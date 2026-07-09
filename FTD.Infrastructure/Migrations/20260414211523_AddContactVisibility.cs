@@ -2,10 +2,10 @@
 
 #nullable disable
 
-namespace FTD.Web.Migrations
+namespace FTD.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddAllUpdates : Migration
+    public partial class AddContactVisibility : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -20,3 +20,4 @@ namespace FTD.Web.Migrations
         }
     }
 }
+

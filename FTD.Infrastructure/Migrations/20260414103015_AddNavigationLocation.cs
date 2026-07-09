@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace FTD.Web.Migrations
+namespace FTD.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class AddNavigationLocation : Migration
@@ -28,3 +28,4 @@ namespace FTD.Web.Migrations
         }
     }
 }
+

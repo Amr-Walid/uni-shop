@@ -1,7 +1,11 @@
+using System;
 using System.Net;
 using System.Net.Mail;
+using System.Threading.Tasks;
+using FTD.Application.Interfaces;
+using Microsoft.Extensions.Logging;
 
-namespace FTD.Web.Services
+namespace FTD.Infrastructure.Services
 {
     public class EmailSettings
     {
@@ -13,7 +17,7 @@ namespace FTD.Web.Services
         public string NotifyEmail { get; set; } = "";
     }
 
-    public class EmailService
+    public class EmailService : IEmailService
     {
         private readonly EmailSettings _settings;
         private readonly ILogger<EmailService> _logger;

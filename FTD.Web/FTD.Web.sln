@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FTD.Domain", "..\FTD.Domain
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FTD.Application", "..\FTD.Application\FTD.Application.csproj", "{4F0D8D72-C579-4E68-B266-7745C3F00908}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FTD.Infrastructure", "..\FTD.Infrastructure\FTD.Infrastructure.csproj", "{89A82705-46BF-475D-8E8F-66528BE6BB37}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{4F0D8D72-C579-4E68-B266-7745C3F00908}.Release|x64.Build.0 = Release|Any CPU
 		{4F0D8D72-C579-4E68-B266-7745C3F00908}.Release|x86.ActiveCfg = Release|Any CPU
 		{4F0D8D72-C579-4E68-B266-7745C3F00908}.Release|x86.Build.0 = Release|Any CPU
+		{89A82705-46BF-475D-8E8F-66528BE6BB37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89A82705-46BF-475D-8E8F-66528BE6BB37}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89A82705-46BF-475D-8E8F-66528BE6BB37}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{89A82705-46BF-475D-8E8F-66528BE6BB37}.Debug|x64.Build.0 = Debug|Any CPU
+		{89A82705-46BF-475D-8E8F-66528BE6BB37}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{89A82705-46BF-475D-8E8F-66528BE6BB37}.Debug|x86.Build.0 = Debug|Any CPU
+		{89A82705-46BF-475D-8E8F-66528BE6BB37}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89A82705-46BF-475D-8E8F-66528BE6BB37}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89A82705-46BF-475D-8E8F-66528BE6BB37}.Release|x64.ActiveCfg = Release|Any CPU
+		{89A82705-46BF-475D-8E8F-66528BE6BB37}.Release|x64.Build.0 = Release|Any CPU
+		{89A82705-46BF-475D-8E8F-66528BE6BB37}.Release|x86.ActiveCfg = Release|Any CPU
+		{89A82705-46BF-475D-8E8F-66528BE6BB37}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
 
-namespace FTD.Web.Migrations
+namespace FTD.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class AddBrandTable : Migration
@@ -128,3 +128,4 @@ namespace FTD.Web.Migrations
         }
     }
 }
+

@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace FTD.Web.Migrations
+namespace FTD.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class RemoveBrandLogoWhite : Migration
@@ -47,3 +47,4 @@ namespace FTD.Web.Migrations
         }
     }
 }
+

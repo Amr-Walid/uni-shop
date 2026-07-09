@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace FTD.Web.Migrations
+namespace FTD.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class AddContactMessages : Migration
@@ -38,3 +38,4 @@ namespace FTD.Web.Migrations
         }
     }
 }
+
