@@ -1,0 +1,48 @@
+@* _SectionEditor_Hero.cshtml *@
+@model FTD.Web.Models.PageSection
+@{
+    string titleAr="", titleEn="", descAr="", descEn="", btnLabelAr="", btnLabelEn="", btnUrl="";
+    if (!string.IsNullOrEmpty(Model.ContentJson))
+    {
+        try {
+            var doc = System.Text.Json.JsonDocument.Parse(Model.ContentJson);
+            doc.RootElement.TryGetProperty("title_ar",    out var t); titleAr    = t.GetString() ?? "";
+            doc.RootElement.TryGetProperty("title_en",    out var te); titleEn   = te.GetString() ?? "";
+            doc.RootElement.TryGetProperty("desc_ar",     out var d); descAr     = d.GetString() ?? "";
+            doc.RootElement.TryGetProperty("desc_en",     out var de); descEn    = de.GetString() ?? "";
+            doc.RootElement.TryGetProperty("btn_ar",      out var b); btnLabelAr = b.GetString() ?? "";
+            doc.RootElement.TryGetProperty("btn_en",      out var be); btnLabelEn= be.GetString() ?? "";
+            doc.RootElement.TryGetProperty("btn_url",     out var u); btnUrl     = u.GetString() ?? "";
+        } catch { }
+    }
+}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+    <div class="a-form-group">
+        <label>العنوان بالعربي</label>
+        <input type="text" name="title_ar" value="@titleAr" placeholder="عنوان كبير">
+    </div>
+    <div class="a-form-group">
+        <label>Title in English</label>
+        <input type="text" name="title_en" value="@titleEn" placeholder="Big Title" dir="ltr">
+    </div>
+    <div class="a-form-group">
+        <label>الوصف بالعربي</label>
+        <textarea name="desc_ar" rows="2" placeholder="وصف مختصر...">@descAr</textarea>
+    </div>
+    <div class="a-form-group">
+        <label>Description in English</label>
+        <textarea name="desc_en" rows="2" placeholder="Short description..." dir="ltr">@descEn</textarea>
+    </div>
+    <div class="a-form-group">
+        <label>نص الزرار AR</label>
+        <input type="text" name="btn_ar" value="@btnLabelAr" placeholder="اكتشف المزيد">
+    </div>
+    <div class="a-form-group">
+        <label>Button Text EN</label>
+        <input type="text" name="btn_en" value="@btnLabelEn" placeholder="Learn More" dir="ltr">
+    </div>
+    <div class="a-form-group" style="grid-column:1/-1">
+        <label>رابط الزرار (URL)</label>
+        <input type="text" name="btn_url" value="@btnUrl" placeholder="/products" dir="ltr">
+    </div>
+</div>

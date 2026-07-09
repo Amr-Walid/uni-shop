@@ -1,0 +1,51 @@
+@model FTD.Web.Models.PageSection
+@{
+    var cards = new List<(string titleAr, string titleEn, string bodyAr, string bodyEn, string icon)>();
+    if (!string.IsNullOrEmpty(Model.ContentJson))
+    {
+        try {
+            var arr = System.Text.Json.JsonSerializer.Deserialize<List<System.Text.Json.JsonElement>>(Model.ContentJson);
+            if (arr != null)
+                foreach (var el in arr)
+                {
+                    el.TryGetProperty("title_ar", out var tAr); el.TryGetProperty("title_en", out var tEn);
+                    el.TryGetProperty("body_ar",  out var bAr); el.TryGetProperty("body_en",  out var bEn);
+                    el.TryGetProperty("icon",     out var ic);
+                    cards.Add((tAr.GetString() ?? "", tEn.GetString() ?? "",
+                               bAr.GetString() ?? "", bEn.GetString() ?? "",
+                               ic.GetString()  ?? "✓"));
+                }
+        } catch { }
+    }
+}
+
+@if (cards.Any())
+{
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1.2rem;margin-bottom:2rem">
+        @foreach (var card in cards)
+        {
+            <div style="background:white;border:1px solid var(--border);border-radius:var(--rl);padding:1.5rem;transition:all .3s" onmouseover="this.style.boxShadow='0 8px 32px rgba(26,107,255,.12)';this.style.borderColor='rgba(26,107,255,.3)'" onmouseout="this.style.boxShadow='';this.style.borderColor='var(--border)'">
+                @if (!string.IsNullOrEmpty(card.icon))
+                {
+                    <div style="width:44px;height:44px;background:var(--blue-light);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:1rem;border:1px solid rgba(26,107,255,.15)">
+                        @card.icon
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(card.titleAr) || !string.IsNullOrEmpty(card.titleEn))
+                {
+                    <h3 style="font-size:15px;font-weight:700;margin-bottom:.5rem">
+                        <span data-ar>@card.titleAr</span>
+                        <span data-en>@card.titleEn</span>
+                    </h3>
+                }
+                @if (!string.IsNullOrEmpty(card.bodyAr) || !string.IsNullOrEmpty(card.bodyEn))
+                {
+                    <p style="font-size:13px;color:var(--text2);line-height:1.7">
+                        <span data-ar>@card.bodyAr</span>
+                        <span data-en>@card.bodyEn</span>
+                    </p>
+                }
+            </div>
+        }
+    </div>
+}

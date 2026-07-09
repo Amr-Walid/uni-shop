@@ -1,0 +1,121 @@
+@model FTD.Web.ViewModels.CheckoutViewModel
+@{
+    ViewData["Title"] = "إتمام الطلب";
+}
+
+<div class="cart-page">
+    <div class="breadcrumb" style="padding-right:0;padding-left:0">
+        <a href="/"><span data-ar>الرئيسية</span><span data-en>Home</span></a>
+        <span class="breadcrumb-sep">/</span>
+        <a href="/Cart"><span data-ar>السلة</span><span data-en>Cart</span></a>
+        <span class="breadcrumb-sep">/</span>
+        <span><span data-ar>إتمام الطلب</span><span data-en>Checkout</span></span>
+    </div>
+
+    <h1 style="font-size:1.8rem;font-weight:900;margin:2rem 0 1.5rem;letter-spacing:-.5px">
+        <span data-ar>إتمام الطلب</span><span data-en>Checkout</span>
+    </h1>
+
+    <form action="/Order/Checkout" method="post">
+        @Html.AntiForgeryToken()
+        <div class="cart-grid">
+            <!-- FORM -->
+            <div>
+                <div class="contact-form-card">
+                    <h3 style="font-size:1.1rem;font-weight:800;margin-bottom:1.5rem">
+                        <span data-ar>بيانات التوصيل</span><span data-en>Delivery Information</span>
+                    </h3>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                        <div class="form-group" style="grid-column:1/-1">
+                            <label><span data-ar>الاسم الكامل *</span><span data-en>Full Name *</span></label>
+                            <input asp-for="CustomerName" placeholder="اسمك الكامل">
+                            <span asp-validation-for="CustomerName" style="color:red;font-size:12px"></span>
+                        </div>
+                        <div class="form-group">
+                            <label><span data-ar>رقم الهاتف *</span><span data-en>Phone *</span></label>
+                            <input asp-for="CustomerPhone" placeholder="+20 1XX XXX XXXX">
+                            <span asp-validation-for="CustomerPhone" style="color:red;font-size:12px"></span>
+                        </div>
+                        <div class="form-group">
+                            <label><span data-ar>البريد الإلكتروني</span><span data-en>Email</span></label>
+                            <input asp-for="CustomerEmail" placeholder="example@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label><span data-ar>المحافظة</span><span data-en>Governorate</span></label>
+                            <select asp-for="Governorate" style="width:100%;padding:11px 15px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:var(--font);background:var(--bg);direction:rtl">
+                                <option value="">اختر المحافظة...</option>
+                                <option>القاهرة</option>
+                                <option>الجيزة</option>
+                                <option>الإسكندرية</option>
+                                <option>الدقهلية</option>
+                                <option>البحيرة</option>
+                                <option>الفيوم</option>
+                                <option>الغربية</option>
+                                <option>الإسماعيلية</option>
+                                <option>المنوفية</option>
+                                <option>المنيا</option>
+                                <option>القليوبية</option>
+                                <option>الوادي الجديد</option>
+                                <option>السويس</option>
+                                <option>أسوان</option>
+                                <option>أسيوط</option>
+                                <option>بني سويف</option>
+                                <option>بورسعيد</option>
+                                <option>دمياط</option>
+                                <option>جنوب سيناء</option>
+                                <option>شمال سيناء</option>
+                                <option>سوهاج</option>
+                                <option>قنا</option>
+                                <option>كفر الشيخ</option>
+                                <option>مطروح</option>
+                                <option>الأقصر</option>
+                                <option>البحر الأحمر</option>
+                                <option>الشرقية</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><span data-ar>المدينة</span><span data-en>City</span></label>
+                            <input asp-for="City" placeholder="المدينة">
+                        </div>
+                        <div class="form-group" style="grid-column:1/-1">
+                            <label><span data-ar>العنوان التفصيلي</span><span data-en>Detailed Address</span></label>
+                            <input asp-for="Address" placeholder="الشارع، المنطقة، رقم العمارة...">
+                        </div>
+                        <div class="form-group" style="grid-column:1/-1">
+                            <label><span data-ar>ملاحظات</span><span data-en>Notes</span></label>
+                            <textarea asp-for="Notes" placeholder="أي تعليمات خاصة للتوصيل..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ORDER SUMMARY -->
+            <div class="cart-summary">
+                <h3><span data-ar>ملخص الطلب</span><span data-en>Order Summary</span></h3>
+                @foreach (var item in Model.Cart.Items)
+                {
+                    <div style="display:flex;justify-content:space-between;font-size:13px;padding:.5rem 0;border-bottom:1px solid var(--border)">
+                        <span>@item.ProductName × @item.Quantity</span>
+                        <span style="font-weight:700">EGP @item.SubTotal.ToString("N0")</span>
+                    </div>
+                }
+                <div class="summary-row" style="margin-top:1rem">
+                    <span><span data-ar>المجموع الفرعي</span><span data-en>Subtotal</span></span>
+                    <span>EGP @Model.Cart.SubTotal.ToString("N0")</span>
+                </div>
+                <div class="summary-row">
+                    <span><span data-ar>الشحن</span><span data-en>Shipping</span></span>
+                    <span>@(Model.Cart.FreeShipping ? "مجاني" : $"EGP {Model.Cart.ShippingFee:N0}")</span>
+                </div>
+                <div class="summary-row total">
+                    <span><span data-ar>الإجمالي</span><span data-en>Total</span></span>
+                    <span style="color:var(--blue)">EGP @Model.Cart.Total.ToString("N0")</span>
+                </div>
+                <button type="submit" class="checkout-btn">
+                    <span data-ar>تأكيد الطلب ←</span><span data-en>Place Order →</span>
+                </button>
+            </div>
+        </div>
+    </form>
+</div>

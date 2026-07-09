@@ -1,0 +1,125 @@
+@model FTD.Web.ViewModels.CartViewModel
+@{
+    ViewData["Title"] = "سلة التسوق";
+}
+
+<div class="cart-page">
+    <div class="breadcrumb" style="padding-right:0;padding-left:0">
+        <a href="/"><span data-ar>الرئيسية</span><span data-en>Home</span></a>
+        <span class="breadcrumb-sep">/</span>
+        <span><span data-ar>سلة التسوق</span><span data-en>Shopping Cart</span></span>
+    </div>
+
+    <div style="margin-top:2rem;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+        <h1 style="font-size:1.8rem;font-weight:900;letter-spacing:-.5px">
+            <span data-ar>سلة التسوق</span><span data-en>Shopping Cart</span>
+        </h1>
+        <a href="/Products" style="font-size:13px;color:var(--blue);font-weight:600">
+            ← <span data-ar>متابعة التسوق</span><span data-en>Continue Shopping</span>
+        </a>
+    </div>
+
+    @if (!Model.Items.Any())
+    {
+        <div class="empty-cart">
+            <div class="empty-cart-icon">🛒</div>
+            <p style="font-size:1.1rem;font-weight:700;margin-bottom:.5rem">
+                <span data-ar>السلة فارغة</span><span data-en>Your cart is empty</span>
+            </p>
+            <p style="color:var(--text3);margin-bottom:1.5rem">
+                <span data-ar>أضف منتجات من متجرنا</span><span data-en>Add products from our store</span>
+            </p>
+            <a href="/Products" class="btn-primary" style="display:inline-flex;margin:auto">
+                <span data-ar>تصفح المنتجات</span><span data-en>Browse Products</span>
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="cart-grid">
+            <div>
+                <div class="cart-items">
+                    @foreach (var item in Model.Items)
+                    {
+                        <div class="cart-item">
+                            <div class="cart-item-img">
+                                @if (!string.IsNullOrEmpty(item.ImagePath))
+                                {
+                                    <img src="@item.ImagePath" alt="@item.ProductName" style="max-height:52px;object-fit:contain">
+                                }
+                                else
+                                {
+                                    @(item.Emoji ?? "📦")
+                                }
+                            </div>
+                            <div style="flex:1">
+                                <div class="cart-item-brand">@item.BrandName</div>
+                                <div class="cart-item-name">@item.ProductName</div>
+                                <div class="qty-wrap">
+                                    <form action="/Cart/Update" method="post" style="display:contents">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="productId" value="@item.ProductId">
+                                        <button type="submit" name="qty" value="@(item.Quantity - 1)" class="qty-btn">−</button>
+                                        <span class="qty-num">@item.Quantity</span>
+                                        <button type="submit" name="qty" value="@(item.Quantity + 1)" class="qty-btn">+</button>
+                                    </form>
+                                    <span class="cart-item-price">EGP @item.SubTotal.ToString("N0")</span>
+                                </div>
+                            </div>
+                            <form action="/Cart/Remove" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="productId" value="@item.ProductId">
+                                <button type="submit" class="cart-item-remove">🗑</button>
+                            </form>
+                        </div>
+                    }
+                </div>
+
+                <form action="/Cart/Clear" method="post" style="margin-top:1rem">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:var(--font);padding:.5rem 0">
+                        <span data-ar>إفراغ السلة</span><span data-en>Clear Cart</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- SUMMARY -->
+            <div class="cart-summary">
+                <h3><span data-ar>ملخص الطلب</span><span data-en>Order Summary</span></h3>
+                <div class="summary-row">
+                    <span><span data-ar>المجموع الفرعي</span><span data-en>Subtotal</span></span>
+                    <span>EGP @Model.SubTotal.ToString("N0")</span>
+                </div>
+                <div class="summary-row">
+                    <span><span data-ar>الشحن</span><span data-en>Shipping</span></span>
+                    <span>
+                        @if (Model.FreeShipping)
+                        {
+                            <span style="color:var(--green);font-weight:700">
+                                <span data-ar>مجاني</span><span data-en>Free</span>
+                            </span>
+                        }
+                        else
+                        {
+                            <span>EGP @Model.ShippingFee.ToString("N0")</span>
+                        }
+                    </span>
+                </div>
+                <div class="summary-row total">
+                    <span><span data-ar>الإجمالي</span><span data-en>Total</span></span>
+                    <span style="color:var(--blue)">EGP @Model.Total.ToString("N0")</span>
+                </div>
+                @if (!Model.FreeShipping)
+                {
+                    <p style="font-size:11px;color:var(--text3);text-align:center;margin-top:.5rem">
+                        <span data-ar>شحن مجاني للطلبات فوق 5000 جنيه</span>
+                        <span data-en>Free shipping on orders above EGP 5,000</span>
+                    </p>
+                }
+                <a href="/Order/Checkout" class="checkout-btn" style="display:block;text-align:center;margin-top:1rem">
+                    <span data-ar>إتمام الطلب ←</span><span data-en>Checkout →</span>
+                </a>
+            </div>
+        </div>
+    }
+</div>

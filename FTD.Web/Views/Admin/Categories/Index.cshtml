@@ -1,0 +1,50 @@
+@model List<FTD.Web.Models.Category>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "الكاتيجوريز";
+}
+
+<div style="display:flex;justify-content:flex-end;margin-bottom:1.5rem">
+  <a href="/Admin/AdminCategories/Create" class="a-btn">+ كاتيجوري جديدة</a>
+</div>
+
+<div class="a-card">
+  <div class="a-table-wrap">
+    <table class="a-table">
+      <thead>
+        <tr>
+          <th>الكاتيجوري</th>
+          <th>Slug</th>
+          <th>عدد المنتجات</th>
+          <th>الترتيب</th>
+          <th>الحالة</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach (var cat in Model)
+        {
+            <tr>
+              <td>
+                <div>
+                  <div style="font-weight:700">@cat.NameAr</div>
+                  <div style="font-size:12px;color:var(--a-text2)">@cat.NameEn</div>
+                </div>
+              </td>
+
+              <td><span style="font-family:monospace;font-size:12px;color:var(--a-blue)">@cat.Slug</span></td>
+              <td>@cat.Products.Count منتج</td>
+              <td>@cat.SortOrder</td>
+              <td>
+                <span class="status-badge"
+                      style="background:@(cat.IsActive ? "rgba(0,196,140,.1)" : "rgba(255,59,48,.1)");color:@(cat.IsActive ? "#00C48C" : "#FF3B30")">
+                  @(cat.IsActive ? "نشط" : "مخفي")
+                </span>
+              </td>
+              <td><a href="/Admin/AdminCategories/Edit/@cat.Id" class="a-btn-sm">تعديل</a></td>
+            </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

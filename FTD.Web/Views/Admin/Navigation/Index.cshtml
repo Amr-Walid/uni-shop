@@ -1,0 +1,198 @@
+@model List<FTD.Web.Models.NavigationItem>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "قائمة التنقل";
+    var pages = ViewBag.Pages as List<FTD.Web.Models.ContentPage>;
+
+    var navbarItems = Model.Where(i => i.Location == "Navbar" || i.Location == "Both").OrderBy(i => i.SortOrder).ToList();
+    var footerItems = Model.Where(i => i.Location == "Footer" || i.Location == "Both").OrderBy(i => i.SortOrder).ToList();
+    var hiddenItems = Model.Where(i => i.Location == "Hidden").OrderBy(i => i.SortOrder).ToList();
+}
+
+<!-- ADD NEW ITEM -->
+<div class="a-card" style="margin-bottom:1.5rem">
+    <h3 class="a-card-title" style="margin-bottom:1.2rem">إضافة عنصر جديد</h3>
+    <form action="/Admin/AdminNavigation/Create" method="post">
+        @Html.AntiForgeryToken()
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1rem">
+            <div class="a-form-group">
+                <label>الاسم بالعربي *</label>
+                <input name="LabelAr" placeholder="مثال: سياسة الإرجاع" required>
+            </div>
+            <div class="a-form-group">
+                <label>الاسم بالإنجليزي *</label>
+                <input name="LabelEn" placeholder="e.g. Return Policy" dir="ltr" required>
+            </div>
+            <div class="a-form-group">
+                <label>نوع الرابط</label>
+                <select name="LinkType" class="a-select" id="linkTypeSelect" onchange="toggleLinkFields(this.value)">
+                    <option value="ContentPage">📄 صفحة حرة</option>
+                    <option value="Static">🔗 رابط ثابت</option>
+                    <option value="External">🌐 رابط خارجي</option>
+                </select>
+            </div>
+            <div class="a-form-group">
+                <label>يظهر في</label>
+                <select name="Location" class="a-select">
+                    <option value="Both">🔵 Navbar + Footer</option>
+                    <option value="Navbar">🟣 Navbar فقط</option>
+                    <option value="Footer">🟤 Footer فقط</option>
+                    <option value="Hidden">⚫ مخفي</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;align-items:flex-end">
+            <div class="a-form-group" id="pageSlugField">
+                <label>اختار الصفحة</label>
+                <select name="PageSlug" class="a-select">
+                    <option value="">اختر الصفحة...</option>
+                    @if (pages != null)
+                    {
+                        @foreach (var pg in pages)
+                        {
+                            <option value="@pg.Slug">@pg.TitleAr — /page/@pg.Slug</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="a-form-group" id="staticRouteField" style="display:none">
+                <label>الرابط الثابت</label>
+                <input name="StaticRoute" placeholder="/products أو /#about" dir="ltr">
+            </div>
+            <div class="a-form-group" id="externalUrlField" style="display:none">
+                <label>الرابط الخارجي</label>
+                <input name="ExternalUrl" placeholder="https://..." dir="ltr">
+            </div>
+            <div class="a-form-group">
+                <label>الترتيب</label>
+                <input name="SortOrder" type="number" value="0">
+            </div>
+            <div class="a-form-group" style="justify-content:flex-end;padding-bottom:2px">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                    <input type="checkbox" name="OpenInNewTab" value="true" style="width:14px;height:14px">
+                    <span>فتح في تاب جديد</span>
+                </label>
+            </div>
+        </div>
+
+        <button type="submit" class="a-btn" style="margin-top:1rem">+ إضافة</button>
+    </form>
+</div>
+
+<!-- PREVIEW TABS -->
+<div style="display:flex;gap:.5rem;margin-bottom:1rem" id="locTabs">
+    <button onclick="showLoc('all')"    class="a-btn-sm active-tab" id="tab-all">الكل (@Model.Count)</button>
+    <button onclick="showLoc('navbar')" class="a-btn-sm" id="tab-navbar">🟣 Navbar (@navbarItems.Count)</button>
+    <button onclick="showLoc('footer')" class="a-btn-sm" id="tab-footer">🟤 Footer (@footerItems.Count)</button>
+    <button onclick="showLoc('hidden')" class="a-btn-sm" id="tab-hidden">⚫ مخفي (@hiddenItems.Count)</button>
+</div>
+
+<div class="a-card">
+    <div class="a-table-wrap">
+        <table class="a-table">
+            <thead>
+                <tr>
+                    <th>الاسم</th>
+                    <th>نوع الرابط</th>
+                    <th>الرابط</th>
+                    <th>يظهر في</th>
+                    <th>الترتيب</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.OrderBy(i => i.SortOrder))
+                {
+                    var locColor = item.Location switch {
+                        "Navbar"  => "#7B5CF6",
+                        "Footer"  => "#FF6B35",
+                        "Both"    => "#1A6BFF",
+                        _         => "#6c757d"
+                    };
+                    var locLabel = item.Location switch {
+                        "Navbar"  => "🟣 Navbar",
+                        "Footer"  => "🟤 Footer",
+                        "Both"    => "🔵 Navbar + Footer",
+                        _         => "⚫ مخفي"
+                    };
+                    <tr data-loc="@item.Location.ToLower()">
+                        <td>
+                            <div style="font-weight:700">@item.LabelAr</div>
+                            <div style="font-size:12px;color:var(--a-text2)">@item.LabelEn</div>
+                        </td>
+                        <td>
+                            <span class="status-badge" style="background:rgba(26,107,255,.1);color:var(--a-blue)">
+                                @(item.LinkType switch {
+                                    "ContentPage" => "📄 صفحة",
+                                    "External"    => "🌐 خارجي",
+                                    _             => "🔗 ثابت"
+                                })
+                            </span>
+                        </td>
+                        <td style="font-family:monospace;font-size:12px;color:var(--a-text2)">
+                            @if (item.LinkType == "ContentPage") { <span>/page/@item.PageSlug</span> }
+                            else if (item.LinkType == "External") { <span>@item.ExternalUrl</span> }
+                            else { <span>@item.StaticRoute</span> }
+                        </td>
+                        <td>
+                            <span class="status-badge" style="background:@locColor + "20";border:1px solid @locColor + "40";color:@locColor">
+                                @locLabel
+                            </span>
+                        </td>
+                        <td style="color:var(--a-text2)">@item.SortOrder</td>
+                        <td>
+                            <div style="display:flex;gap:6px;flex-wrap:wrap">
+                                <!-- Change Location -->
+                                <form action="/Admin/AdminNavigation/SetLocation/@item.Id" method="post" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <select name="location" class="a-select" style="padding:4px 8px;font-size:11px;height:auto"
+                                            onchange="this.form.submit()">
+                                        <option value="Both"   selected="@(item.Location=="Both"   ? "selected":null)">Navbar+Footer</option>
+                                        <option value="Navbar" selected="@(item.Location=="Navbar" ? "selected":null)">Navbar فقط</option>
+                                        <option value="Footer" selected="@(item.Location=="Footer" ? "selected":null)">Footer فقط</option>
+                                        <option value="Hidden" selected="@(item.Location=="Hidden" ? "selected":null)">مخفي</option>
+                                    </select>
+                                </form>
+                                <form action="/Admin/AdminNavigation/Delete/@item.Id" method="post" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="a-btn-sm a-btn-danger" onclick="return confirm('حذف؟')">حذف</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        @if (!Model.Any())
+        {
+            <div style="text-align:center;padding:3rem;color:var(--a-text2)">لا توجد عناصر بعد</div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function toggleLinkFields(type) {
+    document.getElementById('pageSlugField').style.display    = type === 'ContentPage' ? '' : 'none';
+    document.getElementById('staticRouteField').style.display = type === 'Static'      ? '' : 'none';
+    document.getElementById('externalUrlField').style.display = type === 'External'    ? '' : 'none';
+}
+
+function showLoc(loc) {
+    document.querySelectorAll('[data-loc]').forEach(function(row) {
+        if (loc === 'all') { row.style.display = ''; return; }
+        row.style.display = (row.dataset.loc === loc || (loc !== 'hidden' && row.dataset.loc === 'both')) ? '' : 'none';
+    });
+    document.querySelectorAll('[id^="tab-"]').forEach(function(btn) { btn.classList.remove('active-tab'); });
+    document.getElementById('tab-' + loc).classList.add('active-tab');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    toggleLinkFields(document.getElementById('linkTypeSelect').value);
+});
+</script>
+<style>
+.active-tab { background:var(--a-blue) !important; color:white !important; border-color:var(--a-blue) !important; }
+</style>
+}

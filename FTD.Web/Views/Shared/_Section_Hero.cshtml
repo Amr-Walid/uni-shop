@@ -1,0 +1,44 @@
+@model FTD.Web.Models.PageSection
+@{
+    string titleAr="", titleEn="", descAr="", descEn="", btnAr="", btnEn="", btnUrl="";
+    if (!string.IsNullOrEmpty(Model.ContentJson))
+    {
+        try {
+            var doc = System.Text.Json.JsonDocument.Parse(Model.ContentJson);
+            doc.RootElement.TryGetProperty("title_ar", out var t);  titleAr = t.GetString() ?? "";
+            doc.RootElement.TryGetProperty("title_en", out var te); titleEn = te.GetString() ?? "";
+            doc.RootElement.TryGetProperty("desc_ar",  out var d);  descAr  = d.GetString() ?? "";
+            doc.RootElement.TryGetProperty("desc_en",  out var de); descEn  = de.GetString() ?? "";
+            doc.RootElement.TryGetProperty("btn_ar",   out var b);  btnAr   = b.GetString() ?? "";
+            doc.RootElement.TryGetProperty("btn_en",   out var be); btnEn   = be.GetString() ?? "";
+            doc.RootElement.TryGetProperty("btn_url",  out var u);  btnUrl  = u.GetString() ?? "";
+        } catch { }
+    }
+}
+
+<div style="background:var(--dark);border-radius:20px;padding:3rem 2.5rem;margin-bottom:2rem;position:relative;overflow:hidden">
+  <div style="position:absolute;top:-60px;left:-60px;width:240px;height:240px;background:var(--blue);border-radius:50%;opacity:.08;filter:blur(40px)"></div>
+  <div style="position:relative;z-index:1">
+    @if (!string.IsNullOrEmpty(titleAr) || !string.IsNullOrEmpty(titleEn))
+    {
+        <h1 style="font-size:clamp(1.8rem,4vw,3rem);font-weight:900;color:white;line-height:1.1;letter-spacing:-1px;margin-bottom:1rem">
+          <span data-ar>@titleAr</span>
+          <span data-en>@titleEn</span>
+        </h1>
+    }
+    @if (!string.IsNullOrEmpty(descAr) || !string.IsNullOrEmpty(descEn))
+    {
+        <p style="color:rgba(255,255,255,.6);font-size:16px;line-height:1.8;margin-bottom:1.8rem;max-width:560px">
+          <span data-ar>@descAr</span>
+          <span data-en>@descEn</span>
+        </p>
+    }
+    @if (!string.IsNullOrEmpty(btnUrl) && (!string.IsNullOrEmpty(btnAr) || !string.IsNullOrEmpty(btnEn)))
+    {
+        <a href="@btnUrl" class="btn-primary">
+          <span data-ar>@btnAr</span>
+          <span data-en>@btnEn</span>
+        </a>
+    }
+  </div>
+</div>

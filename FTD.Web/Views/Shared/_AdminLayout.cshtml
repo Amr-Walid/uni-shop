@@ -1,0 +1,151 @@
+@inject FTD.Web.Data.AppDbContext _adminDb
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="adminHtml">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>@ViewData["Title"] — FTD Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="~/css/admin.css" asp-append-version="true">
+@await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="admin-body">
+
+<div class="admin-wrap">
+
+  <!-- SIDEBAR -->
+  <aside class="admin-sidebar" id="adminSidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon-sm">FTD</div>
+      <div>
+        <div style="font-size:14px;font-weight:800;color:white">FTD TechZone</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.4)">لوحة التحكم</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      @{
+          var ctrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+          var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+      }
+
+      <div class="nav-group-label">الرئيسية</div>
+      <a href="/Admin/Dashboard" class="sidebar-link @(ctrl == "Dashboard" ? "active" : "")">
+        <span class="si">📊</span> Dashboard
+      </a>
+
+      <div class="nav-group-label">المتجر</div>
+      <a href="/Admin/AdminCategories" class="sidebar-link @(ctrl == "AdminCategories" ? "active" : "")">
+        <span class="si">🗂️</span> التصنيفات
+      </a>
+      <a href="/Admin/AdminAttributes" class="sidebar-link @(ctrl == "AdminAttributes" ? "active" : "")">
+        <span class="si">🔧</span> الـ Attributes
+      </a>
+      <a href="/Admin/AdminBrands" class="sidebar-link @(ctrl == "AdminBrands" ? "active" : "")">
+        <span class="si">🏷️</span> البراندات
+      </a>
+      <a href="/Admin/AdminProducts" class="sidebar-link @(ctrl == "AdminProducts" ? "active" : "")">
+        <span class="si">📦</span> المنتجات
+      </a>
+      <a href="/Admin/AdminOrders" class="sidebar-link @(ctrl == "AdminOrders" ? "active" : "")">
+        <span class="si">🛒</span> الطلبات
+      </a>
+      @{
+          var _unreadCount = _adminDb.ContactMessages.Count(m => !m.IsRead);
+      }
+      <a href="/Admin/AdminMessages" class="sidebar-link @(ctrl == "AdminMessages" ? "active" : "")">
+        <span class="si">📩</span> الرسائل
+        @if (_unreadCount > 0)
+        {
+            <span class="sidebar-badge">@_unreadCount</span>
+        }
+      </a>
+
+      <div class="nav-group-label">المحتوى</div>
+      <a href="/Admin/AdminContent/Blocks" class="sidebar-link @(ctrl == "AdminContent" && action == "Blocks" ? "active" : "")">
+        <span class="si">✏️</span> محتوى الرئيسية
+      </a>
+      <a href="/Admin/AdminContent/Pages" class="sidebar-link @(ctrl == "AdminContent" && action is "Pages" or "CreatePage" or "EditPage" ? "active" : "")">
+        <span class="si">📄</span> صفحات حرة
+      </a>
+      <a href="/Admin/AdminNavigation" class="sidebar-link @(ctrl == "AdminNavigation" ? "active" : "")">
+        <span class="si">🗂️</span> قائمة التنقل
+      </a>
+
+      <div class="nav-group-label">الإعدادات</div>
+      <a href="/Admin/AdminSettings" class="sidebar-link @(ctrl == "AdminSettings" ? "active" : "")">
+        <span class="si">⚙️</span> الإعدادات
+      </a>
+
+      <div style="padding-top:2rem;border-top:1px solid rgba(255,255,255,.08);margin-top:2rem">
+        <a href="/" class="sidebar-link" target="_blank">
+          <span class="si">🌐</span> عرض الموقع
+        </a>
+        <form action="/Admin/AdminAccount/Logout" method="post" style="margin:0">
+          @Html.AntiForgeryToken()
+          <button type="submit" class="sidebar-link"
+                  style="width:100%;text-align:right;background:none;border:none;cursor:pointer;font-family:'Tajawal',sans-serif;font-size:13px;color:rgba(255,255,255,.5)">
+            <span class="si">🚪</span> تسجيل الخروج
+          </button>
+        </form>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <button class="sidebar-toggle" onclick="document.getElementById('adminSidebar').classList.toggle('open')">☰</button>
+      <div class="topbar-title">@ViewData["Title"]</div>
+      <div class="topbar-user">
+        <button class="theme-toggle-btn" onclick="toggleAdminTheme()" id="themeBtn" title="تبديل المظهر">
+          <span id="themeIcon">☀️</span>
+          <span id="themeLabel">Light</span>
+        </button>
+        <div class="user-avatar">A</div>
+        <span style="font-size:13px;color:var(--a-text2)">Admin</span>
+      </div>
+    </header>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">✓ @TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-error">✕ @TempData["Error"]</div>
+    }
+
+    <div class="admin-content">
+      @RenderBody()
+    </div>
+  </div>
+</div>
+
+<script src="~/js/admin.js" asp-append-version="true"></script>
+<script>
+(function(){
+  var saved = localStorage.getItem('ftd_admin_theme') || 'dark';
+  document.getElementById('adminHtml').setAttribute('data-theme', saved);
+  updateThemeBtn(saved);
+  function updateThemeBtn(theme){
+    var btn = document.getElementById('themeBtn');
+    var icon = document.getElementById('themeIcon');
+    var lbl  = document.getElementById('themeLabel');
+    if(!btn) return;
+    if(theme === 'light'){ icon.textContent='🌙'; lbl.textContent='Dark'; }
+    else                 { icon.textContent='☀️'; lbl.textContent='Light'; }
+  }
+  window.toggleAdminTheme = function(){
+    var html  = document.getElementById('adminHtml');
+    var current = html.getAttribute('data-theme') || 'dark';
+    var next    = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('ftd_admin_theme', next);
+    updateThemeBtn(next);
+  };
+})();
+</script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

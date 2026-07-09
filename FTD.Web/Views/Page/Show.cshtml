@@ -1,0 +1,88 @@
+@model FTD.Web.ViewModels.ContentPageViewModel
+@{
+    var p = Model.Page;
+    ViewData["Title"] = p.TitleAr;
+    ViewData["MetaDesc"] = p.MetaDesc;
+    var en = Model.CurrentLang == "en";
+}
+
+<div style="padding-top:var(--nav-h)">
+    <div class="breadcrumb">
+        <a href="/"><span data-ar>الرئيسية</span><span data-en>Home</span></a>
+        <span class="breadcrumb-sep">/</span>
+        <span><span data-ar>@p.TitleAr</span><span data-en>@p.TitleEn</span></span>
+    </div>
+
+    <div class="section" style="max-width:860px;margin:0 auto">
+        <h1 class="section-title" style="margin-bottom:2rem">
+            <span data-ar>@p.TitleAr</span>
+            <span data-en>@p.TitleEn</span>
+        </h1>
+
+        @if (p.Sections != null && p.Sections.Any())
+        {
+            @foreach (var psec in p.Sections.Where(s => s.IsVisible).OrderBy(s => s.SortOrder))
+            {
+                @if (psec.Type == "RichText")
+                {
+                    @await Html.PartialAsync("~/Views/Shared/_Section_RichText.cshtml", psec)
+                }
+                else if (psec.Type == "FAQ")
+                {
+
+                    @await Html.PartialAsync("~/Views/Shared/_Section_FAQ.cshtml", psec)
+                }
+                else if (psec.Type == "Cards")
+                {
+
+                    @await Html.PartialAsync("~/Views/Shared/_Section_Cards.cshtml", psec)
+                }
+                else if (psec.Type == "Hero")
+                {
+
+                    @await Html.PartialAsync("~/Views/Shared/_Section_Hero.cshtml", psec)
+                }
+            }
+        }
+        else
+        {
+            <div class="page-content">
+                <span data-ar>@Html.Raw(p.BodyAr)</span>
+                <span data-en>@Html.Raw(p.BodyEn)</span>
+            </div>
+        }
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .page-content h2 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin: 2rem 0 .8rem
+        }
+
+        .page-content h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 1.5rem 0 .6rem
+        }
+
+        .page-content p {
+            color: var(--text2);
+            line-height: 1.9;
+            margin-bottom: 1rem
+        }
+
+        .page-content ul, .page-content ol {
+            color: var(--text2);
+            line-height: 1.9;
+            padding-right: 1.5rem;
+            margin-bottom: 1rem
+        }
+
+        .page-content li {
+            margin-bottom: .4rem
+        }
+    </style>
+}

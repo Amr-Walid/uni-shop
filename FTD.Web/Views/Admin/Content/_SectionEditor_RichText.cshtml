@@ -1,0 +1,23 @@
+@* _SectionEditor_RichText.cshtml *@
+@model FTD.Web.Models.PageSection
+@{
+    string bodyAr = "", bodyEn = "";
+    if (!string.IsNullOrEmpty(Model.ContentJson))
+    {
+        try {
+            var doc = System.Text.Json.JsonDocument.Parse(Model.ContentJson);
+            doc.RootElement.TryGetProperty("ar", out var ar); bodyAr = ar.GetString() ?? "";
+            doc.RootElement.TryGetProperty("en", out var en); bodyEn = en.GetString() ?? "";
+        } catch { bodyAr = Model.ContentJson; }
+    }
+}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+    <div class="a-form-group">
+        <label>المحتوى بالعربي (HTML مسموح)</label>
+        <textarea name="ar" rows="6" placeholder="<h2>العنوان</h2><p>النص...</p>" style="font-family:monospace;font-size:12px">@bodyAr</textarea>
+    </div>
+    <div class="a-form-group">
+        <label>Content in English (HTML allowed)</label>
+        <textarea name="en" rows="6" placeholder="<h2>Title</h2><p>Text...</p>" dir="ltr" style="font-family:monospace;font-size:12px">@bodyEn</textarea>
+    </div>
+</div>

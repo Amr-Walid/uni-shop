@@ -1,0 +1,412 @@
+@model FTD.Web.ViewModels.HomeViewModel
+@{
+    ViewData["Title"] = "الرئيسية";
+    string Get(string key) => Model.ContentBlocks.TryGetValue(key, out var v) ? v : "";
+}
+
+<!-- HERO SLIDER -->
+<section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-grid-lines"></div>
+    <div class="slider-wrap">
+
+        @for (int i = 0; i < Model.Categories.Count && i < 3; i++)
+        {
+            var cat = Model.Categories[i];
+            var catProduct = Model.FeaturedProducts.FirstOrDefault(p => p.CategoryId == cat.Id);
+            <div class="slide @(i == 0 ? "active" : "")">
+                <div class="slide-content">
+                    <div class="slide-tag">✦ <span data-ar>@(i == 0 ? "وصل حديثاً" : i == 1 ? "الأكثر مبيعاً" : "عرض خاص")</span><span data-en>@(i == 0 ? "New Arrival" : i == 1 ? "Best Seller" : "Hot Deal")</span></div>
+                    <h1 class="slide-title">
+                        <span data-ar>@cat.NameAr<br><span class="hl">@(catProduct?.BrandName ?? "")</span></span>
+                        <span data-en>@cat.NameEn<br><span class="hl">@(catProduct?.BrandName ?? "")</span></span>
+                    </h1>
+                    <p class="slide-desc">
+                        <span data-ar>@(catProduct?.ShortDescAr ?? cat.NameAr)</span>
+                        <span data-en>@(catProduct?.ShortDescEn ?? cat.NameEn)</span>
+                    </p>
+                    <div class="slide-actions">
+                        <a href="/Products?category=@cat.Slug" class="btn-primary">
+                            <span data-ar>اكتشف المنتجات</span><span data-en>Explore Products</span> →
+                        </a>
+                        @if (catProduct != null)
+                        {
+                            <a href="/Products/@catProduct.Slug" class="btn-ghost">
+                                @catProduct.BrandName @catProduct.NameEn
+                            </a>
+                        }
+                    </div>
+                </div>
+                <div class="slide-visual">
+                    @if (catProduct != null)
+                    {
+                        <div class="product-showcase">
+                            @if (!string.IsNullOrEmpty(catProduct.Badge))
+                            {
+                                <span class="showcase-badge">@catProduct.Badge</span>
+                            }
+                            @if (!string.IsNullOrEmpty(catProduct.ImagePath))
+                            {
+                                <img src="@catProduct.ImagePath" alt="@catProduct.NameEn" style="max-height:180px;object-fit:contain;margin-bottom:1rem">
+                            }
+                            else
+                            {
+                                <span class="showcase-emoji">@(catProduct.Emoji ?? "📱")</span>
+                            }
+                            <div class="showcase-brand">@catProduct.BrandName</div>
+                            <div class="showcase-name">
+                                <span data-ar>@catProduct.NameAr</span>
+                                <span data-en>@catProduct.NameEn</span>
+                            </div>
+                            <span class="showcase-price">EGP @catProduct.Price.ToString("N0")</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <button class="slider-arrow arrow-prev" id="btnPrev">&#8250;</button>
+        <button class="slider-arrow arrow-next" id="btnNext">&#8249;</button>
+        <div class="slider-dots">
+            @for (int i = 0; i < Math.Min(Model.Categories.Count, 3); i++)
+            {
+                <button class="dot @(i == 0 ? "active" : "")" data-idx="@i"></button>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- BRANDS STRIP -->
+<div class="brands-strip">
+    <span class="brands-strip-label">
+        <span data-ar>براندات موثوقة</span><span data-en>Trusted Brands</span>
+    </span>
+    <div class="brands-strip-divider"></div>
+    <div class="brands-strip-items">
+        <a href="/Products?brand=doogee" class="brand-strip-item">
+            <img src="/images/brands/doogee.png" alt="DOOGEE" class="brand-logo-strip">
+        </a>
+        <a href="/Products?brand=jisulife" class="brand-strip-item">
+            <img src="/images/brands/jisulife.png" alt="JisuLife" class="brand-logo-strip">
+        </a>
+        <a href="/Products?brand=dreame" class="brand-strip-item">
+            <img src="/images/brands/dreame.png" alt="Dreame" class="brand-logo-strip" >
+        </a>
+    </div>
+</div>
+
+<!-- PRODUCTS -->
+<section class="section products-section" id="products">
+    <div class="products-header">
+        <div>
+            <p class="section-tag"><span data-ar>منتجاتنا</span><span data-en>Our Products</span></p>
+            <div class="section-divider"></div>
+            <h2 class="section-title">
+                <span data-ar>اختر من أفضل التكنولوجيا</span>
+                <span data-en>Choose From The Best Tech</span>
+            </h2>
+        </div>
+        <a href="/Products" class="btn-outline">
+            <span data-ar>عرض الكل</span><span data-en>View All</span>
+        </a>
+    </div>
+
+    <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all">
+            <span data-ar>الكل</span><span data-en>All</span>
+        </button>
+        @foreach (var cat in Model.Categories)
+        {
+            <button class="filter-tab" data-filter="@cat.Slug">
+                @(cat.Emoji ?? "") <span data-ar>@cat.NameAr</span><span data-en>@cat.NameEn</span>
+            </button>
+        }
+    </div>
+
+    <div class="products-grid" id="productsGrid">
+        @foreach (var product in Model.FeaturedProducts)
+        {
+            <div data-category="@product.Category?.Slug">
+                <partial name="_ProductCard" model="product" />
+            </div>
+        }
+    </div>
+
+</section>
+
+<!-- ABOUT -->
+<section class="section about-section" id="about">
+    <div class="about-grid">
+        <div>
+            <p class="section-tag"><span data-ar>من نحن</span><span data-en>About Us</span></p>
+            <div class="section-divider"></div>
+            <h2 class="section-title">
+                <span data-ar>@Get("about.title.ar.ar")</span>
+                <span data-en>@Get("about.title.en.en")</span>
+            </h2>
+            <p class="section-desc">
+                <span data-ar>@Get("about.body.ar.ar")</span>
+                <span data-en>@Get("about.body.en.en")</span>
+            </p>
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-num">@Get("about.stat.years.ar")</div>
+                    <div class="stat-label"><span data-ar>سنوات خبرة</span><span data-en>Years Exp.</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-num">@Get("about.stat.clients.ar")</div>
+                    <div class="stat-label"><span data-ar>عميل سعيد</span><span data-en>Happy Clients</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-num">@Get("about.stat.products.ar")</div>
+                    <div class="stat-label"><span data-ar>منتج</span><span data-en>Products</span></div>
+                </div>
+            </div>
+        </div>
+        @{
+            var featTitle = Model.ContentBlocks.GetValueOrDefault("features.title.ar.ar", "لماذا نحن؟");
+            var featTitleEn = Model.ContentBlocks.GetValueOrDefault("features.title.en.en", "Why Us?");
+            var features = Enumerable.Range(1, 6)
+            .Select(i => new
+            {
+                icon = Model.ContentBlocks.GetValueOrDefault($"features.{i}.icon", "⭐"),
+                ar = Model.ContentBlocks.GetValueOrDefault($"features.{i}.ar", ""),
+                en = Model.ContentBlocks.GetValueOrDefault($"features.{i}.en", "")
+            })
+            .Where(f => !string.IsNullOrEmpty(f.ar))
+            .ToList();
+        }
+        <div class="about-visual">
+            <h3><span data-ar>@featTitle</span><span data-en>@featTitleEn</span></h3>
+            <ul class="feature-list">
+                @foreach (var feat in features)
+                {
+                    <li><div class="feat-icon">@feat.icon</div><span data-ar>@feat.ar</span><span data-en>@feat.en</span></li>
+                }
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- MISSION VISION -->
+<section class="mv-section">
+    <div style="text-align:center;position:relative;z-index:1">
+        <p class="section-tag"><span data-ar>رؤيتنا ورسالتنا</span><span data-en>Mission & Vision</span></p>
+        <h2 class="section-title" style="color:white">
+            <span data-ar>نبني مستقبل التكنولوجيا في مصر</span>
+            <span data-en>Building The Tech Future In Egypt</span>
+        </h2>
+    </div>
+    <div class="mv-grid" style="position:relative;z-index:1">
+        <div class="mv-card">
+            <div class="mv-icon">🎯</div>
+            <h3><span data-ar>رسالتنا</span><span data-en>Our Mission</span></h3>
+            <p>
+                <span data-ar>@Get("mission.text.ar.ar")</span>
+                <span data-en>@Get("mission.text.en.en")</span>
+            </p>
+        </div>
+        <div class="mv-card">
+            <div class="mv-icon">🔭</div>
+            <h3><span data-ar>رؤيتنا</span><span data-en>Our Vision</span></h3>
+            <p>
+                <span data-ar>@Get("vision.text.ar.ar")</span>
+                <span data-en>@Get("vision.text.en.en")</span>
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- CONTACT -->
+<section class="contact-section" id="contact">
+    <p class="section-tag"><span data-ar>تواصل معنا</span><span data-en>Contact Us</span></p>
+    <div class="section-divider"></div>
+    <h2 class="section-title">
+        <span data-ar>نحن هنا لمساعدتك دائماً</span>
+        <span data-en>We're Always Here To Help</span>
+    </h2>
+    <div class="contact-grid">
+        <div>
+            <div class="contact-info-card">
+                @* Contact Info *@
+                @if (Model.ContactInfo?.ShowAddress == true && (!string.IsNullOrEmpty(Model.ContactInfo.AddressAr) || !string.IsNullOrEmpty(Model.ContactInfo.AddressEn)))
+                {
+                    <div class="contact-item">
+                        <div class="contact-icon-wrap">📍</div>
+                        <div>
+                            <strong><span data-ar>العنوان</span><span data-en>Address</span></strong>
+                            <span>
+                                <span data-ar>@Model.ContactInfo!.AddressAr</span>
+                                <span data-en>@Model.ContactInfo!.AddressEn</span>
+                            </span>
+                        </div>
+                    </div>
+                }
+                @if (Model.ContactInfo?.ShowPhone == true && !string.IsNullOrEmpty(Model.ContactInfo.Phone))
+                {
+                    <div class="contact-item">
+                        <div class="contact-icon-wrap">📞</div>
+                        <div>
+                            <strong><span data-ar>الهاتف</span><span data-en>Phone</span></strong>
+                            <span>@Model.ContactInfo!.Phone</span>
+                            @if (Model.ContactInfo.ShowPhone2 && !string.IsNullOrEmpty(Model.ContactInfo.Phone2))
+                            {
+                                <span style="display:block;font-size:12px;color:var(--text3)">@Model.ContactInfo.Phone2</span>
+                            }
+                        </div>
+                    </div>
+                }
+                @if (Model.ContactInfo?.ShowEmail == true && !string.IsNullOrEmpty(Model.ContactInfo.Email))
+                {
+                    <div class="contact-item">
+                        <div class="contact-icon-wrap">✉️</div>
+                        <div>
+                            <strong><span data-ar>البريد</span><span data-en>Email</span></strong>
+                            <span>@Model.ContactInfo!.Email</span>
+                        </div>
+                    </div>
+                }
+                @if (Model.ContactInfo?.ShowWorkingHours == true && (!string.IsNullOrEmpty(Model.ContactInfo.WorkingHoursAr) || !string.IsNullOrEmpty(Model.ContactInfo.WorkingHoursEn)))
+                {
+                    <div class="contact-item">
+                        <div class="contact-icon-wrap">🕐</div>
+                        <div>
+                            <strong><span data-ar>ساعات العمل</span><span data-en>Working Hours</span></strong>
+                            <span>
+                                <span data-ar>@Model.ContactInfo!.WorkingHoursAr</span>
+                                <span data-en>@Model.ContactInfo!.WorkingHoursEn</span>
+                            </span>
+                        </div>
+                    </div>
+                }
+                @if (Model.ContactInfo?.ShowMap == true && !string.IsNullOrEmpty(Model.ContactInfo.MapEmbedUrl))
+                {
+                    <div style="margin-top:1.2rem;border-radius:14px;overflow:hidden;border:1px solid var(--border)">
+                        <iframe src="@Model.ContactInfo!.MapEmbedUrl" width="100%" height="200"
+                                style="border:0;display:block" allowfullscreen="" loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    </div>
+                }
+                else if (Model.ContactInfo != null && (Model.ContactInfo.ShowMap == false || string.IsNullOrEmpty(Model.ContactInfo.MapEmbedUrl)))
+                {
+                    <div class="map-placeholder">
+                        📍 <span>
+                            <span data-ar>@(Model.ContactInfo.AddressAr ?? "القاهرة")</span>
+                            <span data-en>@(Model.ContactInfo.AddressEn ?? "Cairo")</span>
+                        </span>
+                    </div>
+                }
+                @if (Model.ContactInfo != null)
+                {
+                    var _ci = Model.ContactInfo;
+                    bool _fb = _ci.ShowFacebook && !string.IsNullOrEmpty(_ci.Facebook);
+                    bool _ig = _ci.ShowInstagram && !string.IsNullOrEmpty(_ci.Instagram);
+                    bool _wa = _ci.ShowWhatsApp && !string.IsNullOrEmpty(_ci.WhatsApp);
+                    bool _tk = _ci.ShowTikTok && !string.IsNullOrEmpty(_ci.TikTok);
+                    if (_fb || _ig || _wa || _tk)
+                    {
+                        <div style="display:flex;gap:8px;margin-top:1.2rem;flex-wrap:wrap">
+                            @if (_fb)
+                            {
+                                <a href="@_ci.Facebook" target="_blank" class="social-contact-btn">Facebook</a>
+                            }
+                            @if (_ig)
+                            {
+                                <a href="@_ci.Instagram" target="_blank" class="social-contact-btn">Instagram</a>
+                            }
+                            @if (_wa)
+                            {
+                                <a href="@("https://wa.me/" + _ci.WhatsApp!.Replace("+", "").Replace(" ", ""))" target="_blank" class="social-contact-btn" style="background:rgba(0,196,140,.1);color:#00C48C;border-color:rgba(0,196,140,.2)">WhatsApp</a>
+                            }
+                            @if (_tk)
+                            {
+                                <a href="@_ci.TikTok" target="_blank" class="social-contact-btn">TikTok</a>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+        <div class="contact-form-card">
+            <h3 style="font-size:1.2rem;font-weight:800;margin-bottom:1.5rem">
+                <span data-ar>أرسل رسالتك</span><span data-en>Send Your Message</span>
+            </h3>
+            @if (TempData["ContactSuccess"] != null)
+            {
+                <div style="background:rgba(0,196,140,.1);border:1px solid rgba(0,196,140,.2);border-radius:10px;padding:1rem;margin-bottom:1rem;color:#00A374;font-size:14px;font-weight:600">
+                    ✓ <span data-ar>تم إرسال رسالتك بنجاح، سنتواصل معك قريباً</span>
+                    <span data-en>Your message was sent successfully, we'll contact you soon</span>
+                </div>
+            }
+            <form action="/Home/Contact" method="post">
+                @Html.AntiForgeryToken()
+                <div class="form-group">
+                    <label><span data-ar>الاسم الكامل</span><span data-en>Full Name</span></label>
+                    <input type="text" name="name" placeholder="اسمك هنا...">
+                </div>
+                <div class="form-group">
+                    <label><span data-ar>البريد الإلكتروني</span><span data-en>Email</span></label>
+                    <input type="email" name="email" placeholder="example@email.com">
+                </div>
+                <div class="form-group">
+                    <label><span data-ar>رقم الهاتف</span><span data-en>Phone</span></label>
+                    <input type="tel" name="phone" placeholder="+20 1XX XXX XXXX">
+                </div>
+                <div class="form-group">
+                    <label><span data-ar>الرسالة</span><span data-en>Message</span></label>
+                    <textarea name="message" placeholder="اكتب رسالتك هنا..."></textarea>
+                </div>
+                <button type="submit" class="submit-btn">
+                    <span data-ar>إرسال الرسالة ←</span>
+                    <span data-en>Send Message →</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        // Slider
+        var cur=0, slides, dots, timer;
+        function initSlider(){
+          slides=document.querySelectorAll('.slide');
+          dots=document.querySelectorAll('.dot');
+          document.getElementById('btnPrev').onclick=function(){goTo(cur+1);resetTimer()};
+          document.getElementById('btnNext').onclick=function(){goTo(cur-1);resetTimer()};
+          document.querySelector('.slider-dots').onclick=function(e){
+            var b=e.target.closest('.dot');
+            if(b){goTo(parseInt(b.dataset.idx));resetTimer();}
+          };
+          resetTimer();
+        }
+        function goTo(n){
+          slides[cur].classList.remove('active');dots[cur].classList.remove('active');
+          cur=(n+slides.length)%slides.length;
+          slides[cur].classList.add('active');dots[cur].classList.add('active');
+        }
+        function resetTimer(){if(timer)clearInterval(timer);timer=setInterval(()=>goTo(cur+1),5500);}
+
+        // Category filter — filters featured products in-place
+        document.querySelectorAll('.filter-tab').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var filter = this.dataset.filter;
+
+            // Mark active tab
+            document.querySelectorAll('.filter-tab').forEach(function(b) { b.classList.remove('active'); });
+            this.classList.add('active');
+
+            // Show/hide cards in-place
+            var wrappers = document.querySelectorAll('#productsGrid [data-category]');
+            wrappers.forEach(function(w) {
+              w.style.display = (filter === 'all' || w.dataset.category === filter) ? '' : 'none';
+            });
+          });
+        });
+
+        document.addEventListener('DOMContentLoaded', function(){
+          initSlider();
+          updateCartCount();
+        });
+    </script>
+}

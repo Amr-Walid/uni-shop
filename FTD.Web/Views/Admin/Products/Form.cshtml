@@ -1,0 +1,284 @@
+@model FTD.Web.ViewModels.ProductFormViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    Layout = "_AdminLayout";
+    var p      = Model.Product;
+    var isEdit = p.Id > 0;
+    ViewData["Title"] = isEdit ? "تعديل المنتج" : "إضافة منتج جديد";
+}
+
+<form action="@(isEdit ? "/Admin/AdminProducts/Edit/" + p.Id : "/Admin/AdminProducts/Create")"
+      method="post" enctype="multipart/form-data">
+  @Html.AntiForgeryToken()
+
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:1.5rem;align-items:start">
+
+    <!-- MAIN FIELDS -->
+    <div>
+      <div class="a-card" style="margin-bottom:1.5rem">
+        <h3 class="a-card-title">البيانات الأساسية</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
+          <div class="a-form-group">
+            <label>الاسم بالعربي *</label>
+            <input type="text" name="Product.NameAr" value="@p.NameAr" placeholder="اسم المنتج بالعربي" required>
+          </div>
+          <div class="a-form-group">
+            <label>الاسم بالإنجليزي *</label>
+            <input type="text" name="Product.NameEn" value="@p.NameEn" placeholder="Product name in English" dir="ltr" required>
+          </div>
+          <div class="a-form-group">
+            <label>الـ Slug (URL)</label>
+            <input type="text" name="Product.Slug" value="@p.Slug" placeholder="product-name-en" dir="ltr">
+            <small style="color:var(--a-text2);font-size:11px">يُترك فارغاً للتوليد تلقائياً</small>
+          </div>
+          <div class="a-form-group">
+            <label>الكاتيجوري *</label>
+            <select name="Product.CategoryId" class="a-select" id="catSelect" onchange="loadAttrs(this.value)">
+              <option value="">اختر الكاتيجوري...</option>
+              @foreach (var cat in Model.Categories)
+              {
+                  if (p.CategoryId == cat.Id)
+                  { <option value="@cat.Id" selected>@cat.NameAr</option> }
+                  else
+                  { <option value="@cat.Id">@cat.NameAr</option> }
+              }
+            </select>
+          </div>
+          <div class="a-form-group">
+            <label>البراند</label>
+            <select name="Product.BrandId" class="a-select">
+              <option value="">— اختر البراند —</option>
+              @foreach (var br in Model.Brands)
+              {
+                  if (p.BrandId == br.Id)
+                  { <option value="@br.Id" selected>@br.NameEn</option> }
+                  else
+                  { <option value="@br.Id">@br.NameEn</option> }
+              }
+            </select>
+          </div>
+          <div class="a-form-group">
+            <label>Emoji</label>
+            <input type="text" name="Product.Emoji" value="@p.Emoji" placeholder="📱">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
+          <div class="a-form-group">
+            <label>وصف مختصر بالعربي</label>
+            <textarea name="Product.ShortDescAr" rows="2" placeholder="وصف قصير...">@p.ShortDescAr</textarea>
+          </div>
+          <div class="a-form-group">
+            <label>Short Description EN</label>
+            <textarea name="Product.ShortDescEn" rows="2" placeholder="Short description..." dir="ltr">@p.ShortDescEn</textarea>
+          </div>
+          <div class="a-form-group">
+            <label>وصف تفصيلي بالعربي</label>
+            <textarea name="Product.DescAr" rows="4" placeholder="وصف تفصيلي...">@p.DescAr</textarea>
+          </div>
+          <div class="a-form-group">
+            <label>Full Description EN</label>
+            <textarea name="Product.DescEn" rows="4" placeholder="Full description..." dir="ltr">@p.DescEn</textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- ATTRIBUTES -->
+      <div class="a-card" style="margin-bottom:1.5rem">
+        <h3 class="a-card-title">المواصفات التقنية</h3>
+        <div id="attrsContainer" style="margin-top:1rem">
+          @if (Model.Attributes.Any())
+          {
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                @foreach (var attr in Model.Attributes)
+                {
+                    <div class="a-form-group">
+                      <label>@attr.NameAr / @attr.NameEn</label>
+                      <select name="SelectedAttributeValues[@attr.Id]" class="a-select">
+                        <option value="">— اختر —</option>
+                        @foreach (var val in attr.Values)
+                        {
+                            var isSelected = Model.SelectedAttributeValues.ContainsKey(attr.Id) &&
+                                             Model.SelectedAttributeValues[attr.Id] == val.Id;
+                            if (isSelected)
+                            { <option value="@val.Id" selected>@val.ValueAr / @val.ValueEn</option> }
+                            else
+                            { <option value="@val.Id">@val.ValueAr / @val.ValueEn</option> }
+                        }
+                      </select>
+                    </div>
+                }
+              </div>
+          }
+          else
+          {
+              <div style="color:var(--a-text3);font-size:12px">
+                لا توجد مواصفات — أضف Attributes من قسم الـ Attributes أولاً أو اختر الكاتيجوري الصح
+              </div>
+          }
+        </div>
+      </div>
+
+      <!-- IMAGES -->
+      <div class="a-card" style="margin-bottom:1.5rem">
+        <h3 class="a-card-title" style="margin-bottom:1rem">صور المنتج (حتى 4 صور)</h3>
+
+        @if (Model.ExistingImages.Any())
+        {
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:1rem">
+              @foreach (var img in Model.ExistingImages)
+              {
+                  <div style="position:relative">
+                    <img src="@img.ImagePath"
+                         style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:var(--a-bg)">
+                    @if (img.IsMain)
+                    {
+                        <span style="position:absolute;top:4px;right:4px;background:var(--a-blue);color:white;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700">رئيسية</span>
+                    }
+                    <form action="/Admin/AdminProducts/DeleteImage/@img.Id" method="post"
+                          style="position:absolute;top:4px;left:4px">
+                      @Html.AntiForgeryToken()
+                      <button type="submit"
+                              style="background:rgba(255,59,48,.9);border:none;color:white;border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:12px"
+                              onclick="return confirm('حذف الصورة؟')">✕</button>
+                    </form>
+                  </div>
+              }
+            </div>
+        }
+
+        <div class="a-form-group">
+          <label>الصورة الرئيسية</label>
+          <input type="file" name="MainImage" accept="image/jpeg,image/png,image/webp" style="font-size:13px">
+          <small style="color:var(--a-text3);font-size:11px">تظهر في الـ cards والقوائم</small>
+        </div>
+        @if (!string.IsNullOrEmpty(p.ImagePath))
+        {
+            <div style="margin-top:.6rem;background:var(--a-bg);border-radius:8px;padding:.6rem;display:inline-block">
+              <img src="@p.ImagePath" style="height:60px;object-fit:contain">
+              <div style="font-size:10px;color:var(--a-text3);margin-top:4px;text-align:center">الحالية</div>
+            </div>
+        }
+        <div class="a-form-group" style="margin-top:.8rem">
+          <label>صور إضافية (حتى 3)</label>
+          <input type="file" name="ProductImages" accept="image/jpeg,image/png,image/webp"
+                 multiple style="font-size:13px" onchange="limitFiles(this,3)">
+          <small style="color:var(--a-text3);font-size:11px">بتظهر في الـ slider في صفحة المنتج</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div>
+      <div class="a-card" style="margin-bottom:1rem">
+        <h3 class="a-card-title">التسعير والمخزون</h3>
+        <div style="display:flex;flex-direction:column;gap:1rem;margin-top:1rem">
+          <div class="a-form-group">
+            <label>السعر (EGP) *</label>
+            <input type="number" name="Product.Price" value="@p.Price" step="0.01" placeholder="0.00" required>
+          </div>
+          <div class="a-form-group">
+            <label>السعر القديم (شطب)</label>
+            <input type="number" name="Product.OldPrice" value="@p.OldPrice" step="0.01" placeholder="0.00">
+          </div>
+          <div class="a-form-group">
+            <label>المخزون</label>
+            <input type="number" name="Product.Stock" value="@p.Stock" placeholder="0">
+          </div>
+          <div class="a-form-group">
+            <label>الـ Badge</label>
+            <select name="Product.Badge" class="a-select">
+              <option value="">— بدون —</option>
+              @foreach (var b in new[]{"NEW","HOT","SALE","RUGGED","4K"})
+              {
+                  if (p.Badge == b) { <option selected>@b</option> }
+                  else              { <option>@b</option> }
+              }
+            </select>
+          </div>
+          <div class="a-form-group">
+            <label>الترتيب</label>
+            <input type="number" name="Product.SortOrder" value="@p.SortOrder" placeholder="0">
+          </div>
+        </div>
+      </div>
+
+      <div class="a-card" style="margin-bottom:1rem">
+        <h3 class="a-card-title">الإعدادات</h3>
+        <div style="display:flex;flex-direction:column;gap:.8rem;margin-top:1rem">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px">
+            <input type="checkbox" name="Product.IsActive" value="true"
+                   @(p.IsActive ? "checked" : "") style="width:16px;height:16px">
+            نشط (مرئي في الموقع)
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px">
+            <input type="checkbox" name="Product.IsFeatured" value="true"
+                   @(p.IsFeatured ? "checked" : "") style="width:16px;height:16px">
+            مميز (يظهر في الصفحة الرئيسية)
+          </label>
+        </div>
+      </div>
+
+      <div class="a-card" style="margin-bottom:1rem">
+        <h3 class="a-card-title">SEO</h3>
+        <div style="display:flex;flex-direction:column;gap:1rem;margin-top:1rem">
+          <div class="a-form-group">
+            <label>Meta Title</label>
+            <input type="text" name="Product.MetaTitle" value="@p.MetaTitle" placeholder="عنوان لمحركات البحث">
+          </div>
+          <div class="a-form-group">
+            <label>Meta Description</label>
+            <textarea name="Product.MetaDesc" rows="2" placeholder="وصف لمحركات البحث...">@p.MetaDesc</textarea>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:.8rem">
+        <button type="submit" class="a-btn" style="flex:1">
+          @(isEdit ? "💾 حفظ التعديلات" : "✚ إضافة المنتج")
+        </button>
+        <a href="/Admin/AdminProducts" class="a-btn-outline">إلغاء</a>
+      </div>
+    </div>
+
+  </div>
+</form>
+
+@section Scripts {
+<script>
+function limitFiles(input, max) {
+    if (input.files.length > max) {
+        alert("يمكنك رفع " + max + " صور كحد أقصى");
+        input.value = "";
+    }
+}
+
+function loadAttrs(catId) {
+    var container = document.getElementById('attrsContainer');
+    if (!catId) { container.innerHTML = '<div style="color:var(--a-text3);font-size:12px">اختر الكاتيجوري أولاً</div>'; return; }
+    container.innerHTML = '<div style="color:var(--a-text2);font-size:13px;padding:.5rem 0">جاري التحميل...</div>';
+    fetch('/Admin/AdminProducts/AttributesByCategory?categoryId=' + catId)
+        .then(function(r) { return r.json(); })
+        .then(function(attrs) {
+            if (!attrs.length) {
+                container.innerHTML = '<div style="color:var(--a-text3);font-size:12px">لا توجد مواصفات لهذه الكاتيجوري — أضفها من قسم الـ Attributes</div>';
+                return;
+            }
+            var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">';
+            attrs.forEach(function(a) {
+                html += '<div class="a-form-group"><label>' + a.nameAr + ' / ' + a.nameEn + '</label>';
+                html += '<select name="SelectedAttributeValues[' + a.id + ']" class="a-select"><option value="">— اختر —</option>';
+                a.values.forEach(function(v) {
+                    html += '<option value="' + v.id + '">' + v.valueAr + ' / ' + v.valueEn + '</option>';
+                });
+                html += '</select></div>';
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        })
+        .catch(function() {
+            container.innerHTML = '<div style="color:#FF3B30;font-size:12px">خطأ في التحميل</div>';
+        });
+}
+</script>
+}

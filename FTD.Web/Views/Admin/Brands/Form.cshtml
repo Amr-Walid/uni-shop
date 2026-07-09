@@ -1,0 +1,79 @@
+@model FTD.Web.Models.Brand
+@{
+    Layout = "_AdminLayout";
+    var isEdit = Model.Id > 0;
+    ViewData["Title"] = isEdit ? "تعديل براند" : "براند جديد";
+}
+<form action="@(isEdit ? "/Admin/AdminBrands/Edit/" + Model.Id : "/Admin/AdminBrands/Create")"
+      method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <div style="max-width:700px">
+        <div class="a-card" style="margin-bottom:1.5rem">
+            <h3 class="a-card-title">بيانات البراند</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
+                <div class="a-form-group">
+                    <label>الاسم بالعربي *</label>
+                    <input type="text" name="NameAr" value="@Model.NameAr" required>
+                </div>
+                <div class="a-form-group">
+                    <label>الاسم بالإنجليزي *</label>
+                    <input type="text" name="NameEn" value="@Model.NameEn" dir="ltr" required>
+                </div>
+                <div class="a-form-group">
+                    <label>الـ Slug</label>
+                    <input type="text" name="Slug" value="@Model.Slug" placeholder="doogee" dir="ltr">
+                </div>
+                <div class="a-form-group">
+                    <label>الترتيب</label>
+                    <input type="number" name="SortOrder" value="@Model.SortOrder">
+                </div>
+                <div class="a-form-group">
+                    <label>الوصف بالعربي</label>
+                    <textarea name="DescAr" rows="2">@Model.DescAr</textarea>
+                </div>
+                <div class="a-form-group">
+                    <label>Description EN</label>
+                    <textarea name="DescEn" rows="2" dir="ltr">@Model.DescEn</textarea>
+                </div>
+                <div class="a-form-group" style="grid-column:1/-1">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                        <input type="checkbox" name="IsActive" value="true" @(Model.IsActive ? "checked" : "") style="width:15px;height:15px"> نشط
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="a-card">
+            <h3 class="a-card-title">الصور</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem">
+                <div>
+                    <div class="a-form-group">
+                        <label>اللوجو</label>
+                        <input type="file" name="LogoFile" accept="image/*" style="font-size:12px">
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.LogoPath))
+                    {
+                        <img src="@Model.LogoPath" style="height:30px;object-fit:contain;margin-top:.5rem">
+                        <input type="hidden" name="LogoPath" value="@Model.LogoPath">
+                    }
+                </div>
+                <div>
+                    <div class="a-form-group">
+                        <label>بانر الصفحة</label>
+                        <input type="file" name="BannerFile" accept="image/*" style="font-size:12px">
+                        <small style="font-size:11px;color:var(--a-text3)">بيظهر في أعلى صفحة البراند</small>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.BannerPath))
+                    {
+                        <img src="@Model.BannerPath" style="width:100%;height:50px;object-fit:cover;border-radius:6px;margin-top:.5rem">
+                        <input type="hidden" name="BannerPath" value="@Model.BannerPath">
+                    }
+                </div>
+            </div>
+            <div style="display:flex;gap:.8rem;margin-top:1.5rem">
+                <button type="submit" class="a-btn">@(isEdit ? "💾 حفظ" : "✚ إضافة")</button>
+                <a href="/Admin/AdminBrands" class="a-btn-outline">إلغاء</a>
+            </div>
+        </div>
+    </div>
+</form>

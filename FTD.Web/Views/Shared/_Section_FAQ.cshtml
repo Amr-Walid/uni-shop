@@ -1,0 +1,108 @@
+@model FTD.Web.Models.PageSection
+@{
+    var items = new List<(string qAr, string qEn, string aAr, string aEn)>();
+    if (!string.IsNullOrEmpty(Model.ContentJson))
+    {
+        try {
+            var arr = System.Text.Json.JsonSerializer.Deserialize<List<System.Text.Json.JsonElement>>(Model.ContentJson);
+            if (arr != null)
+                foreach (var el in arr)
+                {
+                    el.TryGetProperty("q_ar", out var qAr); el.TryGetProperty("q_en", out var qEn);
+                    el.TryGetProperty("a_ar", out var aAr); el.TryGetProperty("a_en", out var aEn);
+                    var q = qAr.GetString() ?? ""; var qe = qEn.GetString() ?? "";
+                    var a = aAr.GetString() ?? ""; var ae = aEn.GetString() ?? "";
+                    if (!string.IsNullOrWhiteSpace(q) || !string.IsNullOrWhiteSpace(qe))
+                        items.Add((q, qe, a, ae));
+                }
+        } catch { }
+    }
+    var uid = "faq_" + Model.Id;
+}
+
+@if (items.Any())
+{
+    <div class="ftd-accordion" id="@uid" style="margin-bottom:2rem">
+        @for (int i = 0; i < items.Count; i++)
+        {
+            var item   = items[i];
+            var itemId = uid + "_" + i;
+            <div class="ftd-acc-item">
+                <button class="ftd-acc-btn" type="button"
+                        onclick="ftdToggle('@itemId')"
+                        aria-expanded="false"
+                        id="btn_@itemId">
+                    <span class="ftd-acc-q">
+                        <span data-ar>@item.qAr</span>
+                        <span data-en>@item.qEn</span>
+                    </span>
+                    <span class="ftd-acc-icon" id="icon_@itemId">+</span>
+                </button>
+                <div class="ftd-acc-body" id="body_@itemId" style="display:none">
+                    <div class="ftd-acc-answer">
+                        <span data-ar>@item.aAr</span>
+                        <span data-en>@item.aEn</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <style>
+    .ftd-accordion { border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
+    .ftd-acc-item  { border-bottom: 1px solid var(--border); background: white; }
+    .ftd-acc-item:last-child { border-bottom: none; }
+    .ftd-acc-btn   {
+        width: 100%; display: flex; align-items: center;
+        justify-content: space-between; gap: 1rem;
+        padding: 1.1rem 1.4rem;
+        background: none; border: none; cursor: pointer;
+        text-align: right; font-family: var(--font);
+        font-size: 15px; font-weight: 600; color: var(--text);
+        transition: background .15s;
+    }
+    .ftd-acc-btn:hover { background: var(--bg); }
+    .ftd-acc-btn.open  { background: var(--blue-light); color: var(--blue); }
+    .ftd-acc-q   { flex: 1; text-align: right; line-height: 1.5; }
+    .ftd-acc-icon {
+        width: 28px; height: 28px; border-radius: 50%;
+        background: var(--bg); border: 1.5px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px; font-weight: 400; color: var(--text2);
+        flex-shrink: 0; transition: all .25s; line-height: 1;
+    }
+    .ftd-acc-btn.open .ftd-acc-icon {
+        background: var(--blue); color: white;
+        border-color: var(--blue); transform: rotate(45deg);
+    }
+    .ftd-acc-body  { overflow: hidden; }
+    .ftd-acc-answer {
+        padding: .8rem 1.4rem 1.2rem;
+        font-size: 14px; color: var(--text2);
+        line-height: 1.9; border-top: 1px solid var(--border);
+        background: white;
+    }
+    </style>
+
+    <script>
+    function ftdToggle(id) {
+        var body = document.getElementById('body_' + id);
+        var btn  = document.getElementById('btn_'  + id);
+        var icon = document.getElementById('icon_' + id);
+        var isOpen = body.style.display !== 'none';
+
+        // Close all in same accordion
+        var acc = btn.closest('.ftd-accordion');
+        acc.querySelectorAll('.ftd-acc-body').forEach(function(b)  { b.style.display = 'none'; });
+        acc.querySelectorAll('.ftd-acc-btn').forEach(function(b)   { b.classList.remove('open'); b.setAttribute('aria-expanded','false'); });
+        acc.querySelectorAll('.ftd-acc-icon').forEach(function(ic) { ic.textContent = '+'; });
+
+        // Open clicked if it was closed
+        if (!isOpen) {
+            body.style.display = 'block';
+            btn.classList.add('open');
+            btn.setAttribute('aria-expanded', 'true');
+        }
+    }
+    </script>
+}

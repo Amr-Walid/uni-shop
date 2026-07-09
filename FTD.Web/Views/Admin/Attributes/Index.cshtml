@@ -1,0 +1,91 @@
+@model List<FTD.Web.Models.ProductAttribute>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "الـ Attributes";
+    var categories = ViewBag.Categories as List<FTD.Web.Models.Category>;
+    var currentCatId = ViewBag.CurrentCategoryId as int?;
+}
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem">
+    <!-- Category filter -->
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <a href="/Admin/AdminAttributes" class="a-btn-sm @(currentCatId == null ? "a-btn" : "a-btn-outline")">الكل</a>
+        @if (categories != null)
+        {
+            @foreach (var cat in categories)
+            {
+                <a href="/Admin/AdminAttributes?categoryId=@cat.Id"
+                   class="a-btn-sm @(currentCatId == cat.Id ? "a-btn" : "a-btn-outline")">
+                    @(cat.Emoji ?? "") @cat.NameAr
+                </a>
+            }
+        }
+    </div>
+    <a href="/Admin/AdminAttributes/Create" class="a-btn">+ Attribute جديد</a>
+</div>
+
+@if (!Model.Any())
+{
+    <div style="text-align:center;padding:3rem;color:var(--a-text2);background:var(--a-card);border-radius:14px;border:1px dashed var(--a-border)">
+        <div style="font-size:2rem;margin-bottom:.5rem">🏷️</div>
+        <p>مفيش attributes بعد — أضف attribute جديد</p>
+    </div>
+}
+else
+{
+    @foreach (var attr in Model)
+    {
+        <div class="a-card" style="margin-bottom:1rem">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+                <div>
+                    <span style="font-weight:700;font-size:15px">@attr.NameAr</span>
+                    <span style="color:var(--a-text2);font-size:13px;margin-right:8px">/ @attr.NameEn</span>
+                    <span style="font-size:11px;background:rgba(26,107,255,.1);color:#1A6BFF;padding:2px 8px;border-radius:100px;margin-right:6px">
+                        @attr.Category?.NameAr
+                    </span>
+                </div>
+                <div style="display:flex;gap:6px">
+                    <a href="/Admin/AdminAttributes/Edit/@attr.Id" class="a-btn-sm">تعديل</a>
+                    <form action="/Admin/AdminAttributes/Delete/@attr.Id" method="post" style="display:inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="a-btn-sm a-btn-danger" onclick="return confirm('حذف هذا الـ Attribute؟')">حذف</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Attribute Values -->
+            <div>
+                <div style="font-size:11px;font-weight:700;color:var(--a-text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:.8rem">
+                    القيم (@attr.Values.Count)
+                </div>
+                <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.8rem">
+                    @foreach (var val in attr.Values)
+                    {
+                        <div style="display:flex;align-items:center;gap:6px;background:var(--a-bg);border:1px solid var(--a-border);border-radius:8px;padding:5px 10px">
+                            <span style="font-size:13px">@val.ValueAr / @val.ValueEn</span>
+                            <form action="/Admin/AdminAttributes/DeleteValue/@val.Id" method="post" style="display:inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" style="background:none;border:none;color:var(--a-text3);cursor:pointer;font-size:12px;padding:0" onclick="return confirm('حذف؟')">✕</button>
+                            </form>
+                        </div>
+                    }
+                </div>
+
+                <!-- Add new value -->
+                <form action="/Admin/AdminAttributes/AddValue" method="post" style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:flex-end">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="attributeId" value="@attr.Id">
+                    <div class="a-form-group" style="flex:1;min-width:140px">
+                        <label>قيمة جديدة AR</label>
+                        <input type="text" name="valueAr" placeholder="مثال: 12GB">
+                    </div>
+                    <div class="a-form-group" style="flex:1;min-width:140px">
+                        <label>New Value EN</label>
+                        <input type="text" name="valueEn" placeholder="e.g. 12GB" dir="ltr">
+                    </div>
+                    <button type="submit" class="a-btn-sm" style="margin-bottom:1px">+ إضافة</button>
+                </form>
+            </div>
+        </div>
+    }
+}

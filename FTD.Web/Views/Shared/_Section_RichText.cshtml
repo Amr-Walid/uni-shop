@@ -1,0 +1,20 @@
+@model FTD.Web.Models.PageSection
+@{
+    var en = Context.Request.Cookies["ftd_lang"] == "en";
+}
+@* Parse JSON: {"ar":"...","en":"..."} *@
+@{
+    string bodyAr = "", bodyEn = "";
+    if (!string.IsNullOrEmpty(Model.ContentJson))
+    {
+        try {
+            var doc = System.Text.Json.JsonDocument.Parse(Model.ContentJson);
+            doc.RootElement.TryGetProperty("ar", out var arEl); bodyAr = arEl.GetString() ?? "";
+            doc.RootElement.TryGetProperty("en", out var enEl); bodyEn = enEl.GetString() ?? "";
+        } catch { bodyAr = Model.ContentJson; }
+    }
+}
+<div class="page-content" style="margin-bottom:2rem">
+  <span data-ar>@Html.Raw(bodyAr)</span>
+  <span data-en>@Html.Raw(bodyEn)</span>
+</div>

@@ -1,0 +1,105 @@
+@model FTD.Web.ViewModels.OrderDetailViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "طلب #" + Model.Order.OrderNumber;
+    var o = Model.Order;
+}
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:1.5rem;align-items:start">
+  <div>
+    <!-- ORDER ITEMS -->
+    <div class="a-card" style="margin-bottom:1.5rem">
+      <h3 class="a-card-title">المنتجات المطلوبة</h3>
+      <div class="a-table-wrap">
+        <table class="a-table">
+          <thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
+          <tbody>
+            @foreach (var d in o.Details)
+            {
+                <tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span style="font-size:22px">@(d.Product?.Emoji ?? "📦")</span>
+                      <span style="font-size:13px;font-weight:600">@d.ProductName</span>
+                    </div>
+                  </td>
+                  <td>@d.Quantity</td>
+                  <td>EGP @d.UnitPrice.ToString("N0")</td>
+                  <td><strong>EGP @d.SubTotal.ToString("N0")</strong></td>
+                </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div style="padding:1rem;border-top:1px solid var(--a-border);display:flex;flex-direction:column;gap:.5rem;align-items:flex-end">
+        <div style="display:flex;gap:3rem;font-size:13px;color:var(--a-text2)">
+          <span>المجموع الفرعي</span><span>EGP @o.SubTotal.ToString("N0")</span>
+        </div>
+        <div style="display:flex;gap:3rem;font-size:13px;color:var(--a-text2)">
+          <span>الشحن</span><span>@(o.ShippingFee == 0 ? "مجاني" : $"EGP {o.ShippingFee:N0}")</span>
+        </div>
+        <div style="display:flex;gap:3rem;font-size:16px;font-weight:800;color:var(--a-blue)">
+          <span>الإجمالي</span><span>EGP @o.TotalAmount.ToString("N0")</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CUSTOMER INFO -->
+    <div class="a-card">
+      <h3 class="a-card-title">بيانات العميل</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
+        <div><div style="font-size:11px;color:var(--a-text2);margin-bottom:3px">الاسم</div><div style="font-weight:600">@o.CustomerName</div></div>
+        <div><div style="font-size:11px;color:var(--a-text2);margin-bottom:3px">الهاتف</div><div style="font-weight:600;direction:ltr">@o.CustomerPhone</div></div>
+        <div><div style="font-size:11px;color:var(--a-text2);margin-bottom:3px">البريد</div><div style="font-size:13px">@(o.CustomerEmail ?? "—")</div></div>
+        <div><div style="font-size:11px;color:var(--a-text2);margin-bottom:3px">المحافظة</div><div style="font-size:13px">@(o.Governorate ?? "—")</div></div>
+        <div style="grid-column:1/-1"><div style="font-size:11px;color:var(--a-text2);margin-bottom:3px">العنوان</div><div style="font-size:13px">@(o.Address ?? "—")</div></div>
+        @if (!string.IsNullOrEmpty(o.Notes))
+        {
+            <div style="grid-column:1/-1"><div style="font-size:11px;color:var(--a-text2);margin-bottom:3px">ملاحظات العميل</div><div style="font-size:13px;color:var(--a-text2)">@o.Notes</div></div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR: STATUS & ACTIONS -->
+  <div>
+    <div class="a-card" style="margin-bottom:1rem">
+      <h3 class="a-card-title">الحالة الحالية</h3>
+      <div style="margin:1rem 0">
+        <span class="status-badge" style="font-size:14px;padding:8px 16px;background:@(o.Status.ColorHex)20;color:@o.Status.ColorHex;border:1px solid @(o.Status.ColorHex)40">
+          @o.Status.Icon @o.Status.NameAr
+        </span>
+      </div>
+      <form action="/Admin/AdminOrders/UpdateStatus" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@o.Id">
+        <div class="a-form-group">
+          <label>تغيير الحالة إلى</label>
+          <select name="statusId" class="a-select">
+            @foreach (var s in Model.AllStatuses)
+            {
+                <option value="@s.Id" selected="@(s.Id == o.StatusId)">
+                  @s.Icon @s.NameAr
+                </option>
+            }
+          </select>
+        </div>
+        <button type="submit" class="a-btn" style="width:100%">تحديث الحالة</button>
+      </form>
+    </div>
+
+    <div class="a-card" style="margin-bottom:1rem">
+      <h3 class="a-card-title">معلومات الطلب</h3>
+      <div style="display:flex;flex-direction:column;gap:.8rem;margin-top:.8rem">
+        <div><div style="font-size:11px;color:var(--a-text2)">رقم الطلب</div><div style="font-weight:700;color:var(--a-blue)">@o.OrderNumber</div></div>
+        <div><div style="font-size:11px;color:var(--a-text2)">تاريخ الطلب</div><div style="font-size:13px">@o.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div></div>
+        @if (o.UpdatedAt.HasValue)
+        {
+            <div><div style="font-size:11px;color:var(--a-text2)">آخر تحديث</div><div style="font-size:13px">@o.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</div></div>
+        }
+      </div>
+    </div>
+
+    <a href="/Admin/AdminOrders" class="a-btn-outline" style="display:block;text-align:center">← العودة للطلبات</a>
+  </div>
+</div>

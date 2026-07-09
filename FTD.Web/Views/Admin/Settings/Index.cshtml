@@ -1,0 +1,320 @@
+@model List<FTD.Web.Models.SiteSetting>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "إعدادات الموقع";
+    var contact = ViewBag.ContactInfo as FTD.Web.Models.ContactInfo;
+}
+<!-- SITE SETTINGS -->
+<div class="a-card" style="margin-bottom:1.5rem">
+    <h3 class="a-card-title">إعدادات عامة</h3>
+    <form action="/Admin/AdminSettings/SaveSettings" method="post">
+        @Html.AntiForgeryToken()
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
+            @foreach (var s in Model)
+            {
+                <div class="a-form-group">
+                    <label>
+                        @s.Description
+                        <span style="font-family:monospace;font-size:10px;color:var(--a-text3);margin-right:6px">@s.Key</span>
+                    </label>
+                    @if (s.Type == "color")
+                    {
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <input type="color" name="values[@s.Id]" value="@s.Value"
+                                   style="width:44px;height:36px;border:1px solid var(--a-border);border-radius:8px;cursor:pointer">
+                            <input type="text" value="@s.Value" dir="ltr"
+                                   style="flex:1;padding:8px 12px;border:1.5px solid var(--a-border);border-radius:8px;font-size:13px;font-family:monospace;background:var(--a-bg);color:var(--a-text)">
+                        </div>
+                    }
+                    else
+                    {
+                        <input type="text" name="values[@s.Id]" value="@s.Value"
+                               dir="@(s.Key.EndsWith(".ar") ? "rtl" : "ltr")">
+                    }
+                </div>
+            }
+        </div>
+        <button type="submit" class="a-btn" style="margin-top:1.5rem">💾 حفظ الإعدادات</button>
+    </form>
+</div>
+<!-- CONTACT INFO -->
+<div class="a-card">
+    <h3 class="a-card-title">بيانات التواصل</h3>
+    <form action="/Admin/AdminSettings/SaveContact" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="Id" value="@(contact?.Id ?? 1)">
+
+        @* PHONE *@
+        <div class="csb">
+            <div class="csb-hdr">
+                <span>📞 الهاتف</span>
+                <button type="button" class="sw-btn @(contact?.ShowPhone == true ? "sw-on" : "")"
+                        onclick="toggleSw(this,'ShowPhone')">
+                    <span class="sw-knob"></span>
+                </button>
+                <input type="hidden" name="ShowPhone" value="@(contact?.ShowPhone == true ? "true" : "false")" id="hShowPhone">
+                <span class="sw-lbl">عرض في الموقع</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                <div class="a-form-group">
+                    <label>رقم الهاتف الأول</label>
+                    <input name="Phone" value="@contact?.Phone" placeholder="+20 100 000 0000" dir="ltr">
+                </div>
+                <div class="a-form-group">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+                        <label style="margin:0;font-size:11px;font-weight:700;color:var(--a-text2);text-transform:uppercase">رقم الهاتف الثاني</label>
+                        <div style="display:flex;align-items:center;gap:6px">
+                            <button type="button" class="sw-btn sw-sm @(contact?.ShowPhone2 == true ? "sw-on" : "")"
+                                    onclick="toggleSw(this,'ShowPhone2')">
+                                <span class="sw-knob"></span>
+                            </button>
+                            <input type="hidden" name="ShowPhone2" value="@(contact?.ShowPhone2 == true ? "true" : "false")" id="hShowPhone2">
+                            <span class="sw-lbl">عرض</span>
+                        </div>
+                    </div>
+                    <input name="Phone2" value="@contact?.Phone2" placeholder="+20 100 000 0001" dir="ltr">
+                </div>
+            </div>
+        </div>
+
+        @* EMAIL *@
+        <div class="csb">
+            <div class="csb-hdr">
+                <span>✉️ البريد الإلكتروني</span>
+                <div style="display:flex;align-items:center;gap:6px">
+                    <button type="button" class="sw-btn @(contact?.ShowEmail == true ? "sw-on" : "")"
+                            onclick="toggleSw(this,'ShowEmail')">
+                        <span class="sw-knob"></span>
+                    </button>
+                    <input type="hidden" name="ShowEmail" value="@(contact?.ShowEmail == true ? "true" : "false")" id="hShowEmail">
+                    <span class="sw-lbl">عرض في الموقع</span>
+                </div>
+            </div>
+            <div class="a-form-group">
+                <input name="Email" value="@contact?.Email" placeholder="info@ftdtechzone.com" dir="ltr">
+            </div>
+        </div>
+
+        @* ADDRESS *@
+        <div class="csb">
+            <div class="csb-hdr">
+                <span>📍 العنوان</span>
+                <div style="display:flex;align-items:center;gap:6px">
+                    <button type="button" class="sw-btn @(contact?.ShowAddress == true ? "sw-on" : "")"
+                            onclick="toggleSw(this,'ShowAddress')">
+                        <span class="sw-knob"></span>
+                    </button>
+                    <input type="hidden" name="ShowAddress" value="@(contact?.ShowAddress == true ? "true" : "false")" id="hShowAddress">
+                    <span class="sw-lbl">عرض في الموقع</span>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                <div class="a-form-group">
+                    <label>العنوان بالعربي</label>
+                    <input name="AddressAr" value="@contact?.AddressAr" placeholder="القاهرة، مصر الجديدة">
+                </div>
+                <div class="a-form-group">
+                    <label>Address in English</label>
+                    <input name="AddressEn" value="@contact?.AddressEn" placeholder="Cairo, Heliopolis" dir="ltr">
+                </div>
+                <div class="a-form-group">
+                    <label>المدينة</label>
+                    <input name="City" value="@contact?.City" placeholder="Cairo">
+                </div>
+            </div>
+        </div>
+
+        @* MAP *@
+        <div class="csb">
+            <div class="csb-hdr">
+                <span>🗺️ خريطة Google Maps</span>
+                <div style="display:flex;align-items:center;gap:6px">
+                    <button type="button" class="sw-btn @(contact?.ShowMap == true ? "sw-on" : "")"
+                            onclick="toggleSw(this,'ShowMap')">
+                        <span class="sw-knob"></span>
+                    </button>
+                    <input type="hidden" name="ShowMap" value="@(contact?.ShowMap == true ? "true" : "false")" id="hShowMap">
+                    <span class="sw-lbl">عرض في الموقع</span>
+                </div>
+            </div>
+            <div class="a-form-group">
+                <label>رابط Embed الخريطة</label>
+                <input name="MapEmbedUrl" value="@contact?.MapEmbedUrl"
+                       placeholder="https://www.google.com/maps/embed?pb=..." dir="ltr">
+                <small style="font-size:11px;color:var(--a-text3);margin-top:4px;display:block">
+                    افتح Google Maps ← ابحث عن موقعك ← اضغط Share ← Embed a map ← انسخ الـ src
+                </small>
+            </div>
+            @if (!string.IsNullOrEmpty(contact?.MapEmbedUrl))
+            {
+                <div style="margin-top:1rem;border-radius:12px;overflow:hidden;border:1px solid var(--a-border)">
+                    <iframe src="@contact.MapEmbedUrl" width="100%" height="220"
+                            style="border:0;display:block" allowfullscreen="" loading="lazy"
+                            referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+            }
+        </div>
+
+        @* WORKING HOURS *@
+        <div class="csb">
+            <div class="csb-hdr">
+                <span>🕐 ساعات العمل</span>
+                <div style="display:flex;align-items:center;gap:6px">
+                    <button type="button" class="sw-btn @(contact?.ShowWorkingHours == true ? "sw-on" : "")"
+                            onclick="toggleSw(this,'ShowWorkingHours')">
+                        <span class="sw-knob"></span>
+                    </button>
+                    <input type="hidden" name="ShowWorkingHours" value="@(contact?.ShowWorkingHours == true ? "true" : "false")" id="hShowWorkingHours">
+                    <span class="sw-lbl">عرض في الموقع</span>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                <div class="a-form-group">
+                    <label>بالعربي</label>
+                    <input name="WorkingHoursAr" value="@contact?.WorkingHoursAr" placeholder="السبت – الخميس: 10ص – 10م">
+                </div>
+                <div class="a-form-group">
+                    <label>In English</label>
+                    <input name="WorkingHoursEn" value="@contact?.WorkingHoursEn" placeholder="Sat – Thu: 10AM – 10PM" dir="ltr">
+                </div>
+            </div>
+        </div>
+
+        @* SOCIAL MEDIA *@
+        <div class="csb">
+            <div class="csb-hdr"><span>🔗 السوشيال ميديا</span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                @{
+                    var socials = new (string Name, string Field, string? Value, bool Show, string ShowField, string Placeholder)[]
+                    {
+                                ("Facebook",  "Facebook",  contact?.Facebook,  contact?.ShowFacebook==true,  "ShowFacebook",  "https://facebook.com/..."),
+                                ("Instagram", "Instagram", contact?.Instagram, contact?.ShowInstagram==true, "ShowInstagram", "https://instagram.com/..."),
+                                ("WhatsApp",  "WhatsApp",  contact?.WhatsApp,  contact?.ShowWhatsApp==true,  "ShowWhatsApp",  "+201000000000"),
+                                ("TikTok",    "TikTok",    contact?.TikTok,    contact?.ShowTikTok==true,    "ShowTikTok",    "https://tiktok.com/@..."),
+                    };
+                }
+                @foreach (var s in socials)
+                {
+                    <div style="background:var(--a-bg);border-radius:10px;padding:1rem;border:1px solid var(--a-border)">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.7rem">
+                            <span style="font-size:13px;font-weight:700">@s.Name</span>
+                            <div style="display:flex;align-items:center;gap:6px">
+                                <button type="button" class="sw-btn sw-sm @(s.Show ? "sw-on" : "")"
+                                        onclick="toggleSw(this,'@s.ShowField')">
+                                    <span class="sw-knob"></span>
+                                </button>
+                                <input type="hidden" name="@s.ShowField" value="@(s.Show ? "true" : "false")" id="h@(s.ShowField)">
+                                <span class="sw-lbl">عرض</span>
+                            </div>
+                        </div>
+                        <input name="@s.Field" value="@s.Value" placeholder="@s.Placeholder" dir="ltr"
+                               style="width:100%;padding:9px 12px;background:var(--a-card);border:1.5px solid var(--a-border);border-radius:8px;font-size:13px;color:var(--a-text);font-family:'Tajawal',sans-serif;outline:none">
+                    </div>
+                }
+            </div>
+        </div>
+
+        <button type="submit" class="a-btn" style="margin-top:1.5rem">💾 حفظ بيانات التواصل</button>
+    </form>
+</div>
+
+@section Styles {
+    <style>
+        .csb {
+            padding: 1.2rem 0;
+            border-bottom: 1px solid var(--a-border);
+        }
+
+            .csb:last-of-type {
+                border-bottom: none;
+            }
+
+        .csb-hdr {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--a-text2);
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+        /* Switch button */
+        .sw-btn {
+            width: 38px;
+            height: 22px;
+            border-radius: 100px;
+            background: var(--a-border);
+            border: none;
+            cursor: pointer;
+            position: relative;
+            transition: background .2s;
+            flex-shrink: 0;
+            padding: 0;
+        }
+
+            .sw-btn.sw-on {
+                background: var(--a-blue);
+            }
+
+        .sw-knob {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: white;
+            transition: transform .2s;
+            display: block;
+            box-shadow: 0 1px 3px rgba(0,0,0,.2);
+        }
+
+        .sw-btn.sw-on .sw-knob {
+            transform: translateX(16px);
+        }
+
+        .sw-btn.sw-sm {
+            width: 28px;
+            height: 16px;
+        }
+
+            .sw-btn.sw-sm .sw-knob {
+                width: 10px;
+                height: 10px;
+                top: 3px;
+                left: 3px;
+            }
+
+            .sw-btn.sw-sm.sw-on .sw-knob {
+                transform: translateX(12px);
+            }
+
+        .sw-lbl {
+            font-size: 12px;
+            color: var(--a-text2);
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        function toggleSw(btn, field) {
+            btn.classList.toggle('sw-on');
+            var isOn = btn.classList.contains('sw-on');
+            document.getElementById('h' + field).value = isOn ? 'true' : 'false';
+        }
+
+        // Before submit: copy hidden values into named inputs for the server
+        document.querySelector('form[action*="SaveContact"]').addEventListener('submit', function() {
+            document.querySelectorAll('input[data-fname]').forEach(function(el) {
+                var named = document.createElement('input');
+                named.type = 'hidden';
+                named.name = el.getAttribute('data-fname');
+                named.value = el.value;
+                el.parentNode.appendChild(named);
+            });
+        });
+    </script>
+}

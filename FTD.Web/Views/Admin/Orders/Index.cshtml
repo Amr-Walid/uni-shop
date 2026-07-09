@@ -1,0 +1,64 @@
+@model List<FTD.Web.Models.SalesOrder>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "الطلبات";
+    var statuses = ViewBag.Statuses as List<FTD.Web.Models.OrderStatus>;
+}
+
+<!-- STATUS FILTER TABS -->
+<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem">
+  <a href="/Admin/AdminOrders" class="a-btn-sm @(ViewBag.CurrentStatus == null ? "a-btn" : "a-btn-outline")">الكل</a>
+  @if (statuses != null)
+  {
+      @foreach (var s in statuses)
+      {
+          <a href="/Admin/AdminOrders?statusId=@s.Id"
+             class="a-btn-sm"
+             style="background:@(ViewBag.CurrentStatus?.ToString() == s.Id.ToString() ? s.ColorHex : "transparent");color:@(ViewBag.CurrentStatus?.ToString() == s.Id.ToString() ? "white" : s.ColorHex);border:1px solid @s.ColorHex">
+            @s.NameAr
+          </a>
+      }
+  }
+</div>
+
+<div class="a-card">
+  <div class="a-table-wrap">
+    <table class="a-table">
+      <thead>
+        <tr>
+          <th>رقم الطلب</th>
+          <th>العميل</th>
+          <th>الهاتف</th>
+          <th>المحافظة</th>
+          <th>الإجمالي</th>
+          <th>الحالة</th>
+          <th>التاريخ</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach (var order in Model)
+        {
+            <tr>
+              <td><strong style="color:var(--a-blue)">@order.OrderNumber</strong></td>
+              <td>@order.CustomerName</td>
+              <td style="direction:ltr;font-size:13px">@order.CustomerPhone</td>
+              <td style="font-size:13px">@order.Governorate</td>
+              <td><strong>EGP @order.TotalAmount.ToString("N0")</strong></td>
+              <td>
+                <span class="status-badge" style="background:@(order.Status.ColorHex)20;color:@order.Status.ColorHex;border:1px solid @(order.Status.ColorHex)40">
+                  @order.Status.Icon @order.Status.NameAr
+                </span>
+              </td>
+              <td style="font-size:12px;color:var(--a-text2)">@order.CreatedAt.ToString("dd/MM HH:mm")</td>
+              <td><a href="/Admin/AdminOrders/Detail/@order.Id" class="a-btn-sm">تفاصيل</a></td>
+            </tr>
+        }
+      </tbody>
+    </table>
+    @if (!Model.Any())
+    {
+        <div style="text-align:center;padding:3rem;color:var(--a-text2)">لا توجد طلبات</div>
+    }
+  </div>
+</div>

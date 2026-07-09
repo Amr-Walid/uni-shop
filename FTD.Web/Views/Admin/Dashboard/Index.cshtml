@@ -1,0 +1,108 @@
+@model FTD.Web.ViewModels.DashboardViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Dashboard";
+}
+
+<!-- STATS CARDS -->
+<div class="dash-grid">
+  <div class="dash-card">
+    <div class="dash-card-icon" style="background:rgba(26,107,255,.12);color:#1A6BFF">📦</div>
+    <div>
+      <div class="dash-num">@Model.TotalProducts</div>
+      <div class="dash-label">إجمالي المنتجات</div>
+    </div>
+  </div>
+  <div class="dash-card">
+    <div class="dash-card-icon" style="background:rgba(0,196,140,.12);color:#00C48C">🛒</div>
+    <div>
+      <div class="dash-num">@Model.TotalOrders</div>
+      <div class="dash-label">إجمالي الطلبات</div>
+    </div>
+  </div>
+  <div class="dash-card">
+    <div class="dash-card-icon" style="background:rgba(255,107,53,.12);color:#FF6B35">🆕</div>
+    <div>
+      <div class="dash-num">@Model.NewOrders</div>
+      <div class="dash-label">طلبات جديدة</div>
+    </div>
+  </div>
+  <div class="dash-card">
+    <div class="dash-card-icon" style="background:rgba(255,149,0,.12);color:#FF9500">🚚</div>
+    <div>
+      <div class="dash-num">@Model.PendingOrders</div>
+      <div class="dash-label">قيد الشحن</div>
+    </div>
+  </div>
+  <div class="dash-card">
+    <div class="dash-card-icon" style="background:rgba(26,107,255,.12);color:#1A6BFF">💰</div>
+    <div>
+      <div class="dash-num">EGP @Model.TodayRevenue.ToString("N0")</div>
+      <div class="dash-label">إيرادات اليوم</div>
+    </div>
+  </div>
+  <div class="dash-card">
+    <div class="dash-card-icon" style="background:rgba(0,196,140,.12);color:#00C48C">📈</div>
+    <div>
+      <div class="dash-num">EGP @Model.MonthRevenue.ToString("N0")</div>
+      <div class="dash-label">إيرادات الشهر</div>
+    </div>
+  </div>
+</div>
+
+<!-- ORDER STATUS PILLS -->
+<div class="a-card" style="margin-bottom:1.5rem">
+  <h3 class="a-card-title">الطلبات حسب الحالة</h3>
+  <div style="display:flex;gap:.8rem;flex-wrap:wrap;margin-top:1rem">
+    @foreach (var s in Model.OrdersByStatus)
+    {
+        <a href="/Admin/AdminOrders?statusName=@s.StatusName"
+           style="display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:100px;background:@s.ColorHex + '20';border:1px solid @s.ColorHex + '40';text-decoration:none">
+          <span style="width:8px;height:8px;background:@s.ColorHex;border-radius:50%;display:inline-block"></span>
+          <span style="font-size:13px;font-weight:600;color:var(--a-text)">@s.StatusName</span>
+          <span style="font-size:13px;font-weight:800;color:@s.ColorHex">@s.Count</span>
+        </a>
+    }
+  </div>
+</div>
+
+<!-- RECENT ORDERS -->
+<div class="a-card">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem">
+    <h3 class="a-card-title" style="margin:0">أحدث الطلبات</h3>
+    <a href="/Admin/AdminOrders" class="a-btn-sm">عرض الكل</a>
+  </div>
+  <div class="a-table-wrap">
+    <table class="a-table">
+      <thead>
+        <tr>
+          <th>رقم الطلب</th>
+          <th>العميل</th>
+          <th>الهاتف</th>
+          <th>الإجمالي</th>
+          <th>الحالة</th>
+          <th>التاريخ</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach (var order in Model.RecentOrders)
+        {
+            <tr>
+              <td><strong>@order.OrderNumber</strong></td>
+              <td>@order.CustomerName</td>
+              <td style="direction:ltr">@order.CustomerPhone</td>
+              <td><strong>EGP @order.TotalAmount.ToString("N0")</strong></td>
+              <td>
+                <span class="status-badge" style="background:@order.Status.ColorHex + '20';color:@order.Status.ColorHex;border:1px solid @order.Status.ColorHex + '40'">
+                  @order.Status.NameAr
+                </span>
+              </td>
+              <td style="font-size:12px;color:var(--a-text2)">@order.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+              <td><a href="/Admin/AdminOrders/Detail/@order.Id" class="a-btn-sm">عرض</a></td>
+            </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

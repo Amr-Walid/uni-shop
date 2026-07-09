@@ -1,0 +1,55 @@
+@model FTD.Web.Models.Category
+@{
+    Layout = "_AdminLayout";
+    var isEdit = Model.Id > 0;
+    ViewData["Title"] = isEdit ? "تعديل كاتيجوري" : "كاتيجوري جديدة";
+}
+
+<form action="@(isEdit ? "/Admin/AdminCategories/Edit/" + Model.Id : "/Admin/AdminCategories/Create")" method="post">
+  @Html.AntiForgeryToken()
+
+  <div style="max-width:680px">
+    <div class="a-card">
+      <h3 class="a-card-title">بيانات الكاتيجوري</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
+        <div class="a-form-group">
+          <label>الاسم بالعربي *</label>
+          <input asp-for="NameAr" placeholder="مثال: تابلتات">
+          <span asp-validation-for="NameAr" class="a-error"></span>
+        </div>
+        <div class="a-form-group">
+          <label>الاسم بالإنجليزي *</label>
+          <input asp-for="NameEn" placeholder="e.g. Tablets" dir="ltr">
+          <span asp-validation-for="NameEn" class="a-error"></span>
+        </div>
+        <div class="a-form-group">
+          <label>الـ Slug</label>
+          <input asp-for="Slug" placeholder="tablets" dir="ltr">
+          <small style="font-size:11px;color:var(--a-text3)">يُترك فارغاً للتوليد تلقائياً</small>
+        </div>
+        <div class="a-form-group">
+          <label>Emoji (احتياطي)</label>
+          <input asp-for="Emoji" placeholder="📱">
+          <small style="font-size:11px;color:var(--a-text3)">يظهر لو مفيش لوجو</small>
+        </div>
+        <div class="a-form-group">
+          <label>الترتيب</label>
+          <input asp-for="SortOrder" type="number" placeholder="0">
+        </div>
+        <div class="a-form-group" style="display:flex;align-items:center;padding-top:1.5rem">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px">
+            <input asp-for="IsActive" type="checkbox" style="width:16px;height:16px">
+            نشط
+          </label>
+        </div>
+      </div>
+
+
+
+      <div style="display:flex;gap:.8rem;margin-top:1.5rem">
+        <button type="submit" class="a-btn">@(isEdit ? "💾 حفظ" : "✚ إضافة")</button>
+        <a href="/Admin/AdminCategories" class="a-btn-outline">إلغاء</a>
+      </div>
+    </div>
+  </div>
+</form>

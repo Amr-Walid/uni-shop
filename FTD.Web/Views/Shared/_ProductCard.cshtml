@@ -1,0 +1,79 @@
+@model FTD.Web.Models.Product
+@{
+    var badgeClass = Model.Badge switch
+    {
+        "NEW" => "badge-blue",
+        "HOT" => "badge-green",
+        "4K" => "badge-orange",
+        "RUGGED" => "badge-dark",
+        _ => "badge-blue"
+    };
+    var logoPath = Model.BrandName?.ToLower() switch
+    {
+        "doogee" => "/images/brands/doogee.png",
+        "jisulife" => "/images/brands/jisulife.png",
+        "dreame" => "/images/brands/dreame.png",
+        _ => null
+    };
+}
+<div class="product-card" onclick="location.href='/products/@Model.Slug'">
+    <div class="card-img">
+        @if (!string.IsNullOrEmpty(Model.Badge))
+        {
+            <span class="card-badge @badgeClass">@Model.Badge</span>
+        }
+        @if (!string.IsNullOrEmpty(Model.ImagePath))
+        {
+            <img src="@Model.ImagePath" alt="@Model.NameEn" style="max-height:120px;object-fit:contain">
+        }
+        else
+        {
+            <span style="font-size:52px">@(Model.Emoji ?? "📦")</span>
+        }
+    </div>
+    <div class="card-body">
+        <div class="card-brand">
+            @if (!string.IsNullOrEmpty(logoPath))
+            {
+                <img src="@logoPath" alt="@Model.BrandName"
+                     style="height:18px;object-fit:contain;max-width:80px;filter:brightness(0) saturate(100%) invert(35%) sepia(80%) saturate(500%) hue-rotate(195deg) brightness(95%)">
+            }
+            else
+            {
+
+                @Model.BrandName
+            }
+        </div>
+        <div class="card-name">
+            <span data-ar>@Model.NameAr</span>
+            <span data-en>@Model.NameEn</span>
+        </div>
+        <div class="card-desc">
+            <span data-ar>@Model.ShortDescAr</span>
+            <span data-en>@Model.ShortDescEn</span>
+        </div>
+    </div>
+    <div class="card-footer">
+        <div>
+            <div class="card-price">EGP @Model.Price.ToString("N0")</div>
+            @if (Model.OldPrice.HasValue && Model.OldPrice.Value > Model.Price)
+            {
+                var disc = (int)Math.Round((1 - Model.Price / Model.OldPrice.Value) * 100);
+                <div style="display:flex;align-items:center;gap:5px;margin-top:2px">
+                    <span style="font-size:11px;color:var(--text3);text-decoration:line-through">EGP @Model.OldPrice.Value.ToString("N0")</span>
+                    <span style="background:#FF3B30;color:white;font-size:9px;font-weight:800;padding:2px 6px;border-radius:100px">-@disc%</span>
+                </div>
+            }
+        </div>
+        <div style="display:flex;gap:6px">
+            <a href="/products/@Model.Slug" class="card-btn" onclick="event.stopPropagation()">
+                <span data-ar>التفاصيل</span><span data-en>Details</span>
+            </a>
+            <button class="card-btn" style="padding:7px 10px;background:var(--bg);color:var(--text);border:1.5px solid var(--border)"
+                    onclick="event.stopPropagation();addToCartQuick(@Model.Id, this)"
+                    title="أضف للسلة">
+                🛒
+            </button>
+        </div>
+    </div>
+</div>

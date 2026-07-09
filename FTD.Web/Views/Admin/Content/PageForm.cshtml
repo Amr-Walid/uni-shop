@@ -1,0 +1,70 @@
+@model FTD.Web.Models.ContentPage
+@{
+    Layout = "_AdminLayout";
+    var isEdit = Model.Id > 0;
+    ViewData["Title"] = isEdit ? "تعديل صفحة" : "صفحة جديدة";
+}
+
+<form action="@(isEdit ? "/Admin/AdminContent/EditPage/" + Model.Id : "/Admin/AdminContent/CreatePage")" method="post">
+  @Html.AntiForgeryToken()
+
+  <div style="display:grid;grid-template-columns:1fr 300px;gap:1.5rem;align-items:start">
+    <div>
+      <div class="a-card" style="margin-bottom:1.5rem">
+        <h3 class="a-card-title">محتوى الصفحة</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
+          <div class="a-form-group">
+            <label>العنوان بالعربي *</label>
+            <input asp-for="TitleAr" placeholder="عنوان الصفحة بالعربي">
+          </div>
+          <div class="a-form-group">
+            <label>العنوان بالإنجليزي *</label>
+            <input asp-for="TitleEn" placeholder="Page title in English" dir="ltr">
+          </div>
+        </div>
+        <div class="a-form-group" style="margin-top:1rem">
+          <label>المحتوى بالعربي (HTML)</label>
+          <textarea asp-for="BodyAr" rows="10" placeholder="محتوى الصفحة بالعربي — HTML مسموح به..." style="font-family:monospace;font-size:13px"></textarea>
+        </div>
+        <div class="a-form-group">
+          <label>المحتوى بالإنجليزي (HTML)</label>
+          <textarea asp-for="BodyEn" rows="10" placeholder="Page content in English — HTML allowed..." dir="ltr" style="font-family:monospace;font-size:13px"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="a-card" style="margin-bottom:1rem">
+        <h3 class="a-card-title">إعدادات الصفحة</h3>
+        <div class="a-form-group">
+          <label>الـ Slug (URL)</label>
+          <input asp-for="Slug" placeholder="privacy-policy" dir="ltr">
+          <small style="font-size:11px;color:var(--a-text2)">/page/<strong>@(Model.Slug ?? "slug")</strong></small>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;margin-top:.8rem">
+          <input asp-for="IsPublished" type="checkbox" style="width:16px;height:16px">
+          منشور (مرئي للزوار)
+        </label>
+      </div>
+
+      <div class="a-card" style="margin-bottom:1rem">
+        <h3 class="a-card-title">SEO</h3>
+        <div class="a-form-group">
+          <label>Meta Title</label>
+          <input asp-for="MetaTitle" placeholder="عنوان لمحركات البحث">
+        </div>
+        <div class="a-form-group">
+          <label>Meta Description</label>
+          <textarea asp-for="MetaDesc" rows="2" placeholder="وصف لمحركات البحث..."></textarea>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:.8rem">
+        <button type="submit" class="a-btn" style="flex:1">
+          @(isEdit ? "💾 حفظ التعديلات" : "✚ إنشاء الصفحة")
+        </button>
+        <a href="/Admin/AdminContent/Pages" class="a-btn-outline">إلغاء</a>
+      </div>
+    </div>
+  </div>
+</form>

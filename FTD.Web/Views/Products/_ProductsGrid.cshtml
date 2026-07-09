@@ -1,0 +1,16 @@
+@model List<FTD.Web.Models.Product>
+@if (Model.Any())
+{
+    @foreach (var p in Model)
+    {
+        <partial name="_ProductCard" model="p" />
+    }
+}
+else
+{
+    <div style="grid-column:1/-1;text-align:center;padding:4rem 2rem;color:var(--text2)">
+      <div style="font-size:3rem;margin-bottom:1rem">🔍</div>
+      <p style="font-size:16px;font-weight:600" data-ar>لا توجد منتجات مطابقة</p>
+      <p style="font-size:16px;font-weight:600" data-en>No products match your filters</p>
+    </div>
+}

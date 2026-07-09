@@ -1,0 +1,54 @@
+@model FTD.Web.Models.ProductAttribute
+@{
+    Layout = "_AdminLayout";
+    var isEdit = Model.Id > 0;
+    ViewData["Title"] = isEdit ? "تعديل Attribute" : "Attribute جديد";
+    var categories = ViewBag.Categories as List<FTD.Web.Models.Category>;
+}
+
+<form action="@(isEdit ? "/Admin/AdminAttributes/Edit/" + Model.Id : "/Admin/AdminAttributes/Create")" method="post">
+    @Html.AntiForgeryToken()
+    <div style="max-width:580px">
+        <div class="a-card">
+            <h3 class="a-card-title">بيانات الـ Attribute</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
+                <div class="a-form-group">
+                    <label>الاسم بالعربي *</label>
+                    <input type="text" name="NameAr" value="@Model.NameAr" placeholder="مثال: الذاكرة العشوائية" required>
+                </div>
+                <div class="a-form-group">
+                    <label>الاسم بالإنجليزي *</label>
+                    <input type="text" name="NameEn" value="@Model.NameEn" placeholder="e.g. RAM" dir="ltr" required>
+                </div>
+                <div class="a-form-group">
+                    <label>الكاتيجوري *</label>
+                    <select name="CategoryId" class="a-select" required>
+                        <option value="">اختر الكاتيجوري...</option>
+                        @if (categories != null)
+                        {
+                            foreach (var cat in categories)
+                            {
+                                if (Model.CategoryId == cat.Id)
+                                {
+                                    <option value="@cat.Id" selected>@(cat.Emoji ?? "") @cat.NameAr</option>
+                                }
+                                else
+                                {
+                                    <option value="@cat.Id">@(cat.Emoji ?? "") @cat.NameAr</option>
+                                }
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="a-form-group">
+                    <label>الترتيب</label>
+                    <input type="number" name="SortOrder" value="@Model.SortOrder" placeholder="0">
+                </div>
+            </div>
+            <div style="display:flex;gap:.8rem;margin-top:1.5rem">
+                <button type="submit" class="a-btn">@(isEdit ? "💾 حفظ" : "✚ إضافة")</button>
+                <a href="/Admin/AdminAttributes" class="a-btn-outline">إلغاء</a>
+            </div>
+        </div>
+    </div>
+</form>

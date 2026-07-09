@@ -1,0 +1,97 @@
+@model List<FTD.Web.Models.ContentBlock>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "محتوى الرئيسية";
+    var featBlocks = Model.Where(b => b.Key.StartsWith("features.") && b.Key != "features.title.ar" && b.Key != "features.title.en").OrderBy(b => b.Key).ToList();
+    var featTitle = Model.FirstOrDefault(b => b.Key == "features.title.ar");
+    var featTitleEn = Model.FirstOrDefault(b => b.Key == "features.title.en");
+    var otherBlocks = Model.Where(b => !b.Key.StartsWith("features.")).ToList();
+}
+
+<p style="color:var(--a-text2);font-size:13px;margin-bottom:1.5rem">
+    هنا تعدّل النصوص الثابتة في الموقع — عنوان "من نحن"، الرسالة، الرؤية، إلخ.
+</p>
+
+@* ── FEATURES SECTION ── *@
+<div class="a-card" style="margin-bottom:1.5rem">
+    <h3 class="a-card-title" style="margin-bottom:1.2rem">✨ قسم "لماذا نحن؟"</h3>
+
+    @* Title *@
+    @if (featTitle != null || featTitleEn != null)
+    {
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--a-border)">
+            <form action="/Admin/AdminContent/SaveBlock" method="post" style="display:contents">
+                @Html.AntiForgeryToken()
+                @if (featTitle != null)
+                {
+                    <div class="a-form-group">
+                        <label>عنوان القسم (عربي)</label>
+                        <input type="hidden" name="id" value="@featTitle.Id">
+                        <input type="text" name="bodyAr" value="@featTitle.BodyAr">
+                    </div>
+                }
+                @if (featTitleEn != null)
+                {
+                    <div class="a-form-group">
+                        <label>Section Title (English)</label>
+                        <input type="hidden" name="id" value="@featTitleEn.Id">
+                        <input type="text" name="bodyEn" value="@featTitleEn.BodyEn" dir="ltr">
+                    </div>
+                }
+                <div style="grid-column:1/-1">
+                    <button type="submit" class="a-btn-sm">💾 حفظ العنوان</button>
+                </div>
+            </form>
+        </div>
+    }
+
+    @* Features 1-6 *@
+    @foreach (var b in featBlocks)
+    {
+        <form action="/Admin/AdminContent/SaveBlock" method="post" style="margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--a-border)">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@b.Id">
+            <div style="display:grid;grid-template-columns:80px 1fr 1fr;gap:1rem;align-items:end">
+                <div class="a-form-group">
+                    <label>أيقون</label>
+                    <input type="text" name="titleAr" value="@b.TitleAr" placeholder="✓" style="text-align:center;font-size:18px">
+                </div>
+                <div class="a-form-group">
+                    <label>النص بالعربي</label>
+                    <input type="text" name="bodyAr" value="@b.BodyAr" placeholder="ميزة...">
+                </div>
+                <div class="a-form-group">
+                    <label>Text in English</label>
+                    <input type="text" name="bodyEn" value="@b.BodyEn" placeholder="Feature..." dir="ltr">
+                </div>
+            </div>
+            <button type="submit" class="a-btn-sm">💾 حفظ</button>
+        </form>
+    }
+</div>
+
+@* ── OTHER BLOCKS ── *@
+@foreach (var block in otherBlocks)
+{
+    <div class="a-card" style="margin-bottom:1rem">
+        <form action="/Admin/AdminContent/SaveBlock" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@block.Id">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+                <span style="font-family:monospace;font-size:12px;background:var(--a-bg);padding:3px 8px;border-radius:6px;color:var(--a-blue)">@block.Key</span>
+                <span style="font-size:11px;color:var(--a-text2)">@block.UpdatedAt.ToString("dd/MM/yyyy")</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                <div class="a-form-group">
+                    <label>عربي</label>
+                    <textarea name="bodyAr" rows="2" placeholder="النص بالعربي...">@block.BodyAr</textarea>
+                </div>
+                <div class="a-form-group">
+                    <label>English</label>
+                    <textarea name="bodyEn" rows="2" placeholder="Text in English..." dir="ltr">@block.BodyEn</textarea>
+                </div>
+            </div>
+            <button type="submit" class="a-btn-sm" style="margin-top:.5rem">💾 حفظ</button>
+        </form>
+    </div>
+}
