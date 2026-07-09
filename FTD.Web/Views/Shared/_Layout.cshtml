@@ -1,4 +1,4 @@
-@inject FTD.Web.Data.AppDbContext _layoutDb
+@inject FTD.Application.Interfaces.IAppDbContext _layoutDb
 @{
     var en = Context.Request.Cookies["ftd_lang"] == "en";
     var navItems = _layoutDb.NavigationItems.Where(n => n.IsActive && (n.Location == "Navbar" || n.Location == "Both")).OrderBy(n => n.SortOrder).ToList();

@@ -1,7 +1,12 @@
-using FTD.Web.Data;
+using FTD.Application.Interfaces;
+using FTD.Application.Services;
+using FTD.Infrastructure.Data;
+using FTD.Infrastructure.Services;
 using FTD.Web.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Threading.Tasks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +31,8 @@ builder.WebHost.ConfigureKestrel(options =>
 // ── DATABASE ──────────────────────────────────────────────────────────────────
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
 
 // ── IDENTITY (without UI scaffolding) ────────────────────────────────────────
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
@@ -63,10 +70,10 @@ builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<CartService>();
 
 // ── EMAIL SERVICE ─────────────────────────────────────────────────────────────
-var emailSettings = builder.Configuration.GetSection("EmailSettings").Get<FTD.Web.Services.EmailSettings>()
-    ?? new FTD.Web.Services.EmailSettings();
+var emailSettings = builder.Configuration.GetSection("EmailSettings").Get<EmailSettings>()
+    ?? new EmailSettings();
 builder.Services.AddSingleton(emailSettings);
-builder.Services.AddScoped<FTD.Web.Services.EmailService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 var app = builder.Build();
 

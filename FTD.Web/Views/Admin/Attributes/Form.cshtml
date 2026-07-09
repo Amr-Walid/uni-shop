@@ -1,9 +1,9 @@
-@model FTD.Web.Models.ProductAttribute
+@model ProductAttribute
 @{
     Layout = "_AdminLayout";
     var isEdit = Model.Id > 0;
     ViewData["Title"] = isEdit ? "تعديل Attribute" : "Attribute جديد";
-    var categories = ViewBag.Categories as List<FTD.Web.Models.Category>;
+    var categories = ViewBag.Categories as List<Category>;
 }
 
 <form action="@(isEdit ? "/Admin/AdminAttributes/Edit/" + Model.Id : "/Admin/AdminAttributes/Create")" method="post">

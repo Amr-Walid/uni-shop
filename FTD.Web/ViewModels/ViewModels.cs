@@ -1,4 +1,7 @@
-using FTD.Web.Models;
+using FTD.Application.DTOs;
+using FTD.Domain.Entities;
+using Microsoft.AspNetCore.Http;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace FTD.Web.ViewModels
@@ -6,22 +9,22 @@ namespace FTD.Web.ViewModels
     // ── HOME ──────────────────────────────────────────────────────────────────
     public class HomeViewModel
     {
-        public List<Product> FeaturedProducts { get; set; } = new();
-        public List<Category> Categories { get; set; } = new();
+        public List<ProductDto> FeaturedProducts { get; set; } = new();
+        public List<CategoryDto> Categories { get; set; } = new();
         public Dictionary<string, string> ContentBlocks { get; set; } = new();
-        public ContactInfo? ContactInfo { get; set; }
-        public List<SiteSetting> Settings { get; set; } = new();
+        public ContactInfoDto? ContactInfo { get; set; }
+        public List<SiteSettingDto> Settings { get; set; } = new();
     }
 
     // ── PRODUCTS LIST ─────────────────────────────────────────────────────────
     public class ProductsViewModel
     {
-        public List<Product> Products { get; set; } = new();
-        public List<Category> Categories { get; set; } = new();
-        public List<Brand> Brands { get; set; } = new();
+        public List<ProductDto> Products { get; set; } = new();
+        public List<CategoryDto> Categories { get; set; } = new();
+        public List<BrandDto> Brands { get; set; } = new();
         // Current context
-        public Category? CurrentCategory { get; set; }
-        public Brand? CurrentBrand { get; set; }
+        public CategoryDto? CurrentCategory { get; set; }
+        public BrandDto? CurrentBrand { get; set; }
         // Active filters
         public string? BrandFilter { get; set; }
         public string? CategoryFilter { get; set; }
@@ -36,9 +39,9 @@ namespace FTD.Web.ViewModels
     // ── PRODUCT DETAIL ────────────────────────────────────────────────────────
     public class ProductDetailViewModel
     {
-        public Product Product { get; set; } = null!;
-        public List<Product> RelatedProducts { get; set; } = new();
-        public List<ProductAttributeValue> Attributes { get; set; } = new();
+        public ProductDto Product { get; set; } = null!;
+        public List<ProductDto> RelatedProducts { get; set; } = new();
+        public List<ProductAttributeValueDto> Attributes { get; set; } = new();
     }
 
     // ── CART ──────────────────────────────────────────────────────────────────
@@ -97,14 +100,14 @@ namespace FTD.Web.ViewModels
     public class SearchResultsViewModel
     {
         public string Query { get; set; } = "";
-        public List<Product> Products { get; set; } = new();
+        public List<ProductDto> Products { get; set; } = new();
         public int TotalCount { get; set; }
     }
 
     // ── CONTENT PAGE ─────────────────────────────────────────────────────────
     public class ContentPageViewModel
     {
-        public ContentPage Page { get; set; } = null!;
+        public ContentPageDto Page { get; set; } = null!;
         public string CurrentLang { get; set; } = "ar";
     }
 

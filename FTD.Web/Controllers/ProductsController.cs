@@ -1,18 +1,24 @@
-﻿using FTD.Web.Data;
-using FTD.Web.Models;
-using FTD.Web.Services;
+using FTD.Application.Interfaces;
+using FTD.Application.Services;
+using FTD.Application.Mappers;
+using FTD.Application.DTOs;
+using FTD.Domain.Entities;
 using FTD.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace FTD.Web.Controllers
 {
     public class ProductsController : Controller
     {
         private readonly ProductService _products;
-        private readonly AppDbContext _db;
+        private readonly IAppDbContext _db;
 
-        public ProductsController(ProductService products, AppDbContext db)
+        public ProductsController(ProductService products, IAppDbContext db)
         {
             _products = products;
             _db = db;
@@ -23,19 +29,28 @@ namespace FTD.Web.Controllers
             string? brand, string? category, string? q, string? sort,
             [FromQuery(Name = "av")] List<int>? attrValues)
         {
-            var brands = await _db.Brands.Where(b => b.IsActive).OrderBy(b => b.SortOrder).ToListAsync();
-            var categories = await _db.Categories.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync();
+            var brandsList = await _db.Brands.Where(b => b.IsActive).OrderBy(b => b.SortOrder).ToListAsync();
+            var categoriesList = await _db.Categories.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync();
 
-            Brand? currentBrand = null;
-            Category? currentCategory = null;
+            var brands = brandsList.Select(b => b.ToDto()).Where(b => b != null).Select(b => b!).ToList();
+            var categories = categoriesList.Select(c => c.ToDto()).Where(c => c != null).Select(c => c!).ToList();
+
+            BrandDto? currentBrand = null;
+            CategoryDto? currentCategory = null;
 
             if (!string.IsNullOrEmpty(brand))
-                currentBrand = await _db.Brands.FirstOrDefaultAsync(b => b.Slug == brand.ToLower());
+            {
+                var bEntity = await _db.Brands.FirstOrDefaultAsync(b => b.Slug == brand.ToLower());
+                currentBrand = bEntity.ToDto();
+            }
 
             if (!string.IsNullOrEmpty(category))
-                currentCategory = await _db.Categories.FirstOrDefaultAsync(c => c.Slug == category);
+            {
+                var cEntity = await _db.Categories.FirstOrDefaultAsync(c => c.Slug == category);
+                currentCategory = cEntity.ToDto();
+            }
 
-            List<Product> products;
+            List<ProductDto> products;
             if (!string.IsNullOrEmpty(q))
                 products = await _products.SearchAsync(q);
             else
@@ -110,14 +125,20 @@ namespace FTD.Web.Controllers
         // GET /brand/{brandSlug}  e.g. /brand/doogee
         public async Task<IActionResult> BrandPage(string brandSlug)
         {
-            var brand = await _db.Brands
+            var brandEntity = await _db.Brands
                 .FirstOrDefaultAsync(b => b.Slug == brandSlug.ToLower() && b.IsActive);
 
-            if (brand == null) return NotFound();
+            if (brandEntity == null) return NotFound();
+
+            var brand = brandEntity.ToDto()!;
 
             // Build same ViewModel as Index but keep URL as /brand/{slug}
-            var brands = await _db.Brands.Where(b => b.IsActive).OrderBy(b => b.SortOrder).ToListAsync();
-            var categories = await _db.Categories.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync();
+            var brandsList = await _db.Brands.Where(b => b.IsActive).OrderBy(b => b.SortOrder).ToListAsync();
+            var categoriesList = await _db.Categories.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync();
+
+            var brands = brandsList.Select(b => b.ToDto()).Where(b => b != null).Select(b => b!).ToList();
+            var categories = categoriesList.Select(c => c.ToDto()).Where(c => c != null).Select(c => c!).ToList();
+
             var products = await _products.GetFilteredAsync(brand.Slug, null, null, "featured");
             var attrGroups = await BuildAttributeGroupsAsync(products);
 
@@ -173,8 +194,8 @@ namespace FTD.Web.Controllers
             return Json(new { results });
         }
 
-        // ���� Helper ������������������������������������������������������������������������������������������������������������������������
-        private async Task<List<AttributeFilterGroup>> BuildAttributeGroupsAsync(List<Product> products)
+        // Helper
+        private async Task<List<AttributeFilterGroup>> BuildAttributeGroupsAsync(List<ProductDto> products)
         {
             if (!products.Any()) return new();
 

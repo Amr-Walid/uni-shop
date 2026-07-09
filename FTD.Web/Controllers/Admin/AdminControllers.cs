@@ -1,6 +1,6 @@
-using FTD.Web.Data;
-using FTD.Web.Models;
-using FTD.Web.Services;
+using FTD.Infrastructure.Data;
+using FTD.Domain.Entities;
+using FTD.Application.Services;
 using FTD.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;

@@ -1,4 +1,5 @@
-﻿using FTD.Web.Data;
+using FTD.Infrastructure.Data;
+using FTD.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

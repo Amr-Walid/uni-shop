@@ -1,8 +1,8 @@
-@model List<FTD.Web.Models.NavigationItem>
+@model List<NavigationItem>
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "قائمة التنقل";
-    var pages = ViewBag.Pages as List<FTD.Web.Models.ContentPage>;
+    var pages = ViewBag.Pages as List<ContentPage>;
 
     var navbarItems = Model.Where(i => i.Location == "Navbar" || i.Location == "Both").OrderBy(i => i.SortOrder).ToList();
     var footerItems = Model.Where(i => i.Location == "Footer" || i.Location == "Both").OrderBy(i => i.SortOrder).ToList();

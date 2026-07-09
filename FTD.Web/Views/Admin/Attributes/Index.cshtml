@@ -1,8 +1,8 @@
-@model List<FTD.Web.Models.ProductAttribute>
+@model List<ProductAttribute>
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "الـ Attributes";
-    var categories = ViewBag.Categories as List<FTD.Web.Models.Category>;
+    var categories = ViewBag.Categories as List<Category>;
     var currentCatId = ViewBag.CurrentCategoryId as int?;
 }
 

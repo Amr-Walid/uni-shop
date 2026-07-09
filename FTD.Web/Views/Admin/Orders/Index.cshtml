@@ -1,8 +1,8 @@
-@model List<FTD.Web.Models.SalesOrder>
+@model List<SalesOrder>
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "الطلبات";
-    var statuses = ViewBag.Statuses as List<FTD.Web.Models.OrderStatus>;
+    var statuses = ViewBag.Statuses as List<OrderStatus>;
 }
 
 <!-- STATUS FILTER TABS -->

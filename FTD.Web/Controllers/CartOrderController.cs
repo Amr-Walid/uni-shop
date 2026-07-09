@@ -1,6 +1,10 @@
+using FTD.Application.DTOs;
+using FTD.Application.Services;
 using FTD.Web.Services;
 using FTD.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace FTD.Web.Controllers
 {
@@ -89,7 +93,30 @@ namespace FTD.Web.Controllers
             if (!ModelState.IsValid)
                 return View(vm);
 
-            var order = await _orders.CreateOrderAsync(vm, vm.Cart);
+            var checkoutDto = new CheckoutDto
+            {
+                CustomerName = vm.CustomerName,
+                CustomerPhone = vm.CustomerPhone,
+                CustomerEmail = vm.CustomerEmail,
+                Address = vm.Address,
+                City = vm.City,
+                Governorate = vm.Governorate,
+                Notes = vm.Notes
+            };
+
+            var cartDto = new CartDto
+            {
+                ShippingFee = vm.Cart.ShippingFee,
+                Items = vm.Cart.Items.Select(i => new CartItemDto
+                {
+                    ProductId = i.ProductId,
+                    ProductName = i.ProductName,
+                    UnitPrice = i.UnitPrice,
+                    Quantity = i.Quantity
+                }).ToList()
+            };
+
+            var order = await _orders.CreateOrderAsync(checkoutDto, cartDto);
             _cart.ClearCart(HttpContext.Session);
 
             return Redirect("/Order/Confirmation?orderNumber=" + order.OrderNumber);
@@ -106,9 +133,9 @@ namespace FTD.Web.Controllers
     // ── PAGE ──────────────────────────────────────────────────────────────────
     public class PageController : Controller
     {
-        private readonly FTD.Web.Services.ContentService _content;
+        private readonly ContentService _content;
 
-        public PageController(FTD.Web.Services.ContentService content) => _content = content;
+        public PageController(ContentService content) => _content = content;
 
         public async Task<IActionResult> Show(string slug)
         {

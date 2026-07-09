@@ -1,9 +1,13 @@
-using FTD.Web.Data;
-using FTD.Web.Models;
-using FTD.Web.Services;
+using FTD.Application.Interfaces;
+using FTD.Application.Services;
+using FTD.Application.Mappers;
+using FTD.Domain.Entities;
 using FTD.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace FTD.Web.Controllers
 {
@@ -11,14 +15,14 @@ namespace FTD.Web.Controllers
     {
         private readonly ProductService _products;
         private readonly ContentService _content;
-        private readonly AppDbContext _db;
-        private readonly EmailService _email;
+        private readonly IAppDbContext _db;
+        private readonly IEmailService _email;
 
         public HomeController(
             ProductService products,
             ContentService content,
-            AppDbContext db,
-            EmailService email)
+            IAppDbContext db,
+            IEmailService email)
         {
             _products = products;
             _content = content;
@@ -28,13 +32,21 @@ namespace FTD.Web.Controllers
 
         public async Task<IActionResult> Index()
         {
+            var featured = await _products.GetFeaturedAsync(6);
+            var categoriesList = await _db.Categories
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.SortOrder)
+                .ToListAsync();
+
+            var settingsList = await _db.SiteSettings.ToListAsync();
+
             var vm = new HomeViewModel
             {
-                FeaturedProducts = await _products.GetFeaturedAsync(6),
-                Categories = await _db.Categories.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync(),
+                FeaturedProducts = featured,
+                Categories = categoriesList.Select(c => c.ToDto()).Where(c => c != null).Select(c => c!).ToList(),
                 ContentBlocks = await _content.GetBlocksAsync(),
                 ContactInfo = await _content.GetContactInfoAsync(),
-                Settings = await _db.SiteSettings.ToListAsync()
+                Settings = settingsList.Select(s => s.ToDto()).Where(s => s != null).Select(s => s!).ToList()
             };
             return View(vm);
         }
