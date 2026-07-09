@@ -1,7 +1,9 @@
 # FTD TechZone Clean Architecture Refactoring Progress Ledger
 
-- [ ] Task 1: Create FTD.Domain Layer
-- [ ] Task 2: Create FTD.Application Layer
+- [x] Task 1: Create FTD.Domain Layer
+  * Task 1: complete (commits 1a767b1..4a0cd26, review clean)
+- [x] Task 2: Create FTD.Application Layer
+  * Task 2: complete (commit 62f4122, review clean)
 - [ ] Task 3: Create FTD.Infrastructure Layer
 - [ ] Task 4: Refactor FTD.Web Presentation Layer
 - [ ] Task 5: Verification and Final Deployment Run
