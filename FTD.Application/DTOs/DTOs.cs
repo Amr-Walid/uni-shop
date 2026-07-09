@@ -16,6 +16,7 @@ namespace FTD.Application.DTOs
         public bool IsActive { get; set; }
         public int SortOrder { get; set; }
         public DateTime CreatedAt { get; set; }
+        public int ProductsCount { get; set; }
     }
 
     public class CategoryDto
@@ -30,6 +31,7 @@ namespace FTD.Application.DTOs
         public int SortOrder { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
+        public int ProductsCount { get; set; }
     }
 
     public class ProductDto
@@ -80,6 +82,8 @@ namespace FTD.Application.DTOs
         public string NameAr { get; set; } = "";
         public string NameEn { get; set; } = "";
         public int SortOrder { get; set; }
+        public CategoryDto? Category { get; set; }
+        public List<AttributeValueDto> Values { get; set; } = new();
     }
 
     public class AttributeValueDto
@@ -129,7 +133,7 @@ namespace FTD.Application.DTOs
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
-        public OrderStatusDto? Status { get; set; }
+        public OrderStatusDto Status { get; set; } = new();
         public List<SalesOrderDetailDto> Details { get; set; } = new();
     }
 
@@ -142,6 +146,7 @@ namespace FTD.Application.DTOs
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal SubTotal { get; set; }
+        public ProductDto? Product { get; set; }
     }
 
     public class ContentBlockDto
@@ -279,6 +284,41 @@ namespace FTD.Application.DTOs
         public decimal ShippingFee { get; set; }
         public bool FreeShipping => SubTotal >= 5000;
         public decimal Total => SubTotal + (FreeShipping ? 0 : ShippingFee);
+    }
+
+    public class DashboardDto
+    {
+        public int TotalProducts { get; set; }
+        public int TotalOrders { get; set; }
+        public int NewOrders { get; set; }
+        public int PendingOrders { get; set; }
+        public decimal TodayRevenue { get; set; }
+        public decimal MonthRevenue { get; set; }
+        public List<SalesOrderDto> RecentOrders { get; set; } = new();
+        public List<OrderStatusCountDto> OrdersByStatus { get; set; } = new();
+    }
+
+    public class OrderStatusCountDto
+    {
+        public string StatusName { get; set; } = "";
+        public string ColorHex { get; set; } = "";
+        public int Count { get; set; }
+    }
+
+    public class AttributeFilterGroupDto
+    {
+        public int AttributeId { get; set; }
+        public string NameAr { get; set; } = "";
+        public string NameEn { get; set; } = "";
+        public List<AttributeFilterOptionDto> Options { get; set; } = new();
+    }
+
+    public class AttributeFilterOptionDto
+    {
+        public int ValueId { get; set; }
+        public string ValueAr { get; set; } = "";
+        public string ValueEn { get; set; } = "";
+        public int Count { get; set; }
     }
 }
 

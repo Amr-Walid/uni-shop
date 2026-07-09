@@ -1,10 +1,9 @@
-using FTD.Application.Interfaces;
 using FTD.Application.DTOs;
-using FTD.Application.Mappers;
-using FTD.Domain.Entities;
+using FTD.Application.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.IO;
 using System.Linq;
@@ -15,16 +14,18 @@ namespace FTD.Web.Controllers.Admin
     [Authorize(Roles = "Admin")]
     public class AdminBrandsController : Controller
     {
-        private readonly IAppDbContext _db;
+        private readonly ProductService _productService;
         private readonly IWebHostEnvironment _env;
 
-        public AdminBrandsController(IAppDbContext db, IWebHostEnvironment env)
-        { _db = db; _env = env; }
+        public AdminBrandsController(ProductService productService, IWebHostEnvironment env)
+        {
+            _productService = productService;
+            _env = env;
+        }
 
         public async Task<IActionResult> Index()
         {
-            var entities = await _db.Brands.OrderBy(b => b.SortOrder).ToListAsync();
-            var dtos = entities.Select(b => b.ToDto()).Where(b => b != null).Select(b => b!).ToList();
+            var dtos = await _productService.GetAllBrandsAsync();
             return View("~/Views/Admin/Brands/Index.cshtml", dtos);
         }
 
@@ -32,60 +33,41 @@ namespace FTD.Web.Controllers.Admin
             => View("~/Views/Admin/Brands/Form.cshtml", new BrandDto());
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(BrandDto model,
-            IFormFile? LogoFile, IFormFile? BannerFile)
+        public async Task<IActionResult> Create(BrandDto model, IFormFile? LogoFile, IFormFile? BannerFile)
         {
             if (string.IsNullOrEmpty(model.Slug))
                 model.Slug = model.NameEn.ToLower().Replace(" ", "-");
             if (LogoFile != null) model.LogoPath = await SaveAsync(LogoFile, "brands");
             if (BannerFile != null) model.BannerPath = await SaveAsync(BannerFile, "brands/banners");
 
-            var brand = new Brand
-            {
-                NameAr = model.NameAr,
-                NameEn = model.NameEn,
-                Slug = model.Slug,
-                LogoPath = model.LogoPath,
-                BannerPath = model.BannerPath,
-                DescAr = model.DescAr,
-                DescEn = model.DescEn,
-                IsActive = model.IsActive,
-                SortOrder = model.SortOrder,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _db.Brands.Add(brand);
-            await _db.SaveChangesAsync();
+            await _productService.CreateBrandAsync(model);
             TempData["Success"] = "تم إضافة البراند";
             return RedirectToAction(nameof(Index));
         }
 
         public async Task<IActionResult> Edit(int id)
         {
-            var brand = await _db.Brands.FindAsync(id);
+            var brands = await _productService.GetAllBrandsAsync();
+            var brand = brands.FirstOrDefault(b => b.Id == id);
             if (brand == null) return NotFound();
-            return View("~/Views/Admin/Brands/Form.cshtml", brand.ToDto());
+            return View("~/Views/Admin/Brands/Form.cshtml", brand);
         }
 
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, BrandDto model,
             IFormFile? LogoFile, IFormFile? LogoWhiteFile, IFormFile? BannerFile)
         {
-            var brand = await _db.Brands.FindAsync(id);
+            var brands = await _productService.GetAllBrandsAsync();
+            var brand = brands.FirstOrDefault(b => b.Id == id);
             if (brand == null) return NotFound();
-            brand.NameAr = model.NameAr;
-            brand.NameEn = model.NameEn;
-            brand.Slug = string.IsNullOrEmpty(model.Slug) ? model.NameEn.ToLower().Replace(" ", "-") : model.Slug;
-            brand.DescAr = model.DescAr;
-            brand.DescEn = model.DescEn;
-            brand.SortOrder = model.SortOrder;
-            brand.IsActive = model.IsActive;
-            if (LogoFile != null) brand.LogoPath = await SaveAsync(LogoFile, "brands");
-            else if (!string.IsNullOrEmpty(model.LogoPath)) brand.LogoPath = model.LogoPath;
-          
-            if (BannerFile != null) brand.BannerPath = await SaveAsync(BannerFile, "brands/banners");
-            else if (!string.IsNullOrEmpty(model.BannerPath)) brand.BannerPath = model.BannerPath;
-            await _db.SaveChangesAsync();
+
+            if (string.IsNullOrEmpty(model.Slug))
+                model.Slug = model.NameEn.ToLower().Replace(" ", "-");
+
+            if (LogoFile != null) model.LogoPath = await SaveAsync(LogoFile, "brands");
+            if (BannerFile != null) model.BannerPath = await SaveAsync(BannerFile, "brands/banners");
+
+            await _productService.UpdateBrandAsync(id, model);
             TempData["Success"] = "تم تحديث البراند";
             return RedirectToAction(nameof(Index));
         }

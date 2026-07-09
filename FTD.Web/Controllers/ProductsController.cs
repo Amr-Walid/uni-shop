@@ -1,12 +1,7 @@
-using FTD.Application.Interfaces;
 using FTD.Application.Services;
-using FTD.Application.Mappers;
 using FTD.Application.DTOs;
-using FTD.Domain.Entities;
 using FTD.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,12 +11,10 @@ namespace FTD.Web.Controllers
     public class ProductsController : Controller
     {
         private readonly ProductService _products;
-        private readonly IAppDbContext _db;
 
-        public ProductsController(ProductService products, IAppDbContext db)
+        public ProductsController(ProductService products)
         {
             _products = products;
-            _db = db;
         }
 
         // GET /Products  or  /Products?brand=doogee  or  /Products?category=tablets
@@ -29,25 +22,23 @@ namespace FTD.Web.Controllers
             string? brand, string? category, string? q, string? sort,
             [FromQuery(Name = "av")] List<int>? attrValues)
         {
-            var brandsList = await _db.Brands.Where(b => b.IsActive).OrderBy(b => b.SortOrder).ToListAsync();
-            var categoriesList = await _db.Categories.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync();
+            var brandsList = await _products.GetAllBrandsAsync();
+            var categoriesList = await _products.GetActiveCategoriesAsync();
 
-            var brands = brandsList.Select(b => b.ToDto()).Where(b => b != null).Select(b => b!).ToList();
-            var categories = categoriesList.Select(c => c.ToDto()).Where(c => c != null).Select(c => c!).ToList();
+            var brands = brandsList.Where(b => b.IsActive).ToList();
+            var categories = categoriesList;
 
             BrandDto? currentBrand = null;
             CategoryDto? currentCategory = null;
 
             if (!string.IsNullOrEmpty(brand))
             {
-                var bEntity = await _db.Brands.FirstOrDefaultAsync(b => b.Slug == brand.ToLower());
-                currentBrand = bEntity.ToDto();
+                currentBrand = brands.FirstOrDefault(b => b.Slug == brand.ToLower());
             }
 
             if (!string.IsNullOrEmpty(category))
             {
-                var cEntity = await _db.Categories.FirstOrDefaultAsync(c => c.Slug == category);
-                currentCategory = cEntity.ToDto();
+                currentCategory = categories.FirstOrDefault(c => c.Slug == category);
             }
 
             List<ProductDto> products;
@@ -57,7 +48,20 @@ namespace FTD.Web.Controllers
                 products = await _products.GetFilteredAsync(brand, category, attrValues, sort);
 
             // Build attribute filter groups from visible products
-            var attrGroups = await BuildAttributeGroupsAsync(products);
+            var rawGroups = await _products.BuildAttributeGroupsAsync(products);
+            var attrGroups = rawGroups.Select(g => new AttributeFilterGroup
+            {
+                AttributeId = g.AttributeId,
+                NameAr = g.NameAr,
+                NameEn = g.NameEn,
+                Options = g.Options.Select(o => new AttributeFilterOption
+                {
+                    ValueId = o.ValueId,
+                    ValueAr = o.ValueAr,
+                    ValueEn = o.ValueEn,
+                    Count = o.Count
+                }).ToList()
+            }).ToList();
 
             var vm = new ProductsViewModel
             {
@@ -85,7 +89,7 @@ namespace FTD.Web.Controllers
             [FromQuery(Name = "av")] List<int>? attrValues)
         {
             var products = await _products.GetFilteredAsync(brand, category, attrValues, sort);
-            var attrGroups = await BuildAttributeGroupsAsync(products);
+            var rawGroups = await _products.BuildAttributeGroupsAsync(products);
 
             var result = new
             {
@@ -104,7 +108,7 @@ namespace FTD.Web.Controllers
                     emoji = p.Emoji,
                     url = "/products/" + p.Slug
                 }),
-                attrGroups = attrGroups.Select(g => new
+                attrGroups = rawGroups.Select(g => new
                 {
                     attributeId = g.AttributeId,
                     nameAr = g.NameAr,
@@ -125,27 +129,33 @@ namespace FTD.Web.Controllers
         // GET /brand/{brandSlug}  e.g. /brand/doogee
         public async Task<IActionResult> BrandPage(string brandSlug)
         {
-            var brandEntity = await _db.Brands
-                .FirstOrDefaultAsync(b => b.Slug == brandSlug.ToLower() && b.IsActive);
+            var brandsList = await _products.GetAllBrandsAsync();
+            var brand = brandsList.FirstOrDefault(b => b.Slug == brandSlug.ToLower() && b.IsActive);
 
-            if (brandEntity == null) return NotFound();
+            if (brand == null) return NotFound();
 
-            var brand = brandEntity.ToDto()!;
-
-            // Build same ViewModel as Index but keep URL as /brand/{slug}
-            var brandsList = await _db.Brands.Where(b => b.IsActive).OrderBy(b => b.SortOrder).ToListAsync();
-            var categoriesList = await _db.Categories.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync();
-
-            var brands = brandsList.Select(b => b.ToDto()).Where(b => b != null).Select(b => b!).ToList();
-            var categories = categoriesList.Select(c => c.ToDto()).Where(c => c != null).Select(c => c!).ToList();
+            var categories = await _products.GetActiveCategoriesAsync();
 
             var products = await _products.GetFilteredAsync(brand.Slug, null, null, "featured");
-            var attrGroups = await BuildAttributeGroupsAsync(products);
+            var rawGroups = await _products.BuildAttributeGroupsAsync(products);
+            var attrGroups = rawGroups.Select(g => new AttributeFilterGroup
+            {
+                AttributeId = g.AttributeId,
+                NameAr = g.NameAr,
+                NameEn = g.NameEn,
+                Options = g.Options.Select(o => new AttributeFilterOption
+                {
+                    ValueId = o.ValueId,
+                    ValueAr = o.ValueAr,
+                    ValueEn = o.ValueEn,
+                    Count = o.Count
+                }).ToList()
+            }).ToList();
 
             var vm = new ProductsViewModel
             {
                 Products = products,
-                Brands = brands,
+                Brands = brandsList.Where(b => b.IsActive).ToList(),
                 Categories = categories,
                 CurrentBrand = brand,
                 BrandFilter = brand.Slug,
@@ -192,65 +202,6 @@ namespace FTD.Web.Controllers
                 url = "/products/" + p.Slug
             });
             return Json(new { results });
-        }
-
-        // Helper
-        private async Task<List<AttributeFilterGroup>> BuildAttributeGroupsAsync(List<ProductDto> products)
-        {
-            if (!products.Any()) return new();
-
-            var productIds = products.Select(p => p.Id).ToHashSet();
-
-            // Fetch and filter in database - avoids fetching all records
-            var pavs = await _db.ProductAttributeValues.Where(av => productIds.Contains(av.ProductId)).ToListAsync();
-
-            if (!pavs.Any()) return new();
-
-            var attrIds = pavs.Select(av => av.AttributeId).ToHashSet();
-            var valIds = pavs.Select(av => av.AttributeValueId).ToHashSet();
-
-            var attrs = await _db.ProductAttributes.ToListAsync();
-            attrs = attrs.Where(a => attrIds.Contains(a.Id)).ToList();
-
-            var vals = await _db.AttributeValues.ToListAsync();
-            vals = vals.Where(v => valIds.Contains(v.Id)).ToList();
-
-            // Build in memory
-            var groups = new List<AttributeFilterGroup>();
-
-            foreach (var attr in attrs.OrderBy(a => a.SortOrder))
-            {
-                var attrPavs = pavs.Where(av => av.AttributeId == attr.Id).ToList();
-                if (!attrPavs.Any()) continue;
-
-                var options = attrPavs
-                    .GroupBy(av => av.AttributeValueId)
-                    .Select(g => {
-                        var val = vals.FirstOrDefault(v => v.Id == g.Key);
-                        return val == null ? null : new AttributeFilterOption
-                        {
-                            ValueId = g.Key,
-                            ValueAr = val.ValueAr,
-                            ValueEn = val.ValueEn,
-                            Count = g.Select(av => av.ProductId).Distinct().Count()
-                        };
-                    })
-                    .Where(o => o != null)
-                    .Cast<AttributeFilterOption>()
-                    .OrderBy(o => o.ValueAr)
-                    .ToList();
-
-                if (options.Any())
-                    groups.Add(new AttributeFilterGroup
-                    {
-                        AttributeId = attr.Id,
-                        NameAr = attr.NameAr,
-                        NameEn = attr.NameEn,
-                        Options = options
-                    });
-            }
-
-            return groups;
         }
     }
 }

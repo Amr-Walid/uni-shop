@@ -1,0 +1,1267 @@
+﻿# Review package: 4a0cd26..c3bd5f9
+
+## Commits
+
+c3bd5f9 Fix unscalable filtering and improve transactional integrity in order creation
+11b85d4 docs: add task 2 report
+62f4122 feat(application): create FTD.Application layer with interfaces, DTOs, mappers, and services
+
+## Files changed
+
+ .superpowers/sdd/progress.md                 |   6 +-
+ .superpowers/sdd/task-2-report.md            |  70 ++++++
+ FTD.Application/DTOs/DTOs.cs                 | 284 ++++++++++++++++++++++
+ FTD.Application/FTD.Application.csproj       |  17 ++
+ FTD.Application/Interfaces/IAppDbContext.cs  |  30 +++
+ FTD.Application/Interfaces/IEmailService.cs  |   9 +
+ FTD.Application/Mappers/MappingExtensions.cs | 342 +++++++++++++++++++++++++++
+ FTD.Application/Services/ContentService.cs   |  65 +++++
+ FTD.Application/Services/OrderService.cs     |  70 ++++++
+ FTD.Application/Services/ProductService.cs   | 176 ++++++++++++++
+ FTD.Web/Controllers/ProductsController.cs    |   9 +-
+ FTD.Web/FTD.Web.sln                          |  14 ++
+ 12 files changed, 1085 insertions(+), 7 deletions(-)
+
+## Diff
+
+diff --git a/.superpowers/sdd/progress.md b/.superpowers/sdd/progress.md
+index c4afc20..0661f58 100644
+--- a/.superpowers/sdd/progress.md
++++ b/.superpowers/sdd/progress.md
+@@ -1,7 +1,9 @@
+ # FTD TechZone Clean Architecture Refactoring Progress Ledger
+ 
+-- [ ] Task 1: Create FTD.Domain Layer
+-- [ ] Task 2: Create FTD.Application Layer
++- [x] Task 1: Create FTD.Domain Layer
++  * Task 1: complete (commits 1a767b1..4a0cd26, review clean)
++- [x] Task 2: Create FTD.Application Layer
++  * Task 2: complete (commit 62f4122, review clean)
+ - [ ] Task 3: Create FTD.Infrastructure Layer
+ - [ ] Task 4: Refactor FTD.Web Presentation Layer
+ - [ ] Task 5: Verification and Final Deployment Run
+diff --git a/.superpowers/sdd/task-2-report.md b/.superpowers/sdd/task-2-report.md
+new file mode 100644
+index 0000000..878b241
+--- /dev/null
++++ b/.superpowers/sdd/task-2-report.md
+@@ -0,0 +1,70 @@
++# Task 2 Report: Create FTD.Application Layer
++
++## What was Implemented
++
++In this task, we created and structured the **FTD.Application** layer to hold decoupled interfaces, data transfer objects (DTOs), mappers, and business services, aligning with Clean Architecture principles.
++
++1. **Scaffolded FTD.Application Project**:
++   - Created `FTD.Application.csproj` as a Class Library (`net9.0`).
++   - Added reference to `FTD.Domain`.
++   - Associated the new project with the solution `FTD.Web.sln`.
++   - Added reference package `Microsoft.EntityFrameworkCore` to support generic DbSets in the context interface.
++
++2. **Defined Core Application Interfaces**:
++   - `IAppDbContext.cs`: Declared Entity Framework `DbSet<T>` properties matching all 17 domain entities from the domain layer and defined `SaveChangesAsync()`.
++   - `IEmailService.cs`: Declared `SendContactNotificationAsync` method for sending contact messages.
++
++3. **Created DTOs and Mappers**:
++   - `DTOs.cs`: Defined plain data-transfer representation objects (`BrandDto`, `CategoryDto`, `ProductDto`, `ProductImageDto`, `ProductAttributeDto`, `AttributeValueDto`, `ProductAttributeValueDto`, `OrderStatusDto`, `SalesOrderDto`, `SalesOrderDetailDto`, `ContentBlockDto`, `ContentPageDto`, `PageSectionDto`, `NavigationItemDto`, `ContactInfoDto`, `SiteSettingDto`, `ContactMessageDto`).
++   - Added decoupled input models (`CheckoutDto`, `CartItemDto`, `CartDto`) to represent checkout data passed to `OrderService` without coupling the application services to presentation ViewModels.
++   - `MappingExtensions.cs`: Created manual extension mapper methods mapping domain entity types to their respective DTO types. Implemented cyclic-reference protection for `NavigationItemDto` by avoiding infinite recursive calls on parent/child relationships.
++
++4. **Moved and Refactored Business Services**:
++   - Created `ProductService.cs`, `ContentService.cs`, and `OrderService.cs` in `FTD.Application/Services/`.
++   - Refactored the database operations to rely on the new `IAppDbContext` interface instead of the concrete `AppDbContext` dependency.
++   - Refactored query results to return DTO objects (e.g. `ProductDto`, `SalesOrderDto`, `ContentPageDto`, `ContactInfoDto`) using mapping extension methods.
++
++---
++
++## Files Changed/Created
++
++- **Created**:
++  - `FTD.Application/FTD.Application.csproj`
++  - `FTD.Application/Interfaces/IAppDbContext.cs`
++  - `FTD.Application/Interfaces/IEmailService.cs`
++  - `FTD.Application/DTOs/DTOs.cs`
++  - `FTD.Application/Mappers/MappingExtensions.cs`
++  - `FTD.Application/Services/ProductService.cs`
++  - `FTD.Application/Services/ContentService.cs`
++  - `FTD.Application/Services/OrderService.cs`
++- **Modified**:
++  - `FTD.Web/FTD.Web.sln` (associated new FTD.Application project)
++  - `.superpowers/sdd/progress.md` (updated progress ledger)
++
++---
++
++## Self-Review Findings
++
++- **Compilation**: Successfully compiled the newly created `FTD.Application` project with zero errors and zero warnings.
++- **Decoupling**: Business services are fully decoupled from concrete database context (`AppDbContext`) and presentation layer view models (`CheckoutViewModel`, `CartViewModel`). Instead, they communicate using generic interfaces (`IAppDbContext`) and plain-object DTOs (`CheckoutDto`, `CartDto`).
++- **Safety**: Safe handling of recursive/cyclic parent-child relations in `NavigationItem` mapping to DTO.
++
++---
++
++## Issues or Concerns
++
++- None. Refactoring followed clean architecture principles and compiled correctly.
++
++---
++
++## Resolved Reviewer Issues
++
++In response to the reviewer feedback, the following issues were resolved:
++
++1. **Unscalable In-Memory Filtering in ProductService.cs & ProductsController.cs**:
++   - **Location**: `GetFilteredAsync` in `FTD.Application/Services/ProductService.cs` and `BuildAttributeGroupsAsync` in `FTD.Web/Controllers/ProductsController.cs`.
++   - **Fix**: Replaced the inefficient call `_db.ProductAttributeValues.ToListAsync()` (which fetched all records into web server memory before filtering) with database-level filtering. The query now uses `.Where(av => productIds.Contains(av.ProductId)).ToListAsync()` to filter records on the database server before retrieving them.
++   
++2. **Transactional Integrity in OrderService.cs**:
++   - **Location**: `CreateOrderAsync` in `FTD.Application/Services/OrderService.cs`.
++   - **Fix**: Replaced the two separate `SaveChangesAsync()` calls (which first saved the order to retrieve its ID, and then saved details, leaving room for orphaned orders if the second call failed) with a single atomic transaction. The `Details` collection on `SalesOrder` is now populated directly in-memory and committed to the database in a single `SaveChangesAsync()` call, guaranteeing transactional integrity.
+diff --git a/FTD.Application/DTOs/DTOs.cs b/FTD.Application/DTOs/DTOs.cs
+new file mode 100644
+index 0000000..8c9078e
+--- /dev/null
++++ b/FTD.Application/DTOs/DTOs.cs
+@@ -0,0 +1,284 @@
++using System;
++using System.Collections.Generic;
++
++namespace FTD.Application.DTOs
++{
++    public class BrandDto
++    {
++        public int Id { get; set; }
++        public string NameAr { get; set; } = "";
++        public string NameEn { get; set; } = "";
++        public string Slug { get; set; } = "";
++        public string? LogoPath { get; set; }
++        public string? BannerPath { get; set; }
++        public string? DescAr { get; set; }
++        public string? DescEn { get; set; }
++        public bool IsActive { get; set; }
++        public int SortOrder { get; set; }
++        public DateTime CreatedAt { get; set; }
++    }
++
++    public class CategoryDto
++    {
++        public int Id { get; set; }
++        public string NameAr { get; set; } = "";
++        public string NameEn { get; set; } = "";
++        public string Slug { get; set; } = "";
++        public string? ImagePath { get; set; }
++        public string? Emoji { get; set; }
++        public string? Description { get; set; }
++        public int SortOrder { get; set; }
++        public bool IsActive { get; set; }
++        public DateTime CreatedAt { get; set; }
++    }
++
++    public class ProductDto
++    {
++        public int Id { get; set; }
++        public int CategoryId { get; set; }
++        public int? BrandId { get; set; }
++        public string NameAr { get; set; } = "";
++        public string NameEn { get; set; } = "";
++        public string Slug { get; set; } = "";
++        public string? ShortDescAr { get; set; }
++        public string? ShortDescEn { get; set; }
++        public string? DescAr { get; set; }
++        public string? DescEn { get; set; }
++        public decimal Price { get; set; }
++        public decimal? OldPrice { get; set; }
++        public string? Badge { get; set; }
++        public string? ImagePath { get; set; }
++        public string? BrandName { get; set; }
++        public string? Emoji { get; set; }
++        public bool IsActive { get; set; }
++        public bool IsFeatured { get; set; }
++        public int SortOrder { get; set; }
++        public int Stock { get; set; }
++        public DateTime CreatedAt { get; set; }
++        public string? MetaTitle { get; set; }
++        public string? MetaDesc { get; set; }
++
++        public CategoryDto? Category { get; set; }
++        public BrandDto? Brand { get; set; }
++        public List<ProductAttributeValueDto> AttributeValues { get; set; } = new();
++        public List<ProductImageDto> Images { get; set; } = new();
++    }
++
++    public class ProductImageDto
++    {
++        public int Id { get; set; }
++        public int ProductId { get; set; }
++        public string ImagePath { get; set; } = "";
++        public bool IsMain { get; set; }
++        public int SortOrder { get; set; }
++    }
++
++    public class ProductAttributeDto
++    {
++        public int Id { get; set; }
++        public int CategoryId { get; set; }
++        public string NameAr { get; set; } = "";
++        public string NameEn { get; set; } = "";
++        public int SortOrder { get; set; }
++    }
++
++    public class AttributeValueDto
++    {
++        public int Id { get; set; }
++        public int AttributeId { get; set; }
++        public string ValueAr { get; set; } = "";
++        public string ValueEn { get; set; } = "";
++    }
++
++    public class ProductAttributeValueDto
++    {
++        public int Id { get; set; }
++        public int ProductId { get; set; }
++        public int AttributeId { get; set; }
++        public int AttributeValueId { get; set; }
++        public ProductAttributeDto? Attribute { get; set; }
++        public AttributeValueDto? AttributeValue { get; set; }
++    }
++
++    public class OrderStatusDto
++    {
++        public int Id { get; set; }
++        public string NameAr { get; set; } = "";
++        public string NameEn { get; set; } = "";
++        public string ColorHex { get; set; } = "";
++        public string? Icon { get; set; }
++        public int SortOrder { get; set; }
++    }
++
++    public class SalesOrderDto
++    {
++        public int Id { get; set; }
++        public string OrderNumber { get; set; } = "";
++        public int StatusId { get; set; }
++        public string CustomerName { get; set; } = "";
++        public string CustomerPhone { get; set; } = "";
++        public string? CustomerEmail { get; set; }
++        public string? Address { get; set; }
++        public string? City { get; set; }
++        public string? Governorate { get; set; }
++        public decimal SubTotal { get; set; }
++        public decimal ShippingFee { get; set; }
++        public decimal TotalAmount { get; set; }
++        public string? Notes { get; set; }
++        public string? AdminNotes { get; set; }
++        public DateTime CreatedAt { get; set; }
++        public DateTime? UpdatedAt { get; set; }
++
++        public OrderStatusDto? Status { get; set; }
++        public List<SalesOrderDetailDto> Details { get; set; } = new();
++    }
++
++    public class SalesOrderDetailDto
++    {
++        public int Id { get; set; }
++        public int OrderId { get; set; }
++        public int ProductId { get; set; }
++        public string ProductName { get; set; } = "";
++        public int Quantity { get; set; }
++        public decimal UnitPrice { get; set; }
++        public decimal SubTotal { get; set; }
++    }
++
++    public class ContentBlockDto
++    {
++        public int Id { get; set; }
++        public string Key { get; set; } = "";
++        public string? TitleAr { get; set; }
++        public string? TitleEn { get; set; }
++        public string? BodyAr { get; set; }
++        public string? BodyEn { get; set; }
++        public string? ImagePath { get; set; }
++        public string Type { get; set; } = "text";
++        public DateTime UpdatedAt { get; set; }
++    }
++
++    public class ContentPageDto
++    {
++        public int Id { get; set; }
++        public string Slug { get; set; } = "";
++        public string TitleAr { get; set; } = "";
++        public string TitleEn { get; set; } = "";
++        public string? BodyAr { get; set; }
++        public string? BodyEn { get; set; }
++        public bool IsPublished { get; set; }
++        public string? MetaTitle { get; set; }
++        public string? MetaDesc { get; set; }
++        public DateTime CreatedAt { get; set; }
++        public DateTime UpdatedAt { get; set; }
++        public List<PageSectionDto> Sections { get; set; } = new();
++    }
++
++    public class PageSectionDto
++    {
++        public int Id { get; set; }
++        public int PageId { get; set; }
++        public string Type { get; set; } = "";
++        public string? ContentJson { get; set; }
++        public int SortOrder { get; set; }
++        public bool IsVisible { get; set; }
++    }
++
++    public class NavigationItemDto
++    {
++        public int Id { get; set; }
++        public string LabelAr { get; set; } = "";
++        public string LabelEn { get; set; } = "";
++        public string LinkType { get; set; } = "";
++        public string? StaticRoute { get; set; }
++        public string? PageSlug { get; set; }
++        public string? ExternalUrl { get; set; }
++        public bool OpenInNewTab { get; set; }
++        public string Location { get; set; } = "";
++        public int? ParentId { get; set; }
++        public int SortOrder { get; set; }
++        public bool IsActive { get; set; }
++
++        public NavigationItemDto? Parent { get; set; }
++        public List<NavigationItemDto> Children { get; set; } = new();
++    }
++
++    public class ContactInfoDto
++    {
++        public int Id { get; set; }
++        public string? Phone { get; set; }
++        public string? Phone2 { get; set; }
++        public string? Email { get; set; }
++        public string? AddressAr { get; set; }
++        public string? AddressEn { get; set; }
++        public string? City { get; set; }
++        public string? MapEmbedUrl { get; set; }
++        public string? Facebook { get; set; }
++        public string? Instagram { get; set; }
++        public string? WhatsApp { get; set; }
++        public string? TikTok { get; set; }
++        public string? WorkingHoursAr { get; set; }
++        public string? WorkingHoursEn { get; set; }
++        public bool ShowPhone { get; set; }
++        public bool ShowPhone2 { get; set; }
++        public bool ShowEmail { get; set; }
++        public bool ShowAddress { get; set; }
++        public bool ShowMap { get; set; }
++        public bool ShowWorkingHours { get; set; }
++        public bool ShowFacebook { get; set; }
++        public bool ShowInstagram { get; set; }
++        public bool ShowWhatsApp { get; set; }
++        public bool ShowTikTok { get; set; }
++        public DateTime UpdatedAt { get; set; }
++    }
++
++    public class SiteSettingDto
++    {
++        public int Id { get; set; }
++        public string Key { get; set; } = "";
++        public string? Value { get; set; }
++        public string? Description { get; set; }
++        public string Type { get; set; } = "";
++        public DateTime UpdatedAt { get; set; }
++    }
++
++    public class ContactMessageDto
++    {
++        public int Id { get; set; }
++        public string? Name { get; set; }
++        public string? Email { get; set; }
++        public string? Phone { get; set; }
++        public string? Message { get; set; }
++        public bool IsRead { get; set; }
++        public DateTime CreatedAt { get; set; }
++    }
++
++    public class CheckoutDto
++    {
++        public string CustomerName { get; set; } = "";
++        public string CustomerPhone { get; set; } = "";
++        public string? CustomerEmail { get; set; }
++        public string? Address { get; set; }
++        public string? City { get; set; }
++        public string? Governorate { get; set; }
++        public string? Notes { get; set; }
++    }
++
++    public class CartItemDto
++    {
++        public int ProductId { get; set; }
++        public string ProductName { get; set; } = "";
++        public decimal UnitPrice { get; set; }
++        public int Quantity { get; set; }
++        public decimal SubTotal => UnitPrice * Quantity;
++    }
++
++    public class CartDto
++    {
++        public List<CartItemDto> Items { get; set; } = new();
++        public decimal SubTotal => Items.Sum(i => i.SubTotal);
++        public decimal ShippingFee { get; set; }
++        public bool FreeShipping => SubTotal >= 5000;
++        public decimal Total => SubTotal + (FreeShipping ? 0 : ShippingFee);
++    }
++}
++
+diff --git a/FTD.Application/FTD.Application.csproj b/FTD.Application/FTD.Application.csproj
+new file mode 100644
+index 0000000..c413453
+--- /dev/null
++++ b/FTD.Application/FTD.Application.csproj
+@@ -0,0 +1,17 @@
++﻿<Project Sdk="Microsoft.NET.Sdk">
++
++  <ItemGroup>
++    <ProjectReference Include="..\FTD.Domain\FTD.Domain.csproj" />
++  </ItemGroup>
++
++  <ItemGroup>
++    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
++  </ItemGroup>
++
++  <PropertyGroup>
++    <TargetFramework>net9.0</TargetFramework>
++    <ImplicitUsings>enable</ImplicitUsings>
++    <Nullable>enable</Nullable>
++  </PropertyGroup>
++
++</Project>
+diff --git a/FTD.Application/Interfaces/IAppDbContext.cs b/FTD.Application/Interfaces/IAppDbContext.cs
+new file mode 100644
+index 0000000..e902583
+--- /dev/null
++++ b/FTD.Application/Interfaces/IAppDbContext.cs
+@@ -0,0 +1,30 @@
++using System.Threading;
++using System.Threading.Tasks;
++using FTD.Domain.Entities;
++using Microsoft.EntityFrameworkCore;
++
++namespace FTD.Application.Interfaces
++{
++    public interface IAppDbContext
++    {
++        DbSet<Brand> Brands { get; }
++        DbSet<Category> Categories { get; }
++        DbSet<Product> Products { get; }
++        DbSet<ProductImage> ProductImages { get; }
++        DbSet<ProductAttribute> ProductAttributes { get; }
++        DbSet<AttributeValue> AttributeValues { get; }
++        DbSet<ProductAttributeValue> ProductAttributeValues { get; }
++        DbSet<OrderStatus> OrderStatuses { get; }
++        DbSet<SalesOrder> SalesOrders { get; }
++        DbSet<SalesOrderDetail> SalesOrderDetails { get; }
++        DbSet<ContentBlock> ContentBlocks { get; }
++        DbSet<ContentPage> ContentPages { get; }
++        DbSet<PageSection> PageSections { get; }
++        DbSet<NavigationItem> NavigationItems { get; }
++        DbSet<ContactInfo> ContactInfos { get; }
++        DbSet<SiteSetting> SiteSettings { get; }
++        DbSet<ContactMessage> ContactMessages { get; }
++
++        Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
++    }
++}
+diff --git a/FTD.Application/Interfaces/IEmailService.cs b/FTD.Application/Interfaces/IEmailService.cs
+new file mode 100644
+index 0000000..8bdc34e
+--- /dev/null
++++ b/FTD.Application/Interfaces/IEmailService.cs
+@@ -0,0 +1,9 @@
++using System.Threading.Tasks;
++
++namespace FTD.Application.Interfaces
++{
++    public interface IEmailService
++    {
++        Task SendContactNotificationAsync(string name, string email, string phone, string message);
++    }
++}
+diff --git a/FTD.Application/Mappers/MappingExtensions.cs b/FTD.Application/Mappers/MappingExtensions.cs
+new file mode 100644
+index 0000000..4ce5622
+--- /dev/null
++++ b/FTD.Application/Mappers/MappingExtensions.cs
+@@ -0,0 +1,342 @@
++using System;
++using System.Collections.Generic;
++using System.Linq;
++using FTD.Domain.Entities;
++using FTD.Application.DTOs;
++
++namespace FTD.Application.Mappers
++{
++    public static class MappingExtensions
++    {
++        // Brand
++        public static BrandDto? ToDto(this Brand? entity)
++        {
++            if (entity == null) return null;
++            return new BrandDto
++            {
++                Id = entity.Id,
++                NameAr = entity.NameAr,
++                NameEn = entity.NameEn,
++                Slug = entity.Slug,
++                LogoPath = entity.LogoPath,
++                BannerPath = entity.BannerPath,
++                DescAr = entity.DescAr,
++                DescEn = entity.DescEn,
++                IsActive = entity.IsActive,
++                SortOrder = entity.SortOrder,
++                CreatedAt = entity.CreatedAt
++            };
++        }
++
++        // Category
++        public static CategoryDto? ToDto(this Category? entity)
++        {
++            if (entity == null) return null;
++            return new CategoryDto
++            {
++                Id = entity.Id,
++                NameAr = entity.NameAr,
++                NameEn = entity.NameEn,
++                Slug = entity.Slug,
++                ImagePath = entity.ImagePath,
++                Emoji = entity.Emoji,
++                Description = entity.Description,
++                SortOrder = entity.SortOrder,
++                IsActive = entity.IsActive,
++                CreatedAt = entity.CreatedAt
++            };
++        }
++
++        // ProductImage
++        public static ProductImageDto? ToDto(this ProductImage? entity)
++        {
++            if (entity == null) return null;
++            return new ProductImageDto
++            {
++                Id = entity.Id,
++                ProductId = entity.ProductId,
++                ImagePath = entity.ImagePath,
++                IsMain = entity.IsMain,
++                SortOrder = entity.SortOrder
++            };
++        }
++
++        // ProductAttribute
++        public static ProductAttributeDto? ToDto(this ProductAttribute? entity)
++        {
++            if (entity == null) return null;
++            return new ProductAttributeDto
++            {
++                Id = entity.Id,
++                CategoryId = entity.CategoryId,
++                NameAr = entity.NameAr,
++                NameEn = entity.NameEn,
++                SortOrder = entity.SortOrder
++            };
++        }
++
++        // AttributeValue
++        public static AttributeValueDto? ToDto(this AttributeValue? entity)
++        {
++            if (entity == null) return null;
++            return new AttributeValueDto
++            {
++                Id = entity.Id,
++                AttributeId = entity.AttributeId,
++                ValueAr = entity.ValueAr,
++                ValueEn = entity.ValueEn
++            };
++        }
++
++        // ProductAttributeValue
++        public static ProductAttributeValueDto? ToDto(this ProductAttributeValue? entity)
++        {
++            if (entity == null) return null;
++            return new ProductAttributeValueDto
++            {
++                Id = entity.Id,
++                ProductId = entity.ProductId,
++                AttributeId = entity.AttributeId,
++                AttributeValueId = entity.AttributeValueId,
++                Attribute = entity.Attribute.ToDto(),
++                AttributeValue = entity.AttributeValue.ToDto()
++            };
++        }
++
++        // Product
++        public static ProductDto? ToDto(this Product? entity)
++        {
++            if (entity == null) return null;
++            return new ProductDto
++            {
++                Id = entity.Id,
++                CategoryId = entity.CategoryId,
++                BrandId = entity.BrandId,
++                NameAr = entity.NameAr,
++                NameEn = entity.NameEn,
++                Slug = entity.Slug,
++                ShortDescAr = entity.ShortDescAr,
++                ShortDescEn = entity.ShortDescEn,
++                DescAr = entity.DescAr,
++                DescEn = entity.DescEn,
++                Price = entity.Price,
++                OldPrice = entity.OldPrice,
++                Badge = entity.Badge,
++                ImagePath = entity.ImagePath,
++                BrandName = entity.BrandName,
++                Emoji = entity.Emoji,
++                IsActive = entity.IsActive,
++                IsFeatured = entity.IsFeatured,
++                SortOrder = entity.SortOrder,
++                Stock = entity.Stock,
++                CreatedAt = entity.CreatedAt,
++                MetaTitle = entity.MetaTitle,
++                MetaDesc = entity.MetaDesc,
++                Category = entity.Category.ToDto(),
++                Brand = entity.Brand.ToDto(),
++                AttributeValues = entity.AttributeValues?.Select(av => av.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList() ?? new(),
++                Images = entity.Images?.Select(i => i.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList() ?? new()
++            };
++        }
++
++        // OrderStatus
++        public static OrderStatusDto? ToDto(this OrderStatus? entity)
++        {
++            if (entity == null) return null;
++            return new OrderStatusDto
++            {
++                Id = entity.Id,
++                NameAr = entity.NameAr,
++                NameEn = entity.NameEn,
++                ColorHex = entity.ColorHex,
++                Icon = entity.Icon,
++                SortOrder = entity.SortOrder
++            };
++        }
++
++        // SalesOrderDetail
++        public static SalesOrderDetailDto? ToDto(this SalesOrderDetail? entity)
++        {
++            if (entity == null) return null;
++            return new SalesOrderDetailDto
++            {
++                Id = entity.Id,
++                OrderId = entity.OrderId,
++                ProductId = entity.ProductId,
++                ProductName = entity.ProductName,
++                Quantity = entity.Quantity,
++                UnitPrice = entity.UnitPrice,
++                SubTotal = entity.SubTotal
++            };
++        }
++
++        // SalesOrder
++        public static SalesOrderDto? ToDto(this SalesOrder? entity)
++        {
++            if (entity == null) return null;
++            return new SalesOrderDto
++            {
++                Id = entity.Id,
++                OrderNumber = entity.OrderNumber,
++                StatusId = entity.StatusId,
++                CustomerName = entity.CustomerName,
++                CustomerPhone = entity.CustomerPhone,
++                CustomerEmail = entity.CustomerEmail,
++                Address = entity.Address,
++                City = entity.City,
++                Governorate = entity.Governorate,
++                SubTotal = entity.SubTotal,
++                ShippingFee = entity.ShippingFee,
++                TotalAmount = entity.TotalAmount,
++                Notes = entity.Notes,
++                AdminNotes = entity.AdminNotes,
++                CreatedAt = entity.CreatedAt,
++                UpdatedAt = entity.UpdatedAt,
++                Status = entity.Status.ToDto(),
++                Details = entity.Details?.Select(d => d.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList() ?? new()
++            };
++        }
++
++        // ContentBlock
++        public static ContentBlockDto? ToDto(this ContentBlock? entity)
++        {
++            if (entity == null) return null;
++            return new ContentBlockDto
++            {
++                Id = entity.Id,
++                Key = entity.Key,
++                TitleAr = entity.TitleAr,
++                TitleEn = entity.TitleEn,
++                BodyAr = entity.BodyAr,
++                BodyEn = entity.BodyEn,
++                ImagePath = entity.ImagePath,
++                Type = entity.Type,
++                UpdatedAt = entity.UpdatedAt
++            };
++        }
++
++        // PageSection
++        public static PageSectionDto? ToDto(this PageSection? entity)
++        {
++            if (entity == null) return null;
++            return new PageSectionDto
++            {
++                Id = entity.Id,
++                PageId = entity.PageId,
++                Type = entity.Type,
++                ContentJson = entity.ContentJson,
++                SortOrder = entity.SortOrder,
++                IsVisible = entity.IsVisible
++            };
++        }
++
++        // ContentPage
++        public static ContentPageDto? ToDto(this ContentPage? entity)
++        {
++            if (entity == null) return null;
++            return new ContentPageDto
++            {
++                Id = entity.Id,
++                Slug = entity.Slug,
++                TitleAr = entity.TitleAr,
++                TitleEn = entity.TitleEn,
++                BodyAr = entity.BodyAr,
++                BodyEn = entity.BodyEn,
++                IsPublished = entity.IsPublished,
++                MetaTitle = entity.MetaTitle,
++                MetaDesc = entity.MetaDesc,
++                CreatedAt = entity.CreatedAt,
++                UpdatedAt = entity.UpdatedAt,
++                Sections = entity.Sections?.Select(s => s.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList() ?? new()
++            };
++        }
++
++        // NavigationItem
++        public static NavigationItemDto? ToDto(this NavigationItem? entity)
++        {
++            if (entity == null) return null;
++            return new NavigationItemDto
++            {
++                Id = entity.Id,
++                LabelAr = entity.LabelAr,
++                LabelEn = entity.LabelEn,
++                LinkType = entity.LinkType,
++                StaticRoute = entity.StaticRoute,
++                PageSlug = entity.PageSlug,
++                ExternalUrl = entity.ExternalUrl,
++                OpenInNewTab = entity.OpenInNewTab,
++                Location = entity.Location,
++                ParentId = entity.ParentId,
++                SortOrder = entity.SortOrder,
++                IsActive = entity.IsActive,
++                // Avoid infinite recursive loops by not mapping Parent object hierarchy or its children
++                Children = entity.Children?.Select(c => c.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList() ?? new()
++            };
++        }
++
++        // ContactInfo
++        public static ContactInfoDto? ToDto(this ContactInfo? entity)
++        {
++            if (entity == null) return null;
++            return new ContactInfoDto
++            {
++                Id = entity.Id,
++                Phone = entity.Phone,
++                Phone2 = entity.Phone2,
++                Email = entity.Email,
++                AddressAr = entity.AddressAr,
++                AddressEn = entity.AddressEn,
++                City = entity.City,
++                MapEmbedUrl = entity.MapEmbedUrl,
++                Facebook = entity.Facebook,
++                Instagram = entity.Instagram,
++                WhatsApp = entity.WhatsApp,
++                TikTok = entity.TikTok,
++                WorkingHoursAr = entity.WorkingHoursAr,
++                WorkingHoursEn = entity.WorkingHoursEn,
++                ShowPhone = entity.ShowPhone,
++                ShowPhone2 = entity.ShowPhone2,
++                ShowEmail = entity.ShowEmail,
++                ShowAddress = entity.ShowAddress,
++                ShowMap = entity.ShowMap,
++                ShowWorkingHours = entity.ShowWorkingHours,
++                ShowFacebook = entity.ShowFacebook,
++                ShowInstagram = entity.ShowInstagram,
++                ShowWhatsApp = entity.ShowWhatsApp,
++                ShowTikTok = entity.ShowTikTok,
++                UpdatedAt = entity.UpdatedAt
++            };
++        }
++
++        // SiteSetting
++        public static SiteSettingDto? ToDto(this SiteSetting? entity)
++        {
++            if (entity == null) return null;
++            return new SiteSettingDto
++            {
++                Id = entity.Id,
++                Key = entity.Key,
++                Value = entity.Value,
++                Description = entity.Description,
++                Type = entity.Type,
++                UpdatedAt = entity.UpdatedAt
++            };
++        }
++
++        // ContactMessage
++        public static ContactMessageDto? ToDto(this ContactMessage? entity)
++        {
++            if (entity == null) return null;
++            return new ContactMessageDto
++            {
++                Id = entity.Id,
++                Name = entity.Name,
++                Email = entity.Email,
++                Phone = entity.Phone,
++                Message = entity.Message,
++                IsRead = entity.IsRead,
++                CreatedAt = entity.CreatedAt
++            };
++        }
++    }
++}
+diff --git a/FTD.Application/Services/ContentService.cs b/FTD.Application/Services/ContentService.cs
+new file mode 100644
+index 0000000..3f7af4b
+--- /dev/null
++++ b/FTD.Application/Services/ContentService.cs
+@@ -0,0 +1,65 @@
++using System;
++using System.Collections.Generic;
++using System.Linq;
++using System.Threading.Tasks;
++using FTD.Application.DTOs;
++using FTD.Application.Interfaces;
++using FTD.Application.Mappers;
++using Microsoft.EntityFrameworkCore;
++
++namespace FTD.Application.Services
++{
++    public class ContentService
++    {
++        private readonly IAppDbContext _db;
++        public ContentService(IAppDbContext db) => _db = db;
++
++        public async Task<Dictionary<string, string>> GetBlocksAsync()
++        {
++            var blocks = await _db.ContentBlocks.ToListAsync();
++            var dict = new Dictionary<string, string>();
++            foreach (var b in blocks)
++            {
++                if (!string.IsNullOrEmpty(b.BodyAr)) dict[b.Key + ".ar"] = b.BodyAr;
++                if (!string.IsNullOrEmpty(b.BodyEn)) dict[b.Key + ".en"] = b.BodyEn;
++                if (!string.IsNullOrEmpty(b.TitleAr)) dict[b.Key + ".icon"] = b.TitleAr;
++                if (!string.IsNullOrEmpty(b.BodyAr)) dict[b.Key] = b.BodyAr;
++            }
++            return dict;
++        }
++
++        public async Task<string> GetBlockAsync(string key, string lang = "ar")
++        {
++            var block = await _db.ContentBlocks.FirstOrDefaultAsync(b => b.Key == key);
++            if (block == null) return "";
++            return lang == "en" ? (block.BodyEn ?? block.BodyAr ?? "") : (block.BodyAr ?? block.BodyEn ?? "");
++        }
++
++        public async Task<ContentPageDto?> GetPageBySlugAsync(string slug)
++        {
++            var entity = await _db.ContentPages
++                .Include(p => p.Sections.OrderBy(s => s.SortOrder))
++                .FirstOrDefaultAsync(p => p.Slug == slug && p.IsPublished);
++
++            return entity.ToDto();
++        }
++
++        public async Task<ContactInfoDto?> GetContactInfoAsync()
++        {
++            var entity = await _db.ContactInfos.FirstOrDefaultAsync();
++            return entity.ToDto();
++        }
++
++        public async Task<Dictionary<string, string>> GetSettingsAsync()
++        {
++            var settings = await _db.SiteSettings.ToListAsync();
++            return settings.ToDictionary(s => s.Key, s => s.Value ?? "");
++        }
++
++        public async Task<string> GetSettingAsync(string key, string defaultValue = "")
++        {
++            var s = await _db.SiteSettings.FirstOrDefaultAsync(x => x.Key == key);
++            return s?.Value ?? defaultValue;
++        }
++    }
++}
+diff --git a/FTD.Application/Services/OrderService.cs b/FTD.Application/Services/OrderService.cs
+new file mode 100644
+index 0000000..9ab2f8a
+--- /dev/null
++++ b/FTD.Application/Services/OrderService.cs
+@@ -0,0 +1,70 @@
++using System;
++using System.Collections.Generic;
++using System.Linq;
++using System.Threading.Tasks;
++using FTD.Domain.Entities;
++using FTD.Application.DTOs;
++using FTD.Application.Interfaces;
++using FTD.Application.Mappers;
++using Microsoft.EntityFrameworkCore;
++
++namespace FTD.Application.Services
++{
++    public class OrderService
++    {
++        private readonly IAppDbContext _db;
++        public OrderService(IAppDbContext db) => _db = db;
++
++        public async Task<SalesOrderDto> CreateOrderAsync(CheckoutDto checkout, CartDto cart)
++        {
++            var orderNumber = $"FTD{DateTime.UtcNow:yyyyMMddHHmmss}{Random.Shared.Next(100, 999)}";
++
++            var order = new SalesOrder
++            {
++                OrderNumber = orderNumber,
++                StatusId = 1, // New
++                CustomerName = checkout.CustomerName,
++                CustomerPhone = checkout.CustomerPhone,
++                CustomerEmail = checkout.CustomerEmail,
++                Address = checkout.Address,
++                City = checkout.City,
++                Governorate = checkout.Governorate,
++                Notes = checkout.Notes,
++                SubTotal = cart.SubTotal,
++                ShippingFee = cart.FreeShipping ? 0 : cart.ShippingFee,
++                TotalAmount = cart.Total,
++                CreatedAt = DateTime.UtcNow,
++                Details = cart.Items.Select(item => new SalesOrderDetail
++                {
++                    ProductId = item.ProductId,
++                    ProductName = item.ProductName,
++                    Quantity = item.Quantity,
++                    UnitPrice = item.UnitPrice,
++                    SubTotal = item.SubTotal
++                }).ToList()
++            };
++
++            _db.SalesOrders.Add(order);
++            await _db.SaveChangesAsync();
++
++            // Fetch the saved order with navigation properties to return a fully populated DTO
++            var savedOrder = await _db.SalesOrders
++                .Include(o => o.Status)
++                .Include(o => o.Details)
++                .FirstOrDefaultAsync(o => o.Id == order.Id);
++
++            return savedOrder.ToDto()!;
++        }
++
++        public async Task UpdateStatusAsync(int orderId, int statusId)
++        {
++            var order = await _db.SalesOrders.FindAsync(orderId);
++            if (order != null)
++            {
++                order.StatusId = statusId;
++                order.UpdatedAt = DateTime.UtcNow;
++                await _db.SaveChangesAsync();
++            }
++        }
++    }
++}
+diff --git a/FTD.Application/Services/ProductService.cs b/FTD.Application/Services/ProductService.cs
+new file mode 100644
+index 0000000..ba7bf06
+--- /dev/null
++++ b/FTD.Application/Services/ProductService.cs
+@@ -0,0 +1,176 @@
++using System;
++using System.Collections.Generic;
++using System.Linq;
++using System.Threading.Tasks;
++using FTD.Application.DTOs;
++using FTD.Application.Interfaces;
++using FTD.Application.Mappers;
++using Microsoft.EntityFrameworkCore;
++
++namespace FTD.Application.Services
++{
++    public class ProductService
++    {
++        private readonly IAppDbContext _db;
++        public ProductService(IAppDbContext db) => _db = db;
++
++        public async Task<List<ProductDto>> GetFeaturedAsync(int take = 6)
++        {
++            var entities = await _db.Products
++                .Include(p => p.Category)
++                .Where(p => p.IsActive && p.IsFeatured)
++                .OrderBy(p => p.SortOrder)
++                .Take(take)
++                .ToListAsync();
++
++            return entities.Select(p => p.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList();
++        }
++
++        public async Task<List<ProductDto>> GetAllActiveAsync()
++        {
++            var entities = await _db.Products
++                .Include(p => p.Category)
++                .Where(p => p.IsActive)
++                .OrderBy(p => p.Category.SortOrder).ThenBy(p => p.SortOrder)
++                .ToListAsync();
++
++            return entities.Select(p => p.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList();
++        }
++
++        public async Task<List<ProductDto>> GetByCategoryAsync(int categoryId)
++        {
++            var entities = await _db.Products
++                .Include(p => p.Category)
++                .Where(p => p.IsActive && p.CategoryId == categoryId)
++                .OrderBy(p => p.SortOrder)
++                .ToListAsync();
++
++            return entities.Select(p => p.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList();
++        }
++
++        public async Task<List<ProductDto>> GetByBrandAsync(string brandSlug)
++        {
++            var entities = await _db.Products
++                .Include(p => p.Category)
++                .Include(p => p.Brand)
++                .Where(p => p.IsActive && (
++                    (p.Brand != null && p.Brand.Slug.ToLower() == brandSlug.ToLower()) ||
++                    (p.BrandName != null && p.BrandName.ToLower() == brandSlug.ToLower())
++                ))
++                .OrderBy(p => p.SortOrder)
++                .ToListAsync();
++
++            return entities.Select(p => p.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList();
++        }
++
++        // Filtered query for products page with AJAX filters
++        public async Task<List<ProductDto>> GetFilteredAsync(
++            string? brandSlug, string? categorySlug,
++            List<int>? attributeValueIds, string? sortBy)
++        {
++            // Step 1: simple query WITHOUT Include(AttributeValues) to avoid CTE
++            var query = _db.Products
++                .Include(p => p.Category)
++                .Include(p => p.Brand)
++                .Where(p => p.IsActive)
++                .AsQueryable();
++
++            if (!string.IsNullOrEmpty(brandSlug))
++                query = query.Where(p =>
++                    (p.Brand != null && p.Brand.Slug.ToLower() == brandSlug.ToLower()) ||
++                    (p.BrandName != null && p.BrandName.ToLower() == brandSlug.ToLower()));
++
++            if (!string.IsNullOrEmpty(categorySlug))
++                query = query.Where(p => p.Category.Slug == categorySlug);
++
++            query = sortBy switch
++            {
++                "price_asc" => query.OrderBy(p => p.Price),
++                "price_desc" => query.OrderByDescending(p => p.Price),
++                "newest" => query.OrderByDescending(p => p.CreatedAt),
++                _ => query.OrderByDescending(p => p.IsFeatured).ThenBy(p => p.SortOrder)
++            };
++
++            var products = await query.ToListAsync();
++
++            // Step 2: filter by attributes if needed (fetch separately to avoid CTE)
++            if (attributeValueIds != null && attributeValueIds.Any())
++            {
++                var productIds = products.Select(p => p.Id).ToHashSet();
++                // Fetch and filter in database - avoids fetching all records
++                var pavs = await _db.ProductAttributeValues.Where(av => productIds.Contains(av.ProductId)).ToListAsync();
++
++                products = products.Where(p =>
++                    attributeValueIds.All(vid =>
++                        pavs.Any(av => av.ProductId == p.Id && av.AttributeValueId == vid))
++                ).ToList();
++            }
++
++            return products.Select(p => p.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList();
++        }
++
++        public async Task<ProductDto?> GetBySlugAsync(string slug)
++        {
++            var entity = await _db.Products
++                .Include(p => p.Category)
++                .Include(p => p.AttributeValues)
++                    .ThenInclude(av => av.Attribute)
++                .Include(p => p.AttributeValues)
++                    .ThenInclude(av => av.AttributeValue)
++                .Include(p => p.Images)
++                .FirstOrDefaultAsync(p => p.Slug == slug && p.IsActive);
++
++            return entity.ToDto();
++        }
++
++        public async Task<ProductDto?> GetByIdAsync(int id)
++        {
++            var entity = await _db.Products
++                .Include(p => p.Category)
++                .Include(p => p.AttributeValues)
++                    .ThenInclude(av => av.Attribute)
++                .Include(p => p.AttributeValues)
++                    .ThenInclude(av => av.AttributeValue)
++                .Include(p => p.Images)
++                .FirstOrDefaultAsync(p => p.Id == id);
++
++            return entity.ToDto();
++        }
++
++        public async Task<List<ProductDto>> GetRelatedAsync(int productId, int categoryId, int take = 4)
++        {
++            var entities = await _db.Products
++                .Include(p => p.Category)
++                .Where(p => p.IsActive && p.CategoryId == categoryId && p.Id != productId)
++                .Take(take)
++                .ToListAsync();
++
++            return entities.Select(p => p.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList();
++        }
++
++        public async Task<List<ProductDto>> SearchAsync(string query)
++        {
++            var q = query.ToLower().Trim();
++            var entities = await _db.Products
++                .Include(p => p.Category)
++                .Where(p => p.IsActive && (
++                    p.NameAr.ToLower().Contains(q) ||
++                    p.NameEn.ToLower().Contains(q) ||
++                    (p.BrandName != null && p.BrandName.ToLower().Contains(q)) ||
++                    (p.ShortDescAr != null && p.ShortDescAr.ToLower().Contains(q)) ||
++                    (p.ShortDescEn != null && p.ShortDescEn.ToLower().Contains(q)) ||
++                    (p.DescAr != null && p.DescAr.ToLower().Contains(q)) ||
++                    (p.DescEn != null && p.DescEn.ToLower().Contains(q)) ||
++                    (p.Badge != null && p.Badge.ToLower().Contains(q)) ||
++                    (p.Category != null && p.Category.NameAr.ToLower().Contains(q)) ||
++                    (p.Category != null && p.Category.NameEn.ToLower().Contains(q))
++                ))
++                .OrderByDescending(p => p.IsFeatured)
++                .ThenByDescending(p => p.CreatedAt)
++                .Take(20)
++                .ToListAsync();
++
++            return entities.Select(p => p.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList();
++        }
++    }
++}
+diff --git a/FTD.Web/Controllers/ProductsController.cs b/FTD.Web/Controllers/ProductsController.cs
+index 444ed25..d29fdb1 100644
+--- a/FTD.Web/Controllers/ProductsController.cs
++++ b/FTD.Web/Controllers/ProductsController.cs
+@@ -1,11 +1,11 @@
+-using FTD.Web.Data;
++﻿using FTD.Web.Data;
+ using FTD.Web.Models;
+ using FTD.Web.Services;
+ using FTD.Web.ViewModels;
+ using Microsoft.AspNetCore.Mvc;
+ using Microsoft.EntityFrameworkCore;
+ 
+ namespace FTD.Web.Controllers
+ {
+     public class ProductsController : Controller
+     {
+@@ -166,30 +166,29 @@ namespace FTD.Web.Controllers
+                 nameAr = p.NameAr,
+                 nameEn = p.NameEn,
+                 brand = p.Brand?.NameEn ?? p.BrandName,
+                 price = p.Price.ToString("N0") + " EGP",
+                 emoji = p.Emoji,
+                 url = "/products/" + p.Slug
+             });
+             return Json(new { results });
+         }
+ 
+-        // ���� Helper ������������������������������������������������������������������������������������������������������������������������
++        // ���� Helper ������������������������������������������������������������������������������������������������������������������������
+         private async Task<List<AttributeFilterGroup>> BuildAttributeGroupsAsync(List<Product> products)
+         {
+             if (!products.Any()) return new();
+ 
+             var productIds = products.Select(p => p.Id).ToHashSet();
+ 
+-            // Fetch ALL then filter in memory - avoids CTE/WITH SQL error
+-            var allPavs = await _db.ProductAttributeValues.ToListAsync();
+-            var pavs = allPavs.Where(av => productIds.Contains(av.ProductId)).ToList();
++            // Fetch and filter in database - avoids fetching all records
++            var pavs = await _db.ProductAttributeValues.Where(av => productIds.Contains(av.ProductId)).ToListAsync();
+ 
+             if (!pavs.Any()) return new();
+ 
+             var attrIds = pavs.Select(av => av.AttributeId).ToHashSet();
+             var valIds = pavs.Select(av => av.AttributeValueId).ToHashSet();
+ 
+             var attrs = await _db.ProductAttributes.ToListAsync();
+             attrs = attrs.Where(a => attrIds.Contains(a.Id)).ToList();
+ 
+             var vals = await _db.AttributeValues.ToListAsync();
+diff --git a/FTD.Web/FTD.Web.sln b/FTD.Web/FTD.Web.sln
+index 4337c25..3399345 100644
+--- a/FTD.Web/FTD.Web.sln
++++ b/FTD.Web/FTD.Web.sln
+@@ -1,19 +1,21 @@
+ ﻿
+ Microsoft Visual Studio Solution File, Format Version 12.00
+ # Visual Studio Version 18
+ VisualStudioVersion = 18.2.11408.102
+ MinimumVisualStudioVersion = 10.0.40219.1
+ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FTD.Web", "FTD.Web.csproj", "{B298F0BD-CD88-C4A5-4E68-98C135CA2D41}"
+ EndProject
+ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FTD.Domain", "..\FTD.Domain\FTD.Domain.csproj", "{E4AA4BE9-4712-4DDD-A11A-DEDEC17DADB1}"
+ EndProject
++Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FTD.Application", "..\FTD.Application\FTD.Application.csproj", "{4F0D8D72-C579-4E68-B266-7745C3F00908}"
++EndProject
+ Global
+ 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+ 		Debug|Any CPU = Debug|Any CPU
+ 		Debug|x64 = Debug|x64
+ 		Debug|x86 = Debug|x86
+ 		Release|Any CPU = Release|Any CPU
+ 		Release|x64 = Release|x64
+ 		Release|x86 = Release|x86
+ 	EndGlobalSection
+ 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+@@ -34,18 +36,30 @@ Global
+ 		{E4AA4BE9-4712-4DDD-A11A-DEDEC17DADB1}.Debug|x64.ActiveCfg = Debug|Any CPU
+ 		{E4AA4BE9-4712-4DDD-A11A-DEDEC17DADB1}.Debug|x64.Build.0 = Debug|Any CPU
+ 		{E4AA4BE9-4712-4DDD-A11A-DEDEC17DADB1}.Debug|x86.ActiveCfg = Debug|Any CPU
+ 		{E4AA4BE9-4712-4DDD-A11A-DEDEC17DADB1}.Debug|x86.Build.0 = Debug|Any CPU
+ 		{E4AA4BE9-4712-4DDD-A11A-DEDEC17DADB1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+ 		{E4AA4BE9-4712-4DDD-A11A-DEDEC17DADB1}.Release|Any CPU.Build.0 = Release|Any CPU
+ 		{E4AA4BE9-4712-4DDD-A11A-DEDEC17DADB1}.Release|x64.ActiveCfg = Release|Any CPU
+ 		{E4AA4BE9-4712-4DDD-A11A-DEDEC17DADB1}.Release|x64.Build.0 = Release|Any CPU
+ 		{E4AA4BE9-4712-4DDD-A11A-DEDEC17DADB1}.Release|x86.ActiveCfg = Release|Any CPU
+ 		{E4AA4BE9-4712-4DDD-A11A-DEDEC17DADB1}.Release|x86.Build.0 = Release|Any CPU
++		{4F0D8D72-C579-4E68-B266-7745C3F00908}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
++		{4F0D8D72-C579-4E68-B266-7745C3F00908}.Debug|Any CPU.Build.0 = Debug|Any CPU
++		{4F0D8D72-C579-4E68-B266-7745C3F00908}.Debug|x64.ActiveCfg = Debug|Any CPU
++		{4F0D8D72-C579-4E68-B266-7745C3F00908}.Debug|x64.Build.0 = Debug|Any CPU
++		{4F0D8D72-C579-4E68-B266-7745C3F00908}.Debug|x86.ActiveCfg = Debug|Any CPU
++		{4F0D8D72-C579-4E68-B266-7745C3F00908}.Debug|x86.Build.0 = Debug|Any CPU
++		{4F0D8D72-C579-4E68-B266-7745C3F00908}.Release|Any CPU.ActiveCfg = Release|Any CPU
++		{4F0D8D72-C579-4E68-B266-7745C3F00908}.Release|Any CPU.Build.0 = Release|Any CPU
++		{4F0D8D72-C579-4E68-B266-7745C3F00908}.Release|x64.ActiveCfg = Release|Any CPU
++		{4F0D8D72-C579-4E68-B266-7745C3F00908}.Release|x64.Build.0 = Release|Any CPU
++		{4F0D8D72-C579-4E68-B266-7745C3F00908}.Release|x86.ActiveCfg = Release|Any CPU
++		{4F0D8D72-C579-4E68-B266-7745C3F00908}.Release|x86.Build.0 = Release|Any CPU
+ 	EndGlobalSection
+ 	GlobalSection(SolutionProperties) = preSolution
+ 		HideSolutionNode = FALSE
+ 	EndGlobalSection
+ 	GlobalSection(ExtensibilityGlobals) = postSolution
+ 		SolutionGuid = {1CC305CB-ABE4-4A6F-808E-4080DBA411DA}
+ 	EndGlobalSection
+ EndGlobal

@@ -24,7 +24,8 @@ namespace FTD.Application.Mappers
                 DescEn = entity.DescEn,
                 IsActive = entity.IsActive,
                 SortOrder = entity.SortOrder,
-                CreatedAt = entity.CreatedAt
+                CreatedAt = entity.CreatedAt,
+                ProductsCount = entity.Products?.Count ?? 0
             };
         }
 
@@ -43,7 +44,8 @@ namespace FTD.Application.Mappers
                 Description = entity.Description,
                 SortOrder = entity.SortOrder,
                 IsActive = entity.IsActive,
-                CreatedAt = entity.CreatedAt
+                CreatedAt = entity.CreatedAt,
+                ProductsCount = entity.Products?.Count ?? 0
             };
         }
 
@@ -71,7 +73,9 @@ namespace FTD.Application.Mappers
                 CategoryId = entity.CategoryId,
                 NameAr = entity.NameAr,
                 NameEn = entity.NameEn,
-                SortOrder = entity.SortOrder
+                SortOrder = entity.SortOrder,
+                Category = entity.Category.ToDto(),
+                Values = entity.Values?.Select(v => v.ToDto()).Where(x => x != null).Select(x => x!).ToList() ?? new()
             };
         }
 
@@ -166,7 +170,8 @@ namespace FTD.Application.Mappers
                 ProductName = entity.ProductName,
                 Quantity = entity.Quantity,
                 UnitPrice = entity.UnitPrice,
-                SubTotal = entity.SubTotal
+                SubTotal = entity.SubTotal,
+                Product = entity.Product.ToDto()
             };
         }
 

@@ -1,14 +1,13 @@
-using FTD.Application.Interfaces;
 using FTD.Application.DTOs;
-using FTD.Application.Mappers;
-using FTD.Domain.Entities;
+using FTD.Application.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System;
 
 namespace FTD.Web.Controllers.Admin
 {
@@ -16,33 +15,23 @@ namespace FTD.Web.Controllers.Admin
     [Authorize(Roles = "Admin")]
     public class AdminAttributesController : Controller
     {
-        private readonly IAppDbContext _db;
-        public AdminAttributesController(IAppDbContext db) => _db = db;
+        private readonly ProductService _productService;
+        public AdminAttributesController(ProductService productService) => _productService = productService;
 
         public async Task<IActionResult> Index(int? categoryId)
         {
-            var query = _db.ProductAttributes
-                .Include(a => a.Values)
-                .Include(a => a.Category)
-                .AsQueryable();
-
-            if (categoryId.HasValue)
-                query = query.Where(a => a.CategoryId == categoryId.Value);
-
-            var categories = await _db.Categories.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync();
-            ViewBag.Categories = categories.Select(c => c.ToDto()).Where(c => c != null).Select(c => c!).ToList();
+            var categories = await _productService.GetActiveCategoriesAsync();
+            ViewBag.Categories = categories;
             ViewBag.CurrentCategoryId = categoryId;
 
-            var entities = await query.OrderBy(a => a.CategoryId).ThenBy(a => a.SortOrder).ToListAsync();
-            var dtos = entities.Select(a => a.ToDto()).Where(a => a != null).Select(a => a!).ToList();
-
+            var dtos = await _productService.GetAttributesWithDetailsAsync(categoryId);
             return View("~/Views/Admin/Attributes/Index.cshtml", dtos);
         }
 
         public async Task<IActionResult> Create()
         {
-            var categories = await _db.Categories.Where(c => c.IsActive).ToListAsync();
-            ViewBag.Categories = categories.Select(c => c.ToDto()).Where(c => c != null).Select(c => c!).ToList();
+            var categories = await _productService.GetActiveCategoriesAsync();
+            ViewBag.Categories = categories;
             return View("~/Views/Admin/Attributes/Form.cshtml", new ProductAttributeDto());
         }
 
@@ -51,8 +40,8 @@ namespace FTD.Web.Controllers.Admin
         {
             if (!ModelState.IsValid)
             {
-                var categories = await _db.Categories.Where(c => c.IsActive).ToListAsync();
-                ViewBag.Categories = categories.Select(c => c.ToDto()).Where(c => c != null).Select(c => c!).ToList();
+                var categories = await _productService.GetActiveCategoriesAsync();
+                ViewBag.Categories = categories;
                 var errors = string.Join(", ", ModelState.Values
                     .SelectMany(v => v.Errors)
                     .Select(e => e.ErrorMessage));
@@ -60,39 +49,26 @@ namespace FTD.Web.Controllers.Admin
                 return View("~/Views/Admin/Attributes/Form.cshtml", model);
             }
 
-            var attr = new ProductAttribute
-            {
-                NameAr = model.NameAr,
-                NameEn = model.NameEn,
-                CategoryId = model.CategoryId,
-                SortOrder = model.SortOrder
-            };
-
-            _db.ProductAttributes.Add(attr);
-            await _db.SaveChangesAsync();
+            await _productService.CreateAttributeAsync(model);
             TempData["Success"] = "تم إضافة الـ Attribute";
             return RedirectToAction(nameof(Index));
         }
 
         public async Task<IActionResult> Edit(int id)
         {
-            var attr = await _db.ProductAttributes.FindAsync(id);
+            var attrs = await _productService.GetAttributesWithDetailsAsync(null);
+            var attr = attrs.FirstOrDefault(a => a.Id == id);
             if (attr == null) return NotFound();
-            var categories = await _db.Categories.Where(c => c.IsActive).ToListAsync();
-            ViewBag.Categories = categories.Select(c => c.ToDto()).Where(c => c != null).Select(c => c!).ToList();
-            return View("~/Views/Admin/Attributes/Form.cshtml", attr.ToDto());
+
+            var categories = await _productService.GetActiveCategoriesAsync();
+            ViewBag.Categories = categories;
+            return View("~/Views/Admin/Attributes/Form.cshtml", attr);
         }
 
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, ProductAttributeDto model)
         {
-            var attr = await _db.ProductAttributes.FindAsync(id);
-            if (attr == null) return NotFound();
-            attr.NameAr = model.NameAr;
-            attr.NameEn = model.NameEn;
-            attr.CategoryId = model.CategoryId;
-            attr.SortOrder = model.SortOrder;
-            await _db.SaveChangesAsync();
+            await _productService.UpdateAttributeAsync(id, model);
             TempData["Success"] = "تم تحديث الـ Attribute";
             return RedirectToAction(nameof(Index));
         }
@@ -100,8 +76,7 @@ namespace FTD.Web.Controllers.Admin
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            var attr = await _db.ProductAttributes.FindAsync(id);
-            if (attr != null) { _db.ProductAttributes.Remove(attr); await _db.SaveChangesAsync(); }
+            await _productService.DeleteAttributeAsync(id);
             TempData["Success"] = "تم الحذف";
             return RedirectToAction(nameof(Index));
         }
@@ -112,13 +87,7 @@ namespace FTD.Web.Controllers.Admin
         {
             if (!string.IsNullOrWhiteSpace(valueAr))
             {
-                _db.AttributeValues.Add(new AttributeValue
-                {
-                    AttributeId = attributeId,
-                    ValueAr = valueAr.Trim(),
-                    ValueEn = valueEn?.Trim() ?? valueAr.Trim()
-                });
-                await _db.SaveChangesAsync();
+                await _productService.AddAttributeValueAsync(attributeId, valueAr, valueEn);
                 TempData["Success"] = "تم إضافة القيمة";
             }
             return RedirectToAction(nameof(Index));
@@ -127,8 +96,7 @@ namespace FTD.Web.Controllers.Admin
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteValue(int id)
         {
-            var val = await _db.AttributeValues.FindAsync(id);
-            if (val != null) { _db.AttributeValues.Remove(val); await _db.SaveChangesAsync(); }
+            await _productService.DeleteAttributeValueAsync(id);
             TempData["Success"] = "تم حذف القيمة";
             return RedirectToAction(nameof(Index));
         }
@@ -138,28 +106,21 @@ namespace FTD.Web.Controllers.Admin
     [Authorize(Roles = "Admin")]
     public class AdminPageSectionsController : Controller
     {
-        private readonly IAppDbContext _db;
-        public AdminPageSectionsController(IAppDbContext db) => _db = db;
+        private readonly ContentService _contentService;
+        public AdminPageSectionsController(ContentService contentService) => _contentService = contentService;
 
         // GET /Admin/AdminPageSections/Manage/{pageId}
         public async Task<IActionResult> Manage(int id)
         {
-            var page = await _db.ContentPages
-                .Include(p => p.Sections)
-                .FirstOrDefaultAsync(p => p.Id == id);
+            var page = await _contentService.GetPageWithSectionsAsync(id);
             if (page == null) return NotFound();
-            return View("~/Views/Admin/Content/PageSections.cshtml", page.ToDto());
+            return View("~/Views/Admin/Content/PageSections.cshtml", page);
         }
 
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> AddSection(int id, string type)
         {
             var pageId = id;
-            var page = await _db.ContentPages.Include(p => p.Sections).FirstOrDefaultAsync(p => p.Id == pageId);
-            if (page == null) return NotFound();
-
-            var maxOrder = page.Sections.Any() ? page.Sections.Max(s => s.SortOrder) : 0;
-
             // Default content per type
             var defaultJson = type switch
             {
@@ -169,15 +130,7 @@ namespace FTD.Web.Controllers.Admin
                 _ => "{\"ar\":\"\",\"en\":\"\"}"
             };
 
-            _db.PageSections.Add(new PageSection
-            {
-                PageId = pageId,
-                Type = type,
-                ContentJson = defaultJson,
-                SortOrder = maxOrder + 1,
-                IsVisible = true
-            });
-            await _db.SaveChangesAsync();
+            await _contentService.AddPageSectionAsync(pageId, type, defaultJson);
             TempData["Success"] = "تم إضافة الـ Section";
             return RedirectToAction(nameof(Manage), new { id = pageId });
         }
@@ -185,10 +138,10 @@ namespace FTD.Web.Controllers.Admin
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveSection(int id, IFormCollection form)
         {
-            var section = await _db.PageSections.Include(s => s.Page).FirstOrDefaultAsync(s => s.Id == id);
+            var section = await _contentService.GetPageSectionAsync(id);
             if (section == null) return NotFound();
 
-            section.ContentJson = section.Type switch
+            var contentJson = section.Type switch
             {
                 "RichText" => BuildRichTextJson(form),
                 "FAQ" => BuildFaqJson(form, id),
@@ -197,7 +150,7 @@ namespace FTD.Web.Controllers.Admin
                 _ => section.ContentJson
             };
 
-            await _db.SaveChangesAsync();
+            await _contentService.SavePageSectionContentAsync(id, contentJson ?? "");
             TempData["Success"] = "تم حفظ الـ Section";
             return RedirectToAction(nameof(Manage), new { id = section.PageId });
         }
@@ -205,11 +158,11 @@ namespace FTD.Web.Controllers.Admin
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteSection(int id)
         {
-            var section = await _db.PageSections.FindAsync(id);
+            var section = await _contentService.GetPageSectionAsync(id);
             if (section == null) return NotFound();
             var pageId = section.PageId;
-            _db.PageSections.Remove(section);
-            await _db.SaveChangesAsync();
+
+            await _contentService.DeletePageSectionAsync(id);
             TempData["Success"] = "تم الحذف";
             return RedirectToAction(nameof(Manage), new { id = pageId });
         }
@@ -217,36 +170,30 @@ namespace FTD.Web.Controllers.Admin
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleSectionVisible(int id)
         {
-            var section = await _db.PageSections.FindAsync(id);
+            var section = await _contentService.GetPageSectionAsync(id);
             if (section == null) return NotFound();
-            section.IsVisible = !section.IsVisible;
-            await _db.SaveChangesAsync();
+
+            await _contentService.TogglePageSectionVisibilityAsync(id);
             return RedirectToAction(nameof(Manage), new { id = section.PageId });
         }
 
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> MoveSectionUp(int id)
         {
-            var section = await _db.PageSections.FindAsync(id);
+            var section = await _contentService.GetPageSectionAsync(id);
             if (section == null) return NotFound();
-            var prev = await _db.PageSections
-                .Where(s => s.PageId == section.PageId && s.SortOrder < section.SortOrder)
-                .OrderByDescending(s => s.SortOrder).FirstOrDefaultAsync();
-            if (prev != null) (section.SortOrder, prev.SortOrder) = (prev.SortOrder, section.SortOrder);
-            await _db.SaveChangesAsync();
+
+            await _contentService.MovePageSectionUpAsync(id);
             return RedirectToAction(nameof(Manage), new { id = section.PageId });
         }
 
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> MoveSectionDown(int id)
         {
-            var section = await _db.PageSections.FindAsync(id);
+            var section = await _contentService.GetPageSectionAsync(id);
             if (section == null) return NotFound();
-            var next = await _db.PageSections
-                .Where(s => s.PageId == section.PageId && s.SortOrder > section.SortOrder)
-                .OrderBy(s => s.SortOrder).FirstOrDefaultAsync();
-            if (next != null) (section.SortOrder, next.SortOrder) = (next.SortOrder, section.SortOrder);
-            await _db.SaveChangesAsync();
+
+            await _contentService.MovePageSectionDownAsync(id);
             return RedirectToAction(nameof(Manage), new { id = section.PageId });
         }
 
