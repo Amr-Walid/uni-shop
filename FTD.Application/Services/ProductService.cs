@@ -97,9 +97,8 @@ namespace FTD.Application.Services
             if (attributeValueIds != null && attributeValueIds.Any())
             {
                 var productIds = products.Select(p => p.Id).ToHashSet();
-                // Fetch all then filter in memory - avoids CTE error
-                var allPavs = await _db.ProductAttributeValues.ToListAsync();
-                var pavs = allPavs.Where(av => productIds.Contains(av.ProductId)).ToList();
+                // Fetch and filter in database - avoids fetching all records
+                var pavs = await _db.ProductAttributeValues.Where(av => productIds.Contains(av.ProductId)).ToListAsync();
 
                 products = products.Where(p =>
                     attributeValueIds.All(vid =>

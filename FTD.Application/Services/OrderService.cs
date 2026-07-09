@@ -33,24 +33,18 @@ namespace FTD.Application.Services
                 SubTotal = cart.SubTotal,
                 ShippingFee = cart.FreeShipping ? 0 : cart.ShippingFee,
                 TotalAmount = cart.Total,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _db.SalesOrders.Add(order);
-            await _db.SaveChangesAsync();
-
-            foreach (var item in cart.Items)
-            {
-                _db.SalesOrderDetails.Add(new SalesOrderDetail
+                CreatedAt = DateTime.UtcNow,
+                Details = cart.Items.Select(item => new SalesOrderDetail
                 {
-                    OrderId = order.Id,
                     ProductId = item.ProductId,
                     ProductName = item.ProductName,
                     Quantity = item.Quantity,
                     UnitPrice = item.UnitPrice,
                     SubTotal = item.SubTotal
-                });
-            }
+                }).ToList()
+            };
+
+            _db.SalesOrders.Add(order);
             await _db.SaveChangesAsync();
 
             // Fetch the saved order with navigation properties to return a fully populated DTO

@@ -1,4 +1,4 @@
-using FTD.Web.Data;
+ï»¿using FTD.Web.Data;
 using FTD.Web.Models;
 using FTD.Web.Services;
 using FTD.Web.ViewModels;
@@ -173,16 +173,15 @@ namespace FTD.Web.Controllers
             return Json(new { results });
         }
 
-        // ©¤©¤ Helper ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤
+        // ï¿½ï¿½ï¿½ï¿½ Helper ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         private async Task<List<AttributeFilterGroup>> BuildAttributeGroupsAsync(List<Product> products)
         {
             if (!products.Any()) return new();
 
             var productIds = products.Select(p => p.Id).ToHashSet();
 
-            // Fetch ALL then filter in memory - avoids CTE/WITH SQL error
-            var allPavs = await _db.ProductAttributeValues.ToListAsync();
-            var pavs = allPavs.Where(av => productIds.Contains(av.ProductId)).ToList();
+            // Fetch and filter in database - avoids fetching all records
+            var pavs = await _db.ProductAttributeValues.Where(av => productIds.Contains(av.ProductId)).ToListAsync();
 
             if (!pavs.Any()) return new();
 

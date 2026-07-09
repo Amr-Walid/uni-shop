@@ -54,3 +54,17 @@ In this task, we created and structured the **FTD.Application** layer to hold de
 ## Issues or Concerns
 
 - None. Refactoring followed clean architecture principles and compiled correctly.
+
+---
+
+## Resolved Reviewer Issues
+
+In response to the reviewer feedback, the following issues were resolved:
+
+1. **Unscalable In-Memory Filtering in ProductService.cs & ProductsController.cs**:
+   - **Location**: `GetFilteredAsync` in `FTD.Application/Services/ProductService.cs` and `BuildAttributeGroupsAsync` in `FTD.Web/Controllers/ProductsController.cs`.
+   - **Fix**: Replaced the inefficient call `_db.ProductAttributeValues.ToListAsync()` (which fetched all records into web server memory before filtering) with database-level filtering. The query now uses `.Where(av => productIds.Contains(av.ProductId)).ToListAsync()` to filter records on the database server before retrieving them.
+   
+2. **Transactional Integrity in OrderService.cs**:
+   - **Location**: `CreateOrderAsync` in `FTD.Application/Services/OrderService.cs`.
+   - **Fix**: Replaced the two separate `SaveChangesAsync()` calls (which first saved the order to retrieve its ID, and then saved details, leaving room for orphaned orders if the second call failed) with a single atomic transaction. The `Details` collection on `SalesOrder` is now populated directly in-memory and committed to the database in a single `SaveChangesAsync()` call, guaranteeing transactional integrity.
