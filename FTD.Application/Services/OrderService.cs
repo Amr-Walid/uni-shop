@@ -66,5 +66,47 @@ namespace FTD.Application.Services
                 await _db.SaveChangesAsync();
             }
         }
+
+        public async Task<List<SalesOrderDto>> GetOrdersAsync(int? statusId)
+        {
+            var query = _db.SalesOrders.Include(o => o.Status).AsQueryable();
+
+            if (statusId.HasValue)
+            {
+                query = query.Where(o => o.StatusId == statusId.Value);
+            }
+
+            var orders = await query
+                .OrderByDescending(o => o.CreatedAt)
+                .ToListAsync();
+
+            return orders
+                .Select(o => o.ToDto())
+                .OfType<SalesOrderDto>()
+                .ToList();
+        }
+
+        public async Task<SalesOrderDto?> GetOrderByIdAsync(int id)
+        {
+            var order = await _db.SalesOrders
+                .Include(o => o.Status)
+                .Include(o => o.Details)
+                    .ThenInclude(d => d.Product)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            return order.ToDto();
+        }
+
+        public async Task<List<OrderStatusDto>> GetAllStatusesAsync()
+        {
+            var statuses = await _db.OrderStatuses
+                .OrderBy(s => s.SortOrder)
+                .ToListAsync();
+
+            return statuses
+                .Select(s => s.ToDto())
+                .OfType<OrderStatusDto>()
+                .ToList();
+        }
     }
 }
