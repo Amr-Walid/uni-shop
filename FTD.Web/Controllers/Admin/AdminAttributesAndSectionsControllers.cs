@@ -1,9 +1,14 @@
-using FTD.Infrastructure.Data;
+using FTD.Application.Interfaces;
+using FTD.Application.DTOs;
+using FTD.Application.Mappers;
 using FTD.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace FTD.Web.Controllers.Admin
 {
@@ -11,8 +16,8 @@ namespace FTD.Web.Controllers.Admin
     [Authorize(Roles = "Admin")]
     public class AdminAttributesController : Controller
     {
-        private readonly AppDbContext _db;
-        public AdminAttributesController(AppDbContext db) => _db = db;
+        private readonly IAppDbContext _db;
+        public AdminAttributesController(IAppDbContext db) => _db = db;
 
         public async Task<IActionResult> Index(int? categoryId)
         {
@@ -24,37 +29,46 @@ namespace FTD.Web.Controllers.Admin
             if (categoryId.HasValue)
                 query = query.Where(a => a.CategoryId == categoryId.Value);
 
-            ViewBag.Categories = await _db.Categories.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync();
+            var categories = await _db.Categories.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync();
+            ViewBag.Categories = categories.Select(c => c.ToDto()).Where(c => c != null).Select(c => c!).ToList();
             ViewBag.CurrentCategoryId = categoryId;
 
-            return View("~/Views/Admin/Attributes/Index.cshtml", await query.OrderBy(a => a.CategoryId).ThenBy(a => a.SortOrder).ToListAsync());
+            var entities = await query.OrderBy(a => a.CategoryId).ThenBy(a => a.SortOrder).ToListAsync();
+            var dtos = entities.Select(a => a.ToDto()).Where(a => a != null).Select(a => a!).ToList();
+
+            return View("~/Views/Admin/Attributes/Index.cshtml", dtos);
         }
 
         public async Task<IActionResult> Create()
         {
-            ViewBag.Categories = await _db.Categories.Where(c => c.IsActive).ToListAsync();
-            return View("~/Views/Admin/Attributes/Form.cshtml", new ProductAttribute());
+            var categories = await _db.Categories.Where(c => c.IsActive).ToListAsync();
+            ViewBag.Categories = categories.Select(c => c.ToDto()).Where(c => c != null).Select(c => c!).ToList();
+            return View("~/Views/Admin/Attributes/Form.cshtml", new ProductAttributeDto());
         }
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(ProductAttribute model)
+        public async Task<IActionResult> Create(ProductAttributeDto model)
         {
-            // Remove validation errors for nav properties
-            ModelState.Remove("Category");
-            ModelState.Remove("Values");
-            ModelState.Remove("ProductValues");
-
             if (!ModelState.IsValid)
             {
-                ViewBag.Categories = await _db.Categories.Where(c => c.IsActive).ToListAsync();
-                // Show validation errors
+                var categories = await _db.Categories.Where(c => c.IsActive).ToListAsync();
+                ViewBag.Categories = categories.Select(c => c.ToDto()).Where(c => c != null).Select(c => c!).ToList();
                 var errors = string.Join(", ", ModelState.Values
                     .SelectMany(v => v.Errors)
                     .Select(e => e.ErrorMessage));
                 TempData["Error"] = "خطأ في البيانات: " + errors;
                 return View("~/Views/Admin/Attributes/Form.cshtml", model);
             }
-            _db.ProductAttributes.Add(model);
+
+            var attr = new ProductAttribute
+            {
+                NameAr = model.NameAr,
+                NameEn = model.NameEn,
+                CategoryId = model.CategoryId,
+                SortOrder = model.SortOrder
+            };
+
+            _db.ProductAttributes.Add(attr);
             await _db.SaveChangesAsync();
             TempData["Success"] = "تم إضافة الـ Attribute";
             return RedirectToAction(nameof(Index));
@@ -64,12 +78,13 @@ namespace FTD.Web.Controllers.Admin
         {
             var attr = await _db.ProductAttributes.FindAsync(id);
             if (attr == null) return NotFound();
-            ViewBag.Categories = await _db.Categories.Where(c => c.IsActive).ToListAsync();
-            return View("~/Views/Admin/Attributes/Form.cshtml", attr);
+            var categories = await _db.Categories.Where(c => c.IsActive).ToListAsync();
+            ViewBag.Categories = categories.Select(c => c.ToDto()).Where(c => c != null).Select(c => c!).ToList();
+            return View("~/Views/Admin/Attributes/Form.cshtml", attr.ToDto());
         }
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, ProductAttribute model)
+        public async Task<IActionResult> Edit(int id, ProductAttributeDto model)
         {
             var attr = await _db.ProductAttributes.FindAsync(id);
             if (attr == null) return NotFound();
@@ -123,17 +138,17 @@ namespace FTD.Web.Controllers.Admin
     [Authorize(Roles = "Admin")]
     public class AdminPageSectionsController : Controller
     {
-        private readonly AppDbContext _db;
-        public AdminPageSectionsController(AppDbContext db) => _db = db;
+        private readonly IAppDbContext _db;
+        public AdminPageSectionsController(IAppDbContext db) => _db = db;
 
         // GET /Admin/AdminPageSections/Manage/{pageId}
         public async Task<IActionResult> Manage(int id)
         {
             var page = await _db.ContentPages
-                .Include(p => p.Sections.OrderBy(s => s.SortOrder))
+                .Include(p => p.Sections)
                 .FirstOrDefaultAsync(p => p.Id == id);
             if (page == null) return NotFound();
-            return View("~/Views/Admin/Content/PageSections.cshtml", page);
+            return View("~/Views/Admin/Content/PageSections.cshtml", page.ToDto());
         }
 
         [HttpPost, ValidateAntiForgeryToken]

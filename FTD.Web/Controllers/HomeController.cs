@@ -1,10 +1,8 @@
 using FTD.Application.Interfaces;
 using FTD.Application.Services;
-using FTD.Application.Mappers;
-using FTD.Domain.Entities;
+using FTD.Application.DTOs;
 using FTD.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,38 +13,31 @@ namespace FTD.Web.Controllers
     {
         private readonly ProductService _products;
         private readonly ContentService _content;
-        private readonly IAppDbContext _db;
-        private readonly IEmailService _email;
+        private readonly MessageService _messages;
 
         public HomeController(
             ProductService products,
             ContentService content,
-            IAppDbContext db,
-            IEmailService email)
+            MessageService messages)
         {
             _products = products;
             _content = content;
-            _db = db;
-            _email = email;
+            _messages = messages;
         }
 
         public async Task<IActionResult> Index()
         {
             var featured = await _products.GetFeaturedAsync(6);
-            var categoriesList = await _db.Categories
-                .Where(c => c.IsActive)
-                .OrderBy(c => c.SortOrder)
-                .ToListAsync();
-
-            var settingsList = await _db.SiteSettings.ToListAsync();
+            var categoriesList = await _products.GetActiveCategoriesAsync();
+            var settingsList = await _content.GetSettingsListAsync();
 
             var vm = new HomeViewModel
             {
                 FeaturedProducts = featured,
-                Categories = categoriesList.Select(c => c.ToDto()).Where(c => c != null).Select(c => c!).ToList(),
+                Categories = categoriesList,
                 ContentBlocks = await _content.GetBlocksAsync(),
                 ContactInfo = await _content.GetContactInfoAsync(),
-                Settings = settingsList.Select(s => s.ToDto()).Where(s => s != null).Select(s => s!).ToList()
+                Settings = settingsList
             };
             return View(vm);
         }
@@ -54,23 +45,15 @@ namespace FTD.Web.Controllers
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Contact(string name, string email, string phone, string message)
         {
-            // 1. Save to DB
-            _db.ContactMessages.Add(new ContactMessage
+            var dto = new ContactMessageDto
             {
-                Name = name?.Trim(),
-                Email = email?.Trim(),
-                Phone = phone?.Trim(),
-                Message = message?.Trim(),
-                CreatedAt = DateTime.UtcNow
-            });
-            await _db.SaveChangesAsync();
+                Name = name,
+                Email = email,
+                Phone = phone,
+                Message = message
+            };
 
-            // 2. Send email notification (async, won't block if it fails)
-            _ = Task.Run(async () =>
-            {
-                await _email.SendContactNotificationAsync(
-                    name ?? "", email ?? "", phone ?? "", message ?? "");
-            });
+            await _messages.SaveMessageAsync(dto);
 
             TempData["ContactSuccess"] = "true";
             return Redirect("/#contact");

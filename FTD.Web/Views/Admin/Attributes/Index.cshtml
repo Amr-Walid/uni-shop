@@ -1,8 +1,8 @@
-@model List<ProductAttribute>
+@model List<ProductAttributeDto>
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "الـ Attributes";
-    var categories = ViewBag.Categories as List<Category>;
+    var categories = ViewBag.Categories as List<CategoryDto>;
     var currentCatId = ViewBag.CurrentCategoryId as int?;
 }
 

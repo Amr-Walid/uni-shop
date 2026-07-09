@@ -1,0 +1,90 @@
+@model FTD.Web.ViewModels.FooterViewModel
+<!-- FOOTER -->
+<footer>
+    <div class="footer-grid">
+        <div>
+            <div class="footer-brand-logo">
+                <img src="/images/ftd-logo.png" alt="FTD TechZone" style="height:36px;object-fit:contain">
+            </div>
+            <p class="footer-brand-desc">
+                <span data-ar>وجهتك الأولى لأحدث التكنولوجيا في مصر — الفجر للتجارة</span>
+                <span data-en>Your first destination for the latest technology in Egypt — Alfajr For Trade</span>
+            </p>
+            <div class="footer-social">
+                @if (Model.ContactInfo?.ShowFacebook == true && !string.IsNullOrEmpty(Model.ContactInfo.Facebook))
+                {
+                    <a href="@Model.ContactInfo.Facebook" target="_blank" class="social-btn">f</a>
+                }
+                @if (Model.ContactInfo?.ShowInstagram == true && !string.IsNullOrEmpty(Model.ContactInfo.Instagram))
+                {
+                    <a href="@Model.ContactInfo.Instagram" target="_blank" class="social-btn">ig</a>
+                }
+                @if (Model.ContactInfo?.ShowWhatsApp == true && !string.IsNullOrEmpty(Model.ContactInfo.WhatsApp))
+                {
+                    <a href="https://wa.me/@(Model.ContactInfo.WhatsApp?.Replace("+", "").Replace(" ", ""))" target="_blank" class="social-btn">wa</a>
+                }
+                @if (Model.ContactInfo?.ShowTikTok == true && !string.IsNullOrEmpty(Model.ContactInfo.TikTok))
+                {
+                    <a href="@Model.ContactInfo.TikTok" target="_blank" class="social-btn">tt</a>
+                }
+            </div>
+        </div>
+        <div class="footer-col">
+            <h4><span data-ar>روابط سريعة</span><span data-en>Quick Links</span></h4>
+            <ul>
+                <li><a href="/"><span data-ar>الرئيسية</span><span data-en>Home</span></a></li>
+                <li><a href="/#about"><span data-ar>عننا</span><span data-en>About</span></a></li>
+                <li><a href="/Products"><span data-ar>المنتجات</span><span data-en>Products</span></a></li>
+                <li><a href="/#contact"><span data-ar>تواصل معنا</span><span data-en>Contact</span></a></li>
+                @foreach (var fi in Model.FootItems)
+                {
+                    var fiUrl = fi.LinkType == "ContentPage" ? "/page/" + fi.PageSlug
+                    : fi.LinkType == "External" ? fi.ExternalUrl
+                    : fi.StaticRoute;
+                    <li>
+                        <a href="@fiUrl" @(fi.OpenInNewTab ? "target=_blank" : "")>
+                            <span data-ar>@fi.LabelAr</span><span data-en>@fi.LabelEn</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
+        <div class="footer-col">
+            <h4><span data-ar>الماركات</span><span data-en>Brands</span></h4>
+            <ul>
+                @foreach (var nb in Model.NavBrands)
+                {
+                    <li><a href="/brand/@nb.Slug">@nb.NameEn</a></li>
+                }
+            </ul>
+        </div>
+        <div class="footer-col">
+            <h4><span data-ar>تابعنا</span><span data-en>Follow Us</span></h4>
+            <ul>
+                @if (Model.ContactInfo?.ShowFacebook == true && !string.IsNullOrEmpty(Model.ContactInfo.Facebook))
+                {
+                    <li><a href="@Model.ContactInfo.Facebook" target="_blank">Facebook</a></li>
+                }
+                @if (Model.ContactInfo?.ShowInstagram == true && !string.IsNullOrEmpty(Model.ContactInfo.Instagram))
+                {
+                    <li><a href="@Model.ContactInfo.Instagram" target="_blank">Instagram</a></li>
+                }
+                @if (Model.ContactInfo?.ShowWhatsApp == true && !string.IsNullOrEmpty(Model.ContactInfo.WhatsApp))
+                {
+                    <li><a href="https://wa.me/@(Model.ContactInfo.WhatsApp?.Replace("+", "").Replace(" ", ""))" target="_blank">WhatsApp</a></li>
+                }
+                @if (Model.ContactInfo?.ShowTikTok == true && !string.IsNullOrEmpty(Model.ContactInfo.TikTok))
+                {
+                    <li><a href="@Model.ContactInfo.TikTok" target="_blank">TikTok</a></li>
+                }
+            </ul>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>
+            © @DateTime.Now.Year FTD TechZone —
+            <span data-ar>الفجر للتجارة. جميع الحقوق محفوظة.</span>
+            <span data-en>Alfajr For Trade. All Rights Reserved.</span>
+        </p>
+    </div>
+</footer>

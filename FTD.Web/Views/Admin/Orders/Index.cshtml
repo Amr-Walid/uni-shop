@@ -1,8 +1,8 @@
-@model List<SalesOrder>
+@model List<SalesOrderDto>
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "الطلبات";
-    var statuses = ViewBag.Statuses as List<OrderStatus>;
+    var statuses = ViewBag.Statuses as List<OrderStatusDto>;
 }
 
 <!-- STATUS FILTER TABS -->

@@ -1,10 +1,5 @@
-@inject FTD.Application.Interfaces.IAppDbContext _layoutDb
 @{
     var en = Context.Request.Cookies["ftd_lang"] == "en";
-    var navItems = _layoutDb.NavigationItems.Where(n => n.IsActive && (n.Location == "Navbar" || n.Location == "Both")).OrderBy(n => n.SortOrder).ToList();
-    var footItems = _layoutDb.NavigationItems.Where(n => n.IsActive && (n.Location == "Footer" || n.Location == "Both")).OrderBy(n => n.SortOrder).ToList();
-    var navBrands = _layoutDb.Brands.Where(b => b.IsActive).OrderBy(b => b.SortOrder).ToList();
-    var contactInfo = _layoutDb.ContactInfos.FirstOrDefault();
 }
 <!DOCTYPE html>
 <html lang="ar" dir="rtl" id="htmlRoot">
@@ -37,197 +32,15 @@
             </div>
         </div>
     </div>
-    <!-- NAV -->
-    <nav id="mainNav">
-        <button class="hamburger" id="hamburger" aria-label="Menu">
-            <span></span><span></span><span></span>
-        </button>
-        <div class="nav-logo">
-            <a href="/" style="display:flex;align-items:center;text-decoration:none">
-                <img src="/images/ftd-logo.png" alt="FTD TechZone" style="height:38px;object-fit:contain">
-            </a>
-        </div>
-        <ul class="nav-center">
-            <li>
-                <a href="/" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")">
-                    <span data-ar>الرئيسية</span><span data-en>Home</span>
-                </a>
-            </li>
-            <li><a href="/#about"><span data-ar>عننا</span><span data-en>About</span></a></li>
-            <li class="nav-megabtn" id="productsMegaBtn">
-                <a href="/Products" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Products" ? "active" : "")" id="productsMegaTrigger">
-                    <span data-ar>المنتجات</span><span data-en>Products</span>
-                    <span class="mega-arrow">▾</span>
-                </a>
-                <div class="mega-panel" id="productsMegaPanel">
-                    <a href="/Products" class="mega-all">
-                        <span class="d-icon">🛍️</span>
-                        <span data-ar>كل المنتجات</span><span data-en>All Products</span>
-                    </a>
-                    <div class="mega-divider"></div>
-                    @foreach (var nb in navBrands)
-                    {
-                        <a href="/brand/@nb.Slug" class="mega-brand-link">
-                            @if (!string.IsNullOrEmpty(nb.LogoPath))
-                            {
-                                <img src="@nb.LogoPath" alt="@nb.NameEn" style="height:18px;object-fit:contain;max-width:70px">
-                            }
-                            else
-                            {
-                                <span>@nb.NameEn</span>
-                            }
-                        </a>
-                    }
-                </div>
-            </li>
-            <li><a href="/#contact"><span data-ar>تواصل معنا</span><span data-en>Contact</span></a></li>
-            @foreach (var ni in navItems)
-            {
-                var niUrl = ni.LinkType == "ContentPage" ? "/page/" + ni.PageSlug
-                : ni.LinkType == "External" ? ni.ExternalUrl
-                : ni.StaticRoute;
-                <li>
-                    <a href="@niUrl" @(ni.OpenInNewTab ? "target=_blank" : "")>
-                        <span data-ar>@ni.LabelAr</span><span data-en>@ni.LabelEn</span>
-                    </a>
-                </li>
-            }
-        </ul>
-        <div class="nav-right">
-            <div class="search-trigger" onclick="openSearch()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
-                <span><span data-ar>بحث...</span><span data-en>Search...</span></span>
-            </div>
-            <a href="/Cart" class="cart-btn">
-                <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" /></svg>
-                <div class="cart-count" id="cartCount">0</div>
-            </a>
-            <button class="lang-btn" onclick="toggleLang()">
-                <span data-ar>EN</span><span data-en>AR</span>
-            </button>
-        </div>
-    </nav>
-    <!-- MOBILE NAV DRAWER -->
-    <div class="mobile-nav" id="mobileNav">
-        <a href="/">
-            <span data-ar>الرئيسية</span><span data-en>Home</span>
-        </a>
-        <a href="/#about">
-            <span data-ar>عننا</span><span data-en>About</span>
-        </a>
-        <a href="/Products">
-            <span data-ar>كل المنتجات</span><span data-en>All Products</span>
-        </a>
-        @foreach (var nb in navBrands)
-        {
-            <a href="/brand/@nb.Slug">@nb.NameEn</a>
-        }
-        @foreach (var ni in navItems.Where(n => n.Location == "Navbar" || n.Location == "Both"))
-        {
-            var niUrl = ni.LinkType == "ContentPage" ? "/page/" + ni.PageSlug
-            : ni.LinkType == "External" ? ni.ExternalUrl
-            : ni.StaticRoute;
-            <a href="@niUrl">
-                <span data-ar>@ni.LabelAr</span><span data-en>@ni.LabelEn</span>
-            </a>
-        }
-        <a href="/#contact">
-            <span data-ar>تواصل معنا</span><span data-en>Contact</span>
-        </a>
-    </div>
+    
+    @await Component.InvokeAsync("Navbar")
+
     <!-- MAIN CONTENT -->
     <main>
         @RenderBody()
     </main>
-    <!-- FOOTER -->
-    <footer>
-        <div class="footer-grid">
-            <div>
-                <div class="footer-brand-logo">
-                    <img src="/images/ftd-logo.png" alt="FTD TechZone" style="height:36px;object-fit:contain">
-                </div>
-                <p class="footer-brand-desc">
-                    <span data-ar>وجهتك الأولى لأحدث التكنولوجيا في مصر — الفجر للتجارة</span>
-                    <span data-en>Your first destination for the latest technology in Egypt — Alfajr For Trade</span>
-                </p>
-                <div class="footer-social">
-                    @if (contactInfo?.ShowFacebook == true && !string.IsNullOrEmpty(contactInfo.Facebook))
-                    {
-                        <a href="@contactInfo.Facebook" target="_blank" class="social-btn">f</a>
-                    }
-                    @if (contactInfo?.ShowInstagram == true && !string.IsNullOrEmpty(contactInfo.Instagram))
-                    {
-                        <a href="@contactInfo.Instagram" target="_blank" class="social-btn">ig</a>
-                    }
-                    @if (contactInfo?.ShowWhatsApp == true && !string.IsNullOrEmpty(contactInfo.WhatsApp))
-                    {
-                        <a href="https://wa.me/@(contactInfo.WhatsApp?.Replace("+", "").Replace(" ", ""))" target="_blank" class="social-btn">wa</a>
-                    }
-                    @if (contactInfo?.ShowTikTok == true && !string.IsNullOrEmpty(contactInfo.TikTok))
-                    {
-                        <a href="@contactInfo.TikTok" target="_blank" class="social-btn">tt</a>
-                    }
-                </div>
-            </div>
-            <div class="footer-col">
-                <h4><span data-ar>روابط سريعة</span><span data-en>Quick Links</span></h4>
-                <ul>
-                    <li><a href="/"><span data-ar>الرئيسية</span><span data-en>Home</span></a></li>
-                    <li><a href="/#about"><span data-ar>عننا</span><span data-en>About</span></a></li>
-                    <li><a href="/Products"><span data-ar>المنتجات</span><span data-en>Products</span></a></li>
-                    <li><a href="/#contact"><span data-ar>تواصل معنا</span><span data-en>Contact</span></a></li>
-                    @foreach (var fi in footItems)
-                    {
-                        var fiUrl = fi.LinkType == "ContentPage" ? "/page/" + fi.PageSlug
-                        : fi.LinkType == "External" ? fi.ExternalUrl
-                        : fi.StaticRoute;
-                        <li>
-                            <a href="@fiUrl" @(fi.OpenInNewTab ? "target=_blank" : "")>
-                                <span data-ar>@fi.LabelAr</span><span data-en>@fi.LabelEn</span>
-                            </a>
-                        </li>
-                    }
-                </ul>
-            </div>
-            <div class="footer-col">
-                <h4><span data-ar>الماركات</span><span data-en>Brands</span></h4>
-                <ul>
-                    @foreach (var nb in navBrands)
-                    {
-                        <li><a href="/brand/@nb.Slug">@nb.NameEn</a></li>
-                    }
-                </ul>
-            </div>
-            <div class="footer-col">
-                <h4><span data-ar>تابعنا</span><span data-en>Follow Us</span></h4>
-                <ul>
-                    @if (contactInfo?.ShowFacebook == true && !string.IsNullOrEmpty(contactInfo.Facebook))
-                    {
-                        <li><a href="@contactInfo.Facebook" target="_blank">Facebook</a></li>
-                    }
-                    @if (contactInfo?.ShowInstagram == true && !string.IsNullOrEmpty(contactInfo.Instagram))
-                    {
-                        <li><a href="@contactInfo.Instagram" target="_blank">Instagram</a></li>
-                    }
-                    @if (contactInfo?.ShowWhatsApp == true && !string.IsNullOrEmpty(contactInfo.WhatsApp))
-                    {
-                        <li><a href="https://wa.me/@(contactInfo.WhatsApp?.Replace("+", "").Replace(" ", ""))" target="_blank">WhatsApp</a></li>
-                    }
-                    @if (contactInfo?.ShowTikTok == true && !string.IsNullOrEmpty(contactInfo.TikTok))
-                    {
-                        <li><a href="@contactInfo.TikTok" target="_blank">TikTok</a></li>
-                    }
-                </ul>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>
-                © @DateTime.Now.Year FTD TechZone —
-                <span data-ar>الفجر للتجارة. جميع الحقوق محفوظة.</span>
-                <span data-en>Alfajr For Trade. All Rights Reserved.</span>
-            </p>
-        </div>
-    </footer>
+
+    @await Component.InvokeAsync("Footer")
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

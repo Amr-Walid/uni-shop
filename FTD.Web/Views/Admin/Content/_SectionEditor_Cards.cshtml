@@ -1,5 +1,5 @@
 @* _SectionEditor_Cards.cshtml *@
-@model PageSection
+@model PageSectionDto
 @{
     var cards = new List<(string titleAr, string titleEn, string bodyAr, string bodyEn, string icon)>();
     if (!string.IsNullOrEmpty(Model.ContentJson))

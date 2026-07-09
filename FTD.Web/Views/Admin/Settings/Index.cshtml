@@ -1,8 +1,8 @@
-@model List<SiteSetting>
+@model List<SiteSettingDto>
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "إعدادات الموقع";
-    var contact = ViewBag.ContactInfo as ContactInfo;
+    var contact = ViewBag.ContactInfo as ContactInfoDto;
 }
 <!-- SITE SETTINGS -->
 <div class="a-card" style="margin-bottom:1.5rem">

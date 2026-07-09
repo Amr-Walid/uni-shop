@@ -68,6 +68,7 @@ builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<ContentService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<CartService>();
+builder.Services.AddScoped<MessageService>();
 
 // ── EMAIL SERVICE ─────────────────────────────────────────────────────────────
 var emailSettings = builder.Configuration.GetSection("EmailSettings").Get<EmailSettings>()

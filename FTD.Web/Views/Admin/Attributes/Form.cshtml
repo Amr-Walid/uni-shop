@@ -1,9 +1,9 @@
-@model ProductAttribute
+@model ProductAttributeDto
 @{
     Layout = "_AdminLayout";
     var isEdit = Model.Id > 0;
     ViewData["Title"] = isEdit ? "تعديل Attribute" : "Attribute جديد";
-    var categories = ViewBag.Categories as List<Category>;
+    var categories = ViewBag.Categories as List<CategoryDto>;
 }
 
 <form action="@(isEdit ? "/Admin/AdminAttributes/Edit/" + Model.Id : "/Admin/AdminAttributes/Create")" method="post">

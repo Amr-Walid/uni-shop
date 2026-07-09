@@ -1,4 +1,4 @@
-@model List<Brand>
+@model List<BrandDto>
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "البراندات";
@@ -42,7 +42,7 @@
                                 <span style="color:var(--a-text3);font-size:12px">—</span>
                             }
                         </td>
-                        <td>@b.Products.Count منتج</td>
+                        <td>@b.ProductsCount منتج</td>
                         <td>@b.SortOrder</td>
                         <td>
                             <span class="status-badge" style="background:@(b.IsActive ? "rgba(0,196,140,.1)" : "rgba(255,59,48,.1)");color:@(b.IsActive ? "#00C48C" : "#FF3B30")">

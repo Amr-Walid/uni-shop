@@ -120,7 +120,7 @@ namespace FTD.Web.ViewModels
         public int PendingOrders { get; set; }
         public decimal TodayRevenue { get; set; }
         public decimal MonthRevenue { get; set; }
-        public List<SalesOrder> RecentOrders { get; set; } = new();
+        public List<SalesOrderDto> RecentOrders { get; set; } = new();
         public List<OrderStatusCount> OrdersByStatus { get; set; } = new();
     }
 
@@ -134,23 +134,23 @@ namespace FTD.Web.ViewModels
     // ── ADMIN: Product Form ───────────────────────────────────────────────────
     public class ProductFormViewModel
     {
-        public Product Product { get; set; } = new();
-        public List<Category> Categories { get; set; } = new();
-        public List<Brand> Brands { get; set; } = new();
-        public List<ProductAttribute> Attributes { get; set; } = new();
+        public ProductDto Product { get; set; } = new();
+        public List<CategoryDto> Categories { get; set; } = new();
+        public List<BrandDto> Brands { get; set; } = new();
+        public List<ProductAttributeDto> Attributes { get; set; } = new();
         public Dictionary<int, int> SelectedAttributeValues { get; set; } = new();
         public IFormFile? MainImage { get; set; }
         public List<IFormFile> ProductImages { get; set; } = new();
-        public List<ProductImage> ExistingImages { get; set; } = new();
+        public List<ProductImageDto> ExistingImages { get; set; } = new();
     }
 
     // ── PRODUCTS PAGE VIEWMODEL ───────────────────────────────────────────────
     public class ProductsPageViewModel
     {
-        public List<Product> Products { get; set; } = new();
-        public List<Category> Categories { get; set; } = new();
-        public List<Brand> Brands { get; set; } = new();
-        public List<ProductAttribute> Attributes { get; set; } = new();
+        public List<ProductDto> Products { get; set; } = new();
+        public List<CategoryDto> Categories { get; set; } = new();
+        public List<BrandDto> Brands { get; set; } = new();
+        public List<ProductAttributeDto> Attributes { get; set; } = new();
 
         // Active filters
         public int? CategoryId { get; set; }
@@ -165,8 +165,8 @@ namespace FTD.Web.ViewModels
     // ── ADMIN: Order Detail ───────────────────────────────────────────────────
     public class OrderDetailViewModel
     {
-        public SalesOrder Order { get; set; } = null!;
-        public List<OrderStatus> AllStatuses { get; set; } = new();
+        public SalesOrderDto Order { get; set; } = null!;
+        public List<OrderStatusDto> AllStatuses { get; set; } = new();
     }
 
     // ── PRODUCTS FILTER HELPERS ───────────────────────────────────────────────
@@ -184,5 +184,19 @@ namespace FTD.Web.ViewModels
         public string ValueAr { get; set; } = "";
         public string ValueEn { get; set; } = "";
         public int Count { get; set; }
+    }
+
+    // ── LAYOUT VIEW COMPONENTS ────────────────────────────────────────────────
+    public class NavbarViewModel
+    {
+        public List<NavigationItemDto> NavItems { get; set; } = new();
+        public List<BrandDto> NavBrands { get; set; } = new();
+    }
+
+    public class FooterViewModel
+    {
+        public List<NavigationItemDto> FootItems { get; set; } = new();
+        public ContactInfoDto? ContactInfo { get; set; }
+        public List<BrandDto> NavBrands { get; set; } = new();
     }
 }

@@ -27,8 +27,16 @@ namespace FTD.Web.Services
 
             if (!string.IsNullOrEmpty(cartData))
             {
-                var rawItems = System.Text.Json.JsonSerializer
-                    .Deserialize<List<RawCartItem>>(cartData) ?? new();
+                List<RawCartItem> rawItems;
+                try
+                {
+                    rawItems = System.Text.Json.JsonSerializer
+                        .Deserialize<List<RawCartItem>>(cartData) ?? new();
+                }
+                catch (System.Text.Json.JsonException)
+                {
+                    rawItems = new List<RawCartItem>();
+                }
 
                 foreach (var raw in rawItems)
                 {
@@ -94,9 +102,16 @@ namespace FTD.Web.Services
         private List<RawCartItem> GetRawItems(ISession session)
         {
             var data = session.GetString(CartKey);
-            return string.IsNullOrEmpty(data)
-                ? new List<RawCartItem>()
-                : System.Text.Json.JsonSerializer.Deserialize<List<RawCartItem>>(data) ?? new();
+            if (string.IsNullOrEmpty(data))
+                return new List<RawCartItem>();
+            try
+            {
+                return System.Text.Json.JsonSerializer.Deserialize<List<RawCartItem>>(data) ?? new();
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return new List<RawCartItem>();
+            }
         }
 
         private void SaveRawItems(ISession session, List<RawCartItem> items)

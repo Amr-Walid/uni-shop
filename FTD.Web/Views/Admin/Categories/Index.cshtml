@@ -1,4 +1,4 @@
-@model List<Category>
+@model List<CategoryDto>
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "الكاتيجوريز";
@@ -33,7 +33,7 @@
               </td>
 
               <td><span style="font-family:monospace;font-size:12px;color:var(--a-blue)">@cat.Slug</span></td>
-              <td>@cat.Products.Count منتج</td>
+              <td>@cat.ProductsCount منتج</td>
               <td>@cat.SortOrder</td>
               <td>
                 <span class="status-badge"
