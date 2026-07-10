@@ -90,6 +90,15 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapGet("/", () => Results.Ok(new 
+{ 
+    Message = "FTD TechZone Web Service API is running successfully!", 
+    Status = "Healthy", 
+    Catalog = "http://localhost:5100/api/products",
+    Categories = "http://localhost:5100/api/products/categories",
+    Brands = "http://localhost:5100/api/products/brands"
+}));
+
 app.MapControllers();
 
 app.Run();
