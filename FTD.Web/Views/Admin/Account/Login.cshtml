@@ -13,7 +13,7 @@
 <style>
 .login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--a-bg);padding:2rem}
 .login-card{background:var(--a-card);border:1px solid var(--a-border);border-radius:20px;padding:2.5rem;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.15)}
-.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:2rem;justify-content:center}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:2rem;justify-content:center;direction:ltr}
 .login-icon{width:48px;height:48px;background:var(--a-blue);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:white}
 .login-title{font-size:1.6rem;font-weight:900;margin-bottom:.3rem;text-align:center;color:var(--a-text)}
 .login-sub{font-size:13px;color:var(--a-text2);text-align:center;margin-bottom:2rem}
@@ -29,8 +29,9 @@
 <body>
 <div class="login-page">
   <div class="login-card">
-    <div class="login-logo">
-      <div class="login-icon">FTD</div>
+    <div class="login-logo" style="color: var(--primary); display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <img src="/images/logo-unishop-icon.png" alt="Uni Shop Logo" style="height: 44px; width: auto; display: block;" />
+        <span style="font-family: 'Plus Jakarta Sans', 'Tajawal', sans-serif; font-weight: 800; font-style: italic; font-size: 24px; color: var(--primary);">Uni Shop</span>
     </div>
     <div class="login-title">لوحة التحكم</div>
     <div class="login-sub">Uni-Shop — Admin Panel</div>

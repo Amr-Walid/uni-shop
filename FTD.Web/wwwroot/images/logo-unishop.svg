@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 56" width="100%" height="100%">
+  <!-- Shopping Cart Handle (Orange) -->
+  <polygon points="11,15 23,15 19,19 11,19" fill="#FF7A00" />
+  
+  <!-- Shopping Cart Wheels (Orange) -->
+  <circle cx="21" cy="42" r="4" fill="#FF7A00" />
+  <circle cx="30" cy="42" r="4" fill="#FF7A00" />
+  
+  <!-- Shopping Cart Body "us" shape (CurrentColor) -->
+  <path d="M 18,19 
+           L 18,33 
+           A 7.5,7.5 0 0,0 33,33 
+           L 33,26 
+           C 33,16 57,16 57,26 
+           C 57,32 42,32 42,39 
+           C 42,46 68,46 68,39
+           L 38,39" 
+        fill="none" 
+        stroke="currentColor" 
+        stroke-width="5" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" />
+        
+  <!-- Wordmark Text "Uni Shop" (CurrentColor) -->
+  <text x="80" y="36" 
+        font-family="'Plus Jakarta Sans', 'Tajawal', sans-serif" 
+        font-weight="800" 
+        font-style="italic" 
+        font-size="22" 
+        fill="currentColor" 
+        letter-spacing="-0.03em">Uni Shop</text>
+</svg>

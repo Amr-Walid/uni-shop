@@ -36,19 +36,21 @@ namespace FTD.Api.Controllers
                     return BadRequest("كمية المنتج يجب أن تكون أكبر من الصفر");
 
                 var product = await _productService.GetByIdAsync(item.ProductId);
-                if (product != null && product.IsActive)
+                if (product == null)
+                    return BadRequest($"المنتج رقم {item.ProductId} غير موجود في الكتالوج");
+                if (!product.IsActive)
+                    return BadRequest($"المنتج ({product.NameAr}) غير متاح حالياً للشراء");
+
+                cartItems.Add(new CartItemDto
                 {
-                    cartItems.Add(new CartItemDto
-                    {
-                        ProductId = product.Id,
-                        ProductName = product.NameAr,
-                        Emoji = product.Emoji,
-                        ImagePath = product.ImagePath,
-                        BrandName = product.BrandName,
-                        UnitPrice = product.Price,
-                        Quantity = item.Quantity
-                    });
-                }
+                    ProductId = product.Id,
+                    ProductName = product.NameAr,
+                    Emoji = product.Emoji,
+                    ImagePath = product.ImagePath,
+                    BrandName = product.BrandName,
+                    UnitPrice = product.Price,
+                    Quantity = item.Quantity
+                });
             }
 
             if (!cartItems.Any())
@@ -74,8 +76,15 @@ namespace FTD.Api.Controllers
                 Notes = request.Notes
             };
 
-            var order = await _orderService.CreateOrderAsync(checkoutDto, cartDto);
-            return Ok(new { success = true, orderNumber = order.OrderNumber });
+            try
+            {
+                var order = await _orderService.CreateOrderAsync(checkoutDto, cartDto);
+                return Ok(new { success = true, orderNumber = order.OrderNumber });
+            }
+            catch (System.InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         public class ApiCheckoutRequest

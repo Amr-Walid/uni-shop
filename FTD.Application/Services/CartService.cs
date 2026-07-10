@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using FTD.Application.DTOs;
 using FTD.Application.Interfaces;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 
 namespace FTD.Application.Services
 {
@@ -13,12 +14,14 @@ namespace FTD.Application.Services
     {
         private readonly IProductService _productService;
         private readonly IContentService _contentService;
+        private readonly IAppDbContext _db;
         private const string CartKey = "ftd_cart";
 
-        public CartService(IProductService productService, IContentService contentService)
+        public CartService(IProductService productService, IContentService contentService, IAppDbContext db)
         {
             _productService = productService;
             _contentService = contentService;
+            _db = db;
         }
 
         public async Task<CartDto> GetCartAsync(ISession session)
@@ -38,21 +41,31 @@ namespace FTD.Application.Services
                     rawItems = new List<RawCartItem>();
                 }
 
-                foreach (var raw in rawItems)
+                if (rawItems.Any())
                 {
-                    var product = await _productService.GetByIdAsync(raw.ProductId);
-                    if (product != null && product.IsActive)
+                    var productIds = rawItems.Select(x => x.ProductId).Distinct().ToList();
+
+                    // Resolve N+1: Query database once for all matching active products
+                    var products = await _db.Products
+                        .Where(p => productIds.Contains(p.Id) && p.IsActive)
+                        .ToListAsync();
+
+                    foreach (var raw in rawItems)
                     {
-                        items.Add(new CartItemDto
+                        var product = products.FirstOrDefault(p => p.Id == raw.ProductId);
+                        if (product != null)
                         {
-                            ProductId = product.Id,
-                            ProductName = product.NameAr,
-                            Emoji = product.Emoji,
-                            ImagePath = product.ImagePath,
-                            BrandName = product.BrandName,
-                            UnitPrice = product.Price,
-                            Quantity = raw.Qty
-                        });
+                            items.Add(new CartItemDto
+                            {
+                                ProductId = product.Id,
+                                ProductName = product.NameAr,
+                                Emoji = product.Emoji,
+                                ImagePath = product.ImagePath,
+                                BrandName = product.BrandName,
+                                UnitPrice = product.Price,
+                                Quantity = raw.Qty
+                            });
+                        }
                     }
                 }
             }

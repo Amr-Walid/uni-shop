@@ -86,11 +86,6 @@ function toggleLang() {
     applyLangVisibility();
 }
 
-// ── NAV SCROLL ────────────────────────────────────────────────────────────────
-window.addEventListener('scroll', function () {
-    var nav = document.getElementById('mainNav');
-    if (nav) nav.classList.toggle('scrolled', window.scrollY > 20);
-});
 
 // ── SEARCH OVERLAY ────────────────────────────────────────────────────────────
 function openSearch() {

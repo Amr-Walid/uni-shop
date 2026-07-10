@@ -1,8 +1,8 @@
 /* ── THEME VARIABLES ── */
 :root,
 [data-theme="dark"] {
-  --a-blue:#007a99;
-  --a-blue-dark:#004d62;
+  --a-blue:#330077;
+  --a-blue-dark:#4a248e;
   --a-bg:#0F1117;
   --a-bg2:#161B26;
   --a-card:#1C2232;
@@ -19,8 +19,8 @@
 }
 
 [data-theme="light"] {
-  --a-blue:#007a99;
-  --a-blue-dark:#004d62;
+  --a-blue:#330077;
+  --a-blue-dark:#4a248e;
   --a-bg:#faf8ff;
   --a-bg2:#ffffff;
   --a-card:#ffffff;
@@ -37,7 +37,7 @@
 }
 
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Sora','Tajawal',sans-serif;background:var(--a-bg);color:var(--a-text);direction:rtl;line-height:1.6;transition:background .2s,color .2s}
+body{font-family:'Plus Jakarta Sans','Tajawal',sans-serif;background:var(--a-bg);color:var(--a-text);direction:rtl;line-height:1.6;transition:background .2s,color .2s}
 a{text-decoration:none;color:inherit}
 
 /* ── LAYOUT ── */

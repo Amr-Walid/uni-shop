@@ -44,6 +44,19 @@ namespace FTD.Application.Services
                 }).ToList()
             };
 
+            // Verify stock and deduct
+            foreach (var item in cart.Items)
+            {
+                var product = await _db.Products.FindAsync(item.ProductId);
+                if (product == null)
+                    throw new InvalidOperationException($"المنتج رقم {item.ProductId} غير موجود في النظام.");
+
+                if (product.Stock < item.Quantity)
+                    throw new InvalidOperationException($"عذراً، الكمية المطلوبة للمنتج ({product.NameAr}) غير متوفرة حالياً في المخزن. المتاح: {product.Stock}");
+
+                product.Stock -= item.Quantity;
+            }
+
             _db.SalesOrders.Add(order);
             await _db.SaveChangesAsync();
 

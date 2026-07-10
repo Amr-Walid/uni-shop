@@ -105,10 +105,17 @@ namespace FTD.Web.Controllers
                 Notes = vm.Notes
             };
 
-            var order = await _orders.CreateOrderAsync(checkoutDto, cartDto);
-            _cart.ClearCart(HttpContext.Session);
-
-            return Redirect("/Order/Confirmation?orderNumber=" + order.OrderNumber);
+            try
+            {
+                var order = await _orders.CreateOrderAsync(checkoutDto, cartDto);
+                _cart.ClearCart(HttpContext.Session);
+                return Redirect("/Order/Confirmation?orderNumber=" + order.OrderNumber);
+            }
+            catch (System.InvalidOperationException ex)
+            {
+                ModelState.AddModelError("", ex.Message);
+                return View(vm);
+            }
         }
 
         // GET /Order/Confirmation/{orderNumber}

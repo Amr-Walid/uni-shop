@@ -46,13 +46,6 @@ namespace FTD.Infrastructure.Data
                 .HasForeignKey(p => p.BrandId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            // Brand FK - optional (no cascade issues)
-            builder.Entity<Product>()
-                .HasOne(p => p.Brand)
-                .WithMany(b => b.Products)
-                .HasForeignKey(p => p.BrandId)
-                .OnDelete(DeleteBehavior.SetNull);
-
             // Fix cascade delete cycles - SQL Server does not allow multiple cascade paths
             builder.Entity<ProductAttributeValue>()
                 .HasOne(av => av.Attribute)

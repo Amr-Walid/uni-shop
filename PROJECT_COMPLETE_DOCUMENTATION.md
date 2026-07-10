@@ -188,6 +188,9 @@ graph TD
 17. **`f1e5a2b`**: `style: integrate modern Aetheric Command Light visual layout and dynamic templates overhaul` (تطبيق المظهر العصري الفاخر Aetheric على الهيرو والتذييل وصفحات المنتجات والسلة والدفع).
 18. **`13e2ee9`**: `style: resolve search overlay layout break by restoring and updating CSS styles` (إصلاح تداخل وتمدد شريط البحث المنبثق).
 19. **`f0a91e5`**: `style: implement smooth scroll spy freeze and replace hero orbits with interactive premium showcase slider` (حل أخطاء انتقال الهيدر وتصميم سلايدر المنتجات التفاعلي وتعديل الفوتر المكسور).
+20. **`f2e177c`**: `style: anchor nav-wrap to left and right bounds to prevent shifting in RTL on scroll` (تأمين حدود الهيدر العرضية لمنع الإزاحة).
+21. **`f8d846c`**: `style: prevent page horizontal shifting by applying overflow-x hidden on main content tag` (منع الإزاحة الأفقية للصفحة مع الحفاظ على الهيدر اللاصق والماركي).
+22. **`9c2db04`**: `refactor: resolve all code review findings (unify appsettings connection strings, optimize N+1 queries in CartService, implement stock deduction in OrderService, clean duplicate mappings and dead JS scroll listeners)` (حل وإصلاح جميع نقاط تقرير مراجعة الكود البرمجي).
 
 ---
 
