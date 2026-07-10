@@ -3,6 +3,7 @@ using FTD.Application.Services;
 using FTD.Infrastructure.Data;
 using FTD.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Threading.Tasks;
@@ -41,9 +42,26 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
     options.Password.RequireUppercase = false;
     options.Password.RequireNonAlphanumeric = false;
     options.SignIn.RequireConfirmedAccount = false;
+
+    // Account lockout — protects the admin login endpoint against brute-force attacks.
+    options.Lockout.AllowedForNewUsers = true;
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
 })
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
+
+// ── RATE LIMITING (Admin login) ───────────────────────────────────────────────
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("admin-login-policy", opt =>
+    {
+        opt.PermitLimit = 5;                       // 5 requests
+        opt.Window = TimeSpan.FromSeconds(30);      // per 30 seconds
+        opt.QueueLimit = 0;
+    });
+    options.RejectionStatusCode = Microsoft.AspNetCore.Http.StatusCodes.Status429TooManyRequests;
+});
 
 // Redirect unauthorized to our custom admin login page
 builder.Services.ConfigureApplicationCookie(options =>
@@ -98,6 +116,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseSession();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

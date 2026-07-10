@@ -37,10 +37,20 @@ namespace FTD.Web.Controllers.Admin
         {
             if (string.IsNullOrEmpty(model.Slug))
                 model.Slug = model.NameEn.ToLower().Replace(" ", "-");
-            if (LogoFile != null) model.LogoPath = await SaveAsync(LogoFile, "brands");
-            if (BannerFile != null) model.BannerPath = await SaveAsync(BannerFile, "brands/banners");
 
-            await _productService.CreateBrandAsync(model);
+            try
+            {
+                if (LogoFile != null) model.LogoPath = await SaveAsync(LogoFile, "brands");
+                if (BannerFile != null) model.BannerPath = await SaveAsync(BannerFile, "brands/banners");
+
+                await _productService.CreateBrandAsync(model);
+            }
+            catch (InvalidOperationException ex)
+            {
+                ModelState.AddModelError("", ex.Message);
+                return View("~/Views/Admin/Brands/Form.cshtml", model);
+            }
+
             TempData["Success"] = "تم إضافة البراند";
             return RedirectToAction(nameof(Index));
         }
@@ -64,10 +74,19 @@ namespace FTD.Web.Controllers.Admin
             if (string.IsNullOrEmpty(model.Slug))
                 model.Slug = model.NameEn.ToLower().Replace(" ", "-");
 
-            if (LogoFile != null) model.LogoPath = await SaveAsync(LogoFile, "brands");
-            if (BannerFile != null) model.BannerPath = await SaveAsync(BannerFile, "brands/banners");
+            try
+            {
+                if (LogoFile != null) model.LogoPath = await SaveAsync(LogoFile, "brands");
+                if (BannerFile != null) model.BannerPath = await SaveAsync(BannerFile, "brands/banners");
 
-            await _productService.UpdateBrandAsync(id, model);
+                await _productService.UpdateBrandAsync(id, model);
+            }
+            catch (InvalidOperationException ex)
+            {
+                ModelState.AddModelError("", ex.Message);
+                return View("~/Views/Admin/Brands/Form.cshtml", model);
+            }
+
             TempData["Success"] = "تم تحديث البراند";
             return RedirectToAction(nameof(Index));
         }

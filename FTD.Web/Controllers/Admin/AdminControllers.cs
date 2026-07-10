@@ -83,19 +83,31 @@ namespace FTD.Web.Controllers.Admin
             if (string.IsNullOrEmpty(vm.Product.Slug))
                 vm.Product.Slug = GenerateSlug(vm.Product.NameEn);
 
-            if (vm.MainImage != null && vm.MainImage.Length > 0)
-                vm.Product.ImagePath = await SaveImageAsync(vm.MainImage, "products");
+            try
+            {
+                if (vm.MainImage != null && vm.MainImage.Length > 0)
+                    vm.Product.ImagePath = await SaveImageAsync(vm.MainImage, "products");
 
-            var additionalImages = new List<ProductImageDto>();
-            if (vm.ProductImages != null)
-                foreach (var img in vm.ProductImages.Take(3))
-                    if (img.Length > 0)
-                    {
-                        var path = await SaveImageAsync(img, "products");
-                        additionalImages.Add(new ProductImageDto { ImagePath = path });
-                    }
+                var additionalImages = new List<ProductImageDto>();
+                if (vm.ProductImages != null)
+                    foreach (var img in vm.ProductImages.Take(3))
+                        if (img.Length > 0)
+                        {
+                            var path = await SaveImageAsync(img, "products");
+                            additionalImages.Add(new ProductImageDto { ImagePath = path });
+                        }
 
-            await _productService.CreateProductAsync(vm.Product, additionalImages, vm.SelectedAttributeValues);
+                await _productService.CreateProductAsync(vm.Product, additionalImages, vm.SelectedAttributeValues);
+            }
+            catch (InvalidOperationException ex)
+            {
+                ModelState.AddModelError("", ex.Message);
+                vm.Categories = await _productService.GetActiveCategoriesAsync();
+                var brandsRetry = await _productService.GetAllBrandsAsync();
+                vm.Brands = brandsRetry.Where(b => b.IsActive).ToList();
+                vm.Attributes = await _productService.GetAttributesWithDetailsAsync(null);
+                return View("~/Views/Admin/Products/Form.cshtml", vm);
+            }
 
             TempData["Success"] = "تم إضافة المنتج بنجاح";
             return RedirectToAction(nameof(Index));
@@ -135,21 +147,33 @@ namespace FTD.Web.Controllers.Admin
             if (string.IsNullOrEmpty(vm.Product.Slug))
                 vm.Product.Slug = GenerateSlug(vm.Product.NameEn);
 
-            if (vm.MainImage != null && vm.MainImage.Length > 0)
-                vm.Product.ImagePath = await SaveImageAsync(vm.MainImage, "products");
-
-            var additionalImages = new List<ProductImageDto>();
-            if (vm.ProductImages != null)
+            try
             {
-                foreach (var img in vm.ProductImages.Take(3))
-                    if (img.Length > 0)
-                    {
-                        var path = await SaveImageAsync(img, "products");
-                        additionalImages.Add(new ProductImageDto { ImagePath = path });
-                    }
-            }
+                if (vm.MainImage != null && vm.MainImage.Length > 0)
+                    vm.Product.ImagePath = await SaveImageAsync(vm.MainImage, "products");
 
-            await _productService.UpdateProductAsync(id, vm.Product, additionalImages, vm.SelectedAttributeValues);
+                var additionalImages = new List<ProductImageDto>();
+                if (vm.ProductImages != null)
+                {
+                    foreach (var img in vm.ProductImages.Take(3))
+                        if (img.Length > 0)
+                        {
+                            var path = await SaveImageAsync(img, "products");
+                            additionalImages.Add(new ProductImageDto { ImagePath = path });
+                        }
+                }
+
+                await _productService.UpdateProductAsync(id, vm.Product, additionalImages, vm.SelectedAttributeValues);
+            }
+            catch (InvalidOperationException ex)
+            {
+                ModelState.AddModelError("", ex.Message);
+                vm.Categories = await _productService.GetActiveCategoriesAsync();
+                var brandsRetry = await _productService.GetAllBrandsAsync();
+                vm.Brands = brandsRetry.Where(b => b.IsActive).ToList();
+                vm.Attributes = await _productService.GetAttributesWithDetailsAsync(vm.Product.CategoryId);
+                return View("~/Views/Admin/Products/Form.cshtml", vm);
+            }
 
             TempData["Success"] = "تم تحديث المنتج بنجاح";
             return RedirectToAction(nameof(Index));
@@ -407,12 +431,21 @@ namespace FTD.Web.Controllers.Admin
         }
 
         [HttpPost, ValidateAntiForgeryToken, AllowAnonymous]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("admin-login-policy")]
         public async Task<IActionResult> Login(string email, string password, string? returnUrl = null)
         {
-            var result = await _signIn.PasswordSignInAsync(email, password, isPersistent: true, lockoutOnFailure: false);
+            // lockoutOnFailure: true — enables Identity's built-in account lockout after
+            // repeated failed attempts (configured via options.Lockout in Program.cs),
+            // protecting against brute-force attacks on the admin login endpoint.
+            var result = await _signIn.PasswordSignInAsync(email, password, isPersistent: true, lockoutOnFailure: true);
             if (result.Succeeded)
                 return LocalRedirect(returnUrl ?? "/Admin/Dashboard");
-            ModelState.AddModelError("", "بيانات الدخول غير صحيحة");
+
+            if (result.IsLockedOut)
+                ModelState.AddModelError("", "تم قفل الحساب مؤقتاً بسبب محاولات دخول فاشلة متكررة. حاول مرة أخرى بعد بضع دقائق.");
+            else
+                ModelState.AddModelError("", "بيانات الدخول غير صحيحة");
+
             ViewBag.ReturnUrl = returnUrl;
             return View("~/Views/Admin/Account/Login.cshtml");
         }
