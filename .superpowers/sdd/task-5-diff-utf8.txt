@@ -1,0 +1,136 @@
+﻿03dd011 feat: implement public orders checkout and contact messages api endpoints
+ FTD.Api/Controllers/ContactController.cs | 24 ++++++++
+ FTD.Api/Controllers/OrdersController.cs  | 96 ++++++++++++++++++++++++++++++++
+ 2 files changed, 120 insertions(+)
+diff --git a/FTD.Api/Controllers/ContactController.cs b/FTD.Api/Controllers/ContactController.cs
+new file mode 100644
+index 0000000..360179f
+--- /dev/null
++++ b/FTD.Api/Controllers/ContactController.cs
+@@ -0,0 +1,24 @@
++using FTD.Application.DTOs;
++using FTD.Application.Interfaces;
++using Microsoft.AspNetCore.Mvc;
++
++namespace FTD.Api.Controllers
++{
++    [ApiController]
++    [Route("api/[controller]")]
++    public class ContactController : ControllerBase
++    {
++        private readonly IMessageService _messageService;
++        public ContactController(IMessageService messageService) => _messageService = messageService;
++
++        [HttpPost]
++        public async Task<IActionResult> SendMessage([FromBody] ContactMessageDto dto)
++        {
++            if (string.IsNullOrEmpty(dto.Name) || string.IsNullOrEmpty(dto.Email) || string.IsNullOrEmpty(dto.Message))
++                return BadRequest("╪¼┘à┘è╪╣ ╪º┘ä╪¡┘é┘ê┘ä ╪º┘ä╪Ñ┘ä╪▓╪º┘à┘è╪⌐ ┘à╪╖┘ä┘ê╪¿╪⌐ (╪º┘ä╪º╪│┘à╪î ╪º┘ä╪¿╪▒┘è╪» ╪º┘ä╪Ñ┘ä┘â╪¬╪▒┘ê┘å┘è╪î ╪º┘ä╪▒╪│╪º┘ä╪⌐)");
++
++            await _messageService.SaveMessageAsync(dto);
++            return Ok(new { success = true, message = "╪¬┘à ╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪▒╪│╪º┘ä╪⌐ ╪¿┘å╪¼╪º╪¡" });
++        }
++    }
++}
+diff --git a/FTD.Api/Controllers/OrdersController.cs b/FTD.Api/Controllers/OrdersController.cs
+new file mode 100644
+index 0000000..08997a6
+--- /dev/null
++++ b/FTD.Api/Controllers/OrdersController.cs
+@@ -0,0 +1,96 @@
++using FTD.Application.DTOs;
++using FTD.Application.Interfaces;
++using Microsoft.AspNetCore.Mvc;
++
++namespace FTD.Api.Controllers
++{
++    [ApiController]
++    [Route("api/[controller]")]
++    public class OrdersController : ControllerBase
++    {
++        private readonly IOrderService _orderService;
++        private readonly IProductService _productService;
++        private readonly IContentService _contentService;
++
++        public OrdersController(IOrderService orderService, IProductService productService, IContentService contentService)
++        {
++            _orderService = orderService;
++            _productService = productService;
++            _contentService = contentService;
++        }
++
++        [HttpPost("checkout")]
++        public async Task<IActionResult> Checkout([FromBody] ApiCheckoutRequest request)
++        {
++            if (request.Items == null || !request.Items.Any())
++                return BadRequest("╪│┘ä╪⌐ ╪º┘ä╪¬╪│┘ê┘é ┘ü╪º╪▒╪║╪⌐");
++
++            if (string.IsNullOrEmpty(request.CustomerName) || string.IsNullOrEmpty(request.CustomerPhone) || string.IsNullOrEmpty(request.Address))
++                return BadRequest("╪º┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪┤╪«╪╡┘è╪⌐ ╪º┘ä╪ú╪│╪º╪│┘è╪⌐ ┘à╪╖┘ä┘ê╪¿╪⌐ (╪º┘ä╪º╪│┘à╪î ╪º┘ä┘ç╪º╪¬┘ü╪î ╪º┘ä╪╣┘å┘ê╪º┘å)");
++
++            // Build CartDto programmatically based on sent items
++            var cartItems = new List<CartItemDto>();
++            foreach (var item in request.Items)
++            {
++                var product = await _productService.GetByIdAsync(item.ProductId);
++                if (product != null && product.IsActive)
++                {
++                    cartItems.Add(new CartItemDto
++                    {
++                        ProductId = product.Id,
++                        ProductName = product.NameAr,
++                        Emoji = product.Emoji,
++                        ImagePath = product.ImagePath,
++                        BrandName = product.BrandName,
++                        UnitPrice = product.Price,
++                        Quantity = item.Quantity
++                    });
++                }
++            }
++
++            if (!cartItems.Any())
++                return BadRequest("┘ä╪º ╪¬┘ê╪¼╪» ┘à┘å╪¬╪¼╪º╪¬ ╪╡╪º┘ä╪¡╪⌐ ┘ü┘è ╪│┘ä╪⌐ ╪º┘ä╪¬╪│┘ê┘é");
++
++            var shippingFeeStr = await _contentService.GetSettingAsync("shipping.fee", "150");
++            var shippingFee = decimal.TryParse(shippingFeeStr, out var fee) ? fee : 150m;
++
++            var freeAboveStr = await _contentService.GetSettingAsync("shipping.free.above", "5000");
++            var freeAbove = decimal.TryParse(freeAboveStr, out var fa) ? fa : 5000m;
++
++            var cartDto = new CartDto { Items = cartItems, ShippingFee = shippingFee };
++            if (cartDto.SubTotal >= freeAbove) cartDto.ShippingFee = 0;
++
++            var checkoutDto = new CheckoutDto
++            {
++                CustomerName = request.CustomerName,
++                CustomerPhone = request.CustomerPhone,
++                CustomerEmail = request.CustomerEmail,
++                Address = request.Address,
++                City = request.City,
++                Governorate = request.Governorate,
++                Notes = request.Notes
++            };
++
++            var order = await _orderService.CreateOrderAsync(checkoutDto, cartDto);
++            return Ok(new { success = true, orderNumber = order.OrderNumber });
++        }
++
++        public class ApiCheckoutRequest
++        {
++            public string CustomerName { get; set; } = "";
++            public string CustomerPhone { get; set; } = "";
++            public string? CustomerEmail { get; set; }
++            public string Address { get; set; } = "";
++            public string City { get; set; } = "";
++            public string Governorate { get; set; } = "";
++            public string? Notes { get; set; }
++            public List<ApiCartItem> Items { get; set; } = new();
++        }
++
++        public class ApiCartItem
++        {
++            public int ProductId { get; set; }
++            public int Quantity { get; set; }
++        }
++    }
++}
