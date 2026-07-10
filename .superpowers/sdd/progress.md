@@ -21,6 +21,8 @@
   * Task 8: complete (commits 907bdf1..5ac2313, review clean)
 - [x] Task 9: Implement Public Catalog Endpoints (Products, Categories, Brands)
   * Task 9: complete (commits 5ac2313..47bdc1f, review clean)
-- [ ] Task 10: Implement Public Checkout and Contact Endpoints
-- [ ] Task 11: Implement Secured Admin Dashboard and Orders Management API
+- [x] Task 10: Implement Public Checkout and Contact Endpoints
+  * Task 10: complete (commits 47bdc1f..18d6656, review clean)
+- [x] Task 11: Implement Secured Admin Dashboard and Orders Management API
+  * Task 11: complete (commits 18d6656..6d81387, review clean)
 
