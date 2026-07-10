@@ -6,17 +6,17 @@
             <span>Uni<strong>-Shop</strong></span>
         </a>
         <div class="nav-links">
-            <a href="/" class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")">
+            <a href="/" class="nav-link" id="nav-home">
                 <span data-ar>الرئيسية</span><span data-en>Home</span>
             </a>
-            <a href="/#about" class="nav-link">
+            <a href="/#about" class="nav-link" id="nav-about">
                 <span data-ar>عننا</span><span data-en>About</span>
             </a>
-            <a href="/Products" class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Products" ? "active" : "")">
+            <a href="/Products" class="nav-link" id="nav-products">
                 <span data-ar>المنتجات</span><span data-en>Products</span>
                 <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </a>
-            <a href="/#contact" class="nav-link">
+            <a href="/#contact" class="nav-link" id="nav-contact">
                 <span data-ar>تواصل معنا</span><span data-en>Contact</span>
             </a>
         </div>
@@ -48,59 +48,93 @@
 <script>
     function toggleMobileMenu() {
         var menu = document.getElementById('mobile-menu');
-        if (menu) {
-            menu.classList.toggle('open');
-        }
+        if (menu) menu.classList.toggle('open');
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        var navLinks = document.querySelectorAll('.nav-link');
-        var hero = document.querySelector('.hero');
-        
-        // Only run spy if hero exists (we are on home page)
-        if (hero) {
-            var sections = {
-                'home': hero,
-                'about': document.getElementById('about'),
-                'products': document.getElementById('featured'),
-                'contact': document.getElementById('contact')
-            };
+    (function () {
+        var path = window.location.pathname;
+        var hash = window.location.hash;
 
-            function updateActiveLink() {
-                var scrollPos = window.scrollY || document.documentElement.scrollTop;
-                var triggerOffset = 220; 
+        function setActive(id) {
+            document.querySelectorAll('.nav-link').forEach(function (l) { l.classList.remove('active'); });
+            var el = document.getElementById(id);
+            if (el) el.classList.add('active');
+        }
 
-                var currentSection = 'home';
-                
-                if (sections.contact && scrollPos >= (sections.contact.offsetTop - triggerOffset)) {
-                    currentSection = 'contact';
-                } else if (sections.about && scrollPos >= (sections.about.offsetTop - triggerOffset)) {
-                    currentSection = 'about';
-                } else if (sections.products && scrollPos >= (sections.products.offsetTop - triggerOffset)) {
-                    currentSection = 'products';
-                } else {
-                    currentSection = 'home';
-                }
+        // ── Non-home pages: set by route ─────────────────────────────────────
+        if (path !== '/' && path !== '') {
+            if (path.indexOf('/Products') === 0) setActive('nav-products');
+            return;
+        }
 
-                navLinks.forEach(function(link) {
-                    link.classList.remove('active');
-                    
-                    var href = link.getAttribute('href');
-                    if (currentSection === 'home' && href === '/') {
-                        link.classList.add('active');
-                    } else if (currentSection === 'about' && href.indexOf('#about') !== -1) {
-                        link.classList.add('active');
-                    } else if (currentSection === 'products' && href.indexOf('/Products') !== -1) {
-                        link.classList.add('active');
-                    } else if (currentSection === 'contact' && href.indexOf('#contact') !== -1) {
-                        link.classList.add('active');
-                    }
-                });
+        // ── Home page ────────────────────────────────────────────────────────
+
+        // Set active immediately from URL hash — handles cross-page navigation
+        // (browser natively scrolls to hash, no JS scroll events involved)
+        if      (hash === '#about')   setActive('nav-about');
+        else if (hash === '#contact') setActive('nav-contact');
+        else                          setActive('nav-home');
+
+        // Scroll spy — only for manual scrolling AFTER the page loads
+        window.addEventListener('load', function () {
+            var aboutEl    = document.getElementById('about');
+            var featuredEl = document.getElementById('featured');
+            var contactEl  = document.getElementById('contact');
+
+            function getActiveId() {
+                var scrollY     = window.scrollY + 180;
+                var contactTop  = contactEl  ? contactEl.getBoundingClientRect().top  + window.scrollY : Infinity;
+                var aboutTop    = aboutEl    ? aboutEl.getBoundingClientRect().top    + window.scrollY : Infinity;
+                var featuredTop = featuredEl ? featuredEl.getBoundingClientRect().top + window.scrollY : Infinity;
+                if (contactEl  && scrollY >= contactTop)  return 'nav-contact';
+                if (aboutEl    && scrollY >= aboutTop)    return 'nav-about';
+                if (featuredEl && scrollY >= featuredTop) return 'nav-products';
+                return 'nav-home';
             }
 
-            window.addEventListener('scroll', updateActiveLink);
-            window.addEventListener('hashchange', updateActiveLink);
-            updateActiveLink();
-        }
-    });
+            var isNavigating = false;
+
+            window.addEventListener('scroll', function () {
+                if (!isNavigating) setActive(getActiveId());
+            }, { passive: true });
+
+            // Click on hash links: freeze spy, smooth scroll, unfreeze when done
+            document.querySelectorAll('a[href^="/#"], a[href="/"]').forEach(function (link) {
+                link.addEventListener('click', function (e) {
+                    var href = this.getAttribute('href');
+                    var targetId, targetSelector;
+
+                    if      (href === '/' || href === '/#') { targetId = 'nav-home';    targetSelector = null; }
+                    else if (href === '/#about')            { targetId = 'nav-about';   targetSelector = '#about'; }
+                    else if (href === '/#contact')          { targetId = 'nav-contact'; targetSelector = '#contact'; }
+                    else return;
+
+                    setActive(targetId);
+
+                    if (targetSelector) {
+                        e.preventDefault();
+                        var el = document.querySelector(targetSelector);
+                        if (el) {
+                            isNavigating = true;
+                            el.scrollIntoView({ behavior: 'smooth' });
+                            window.history.pushState(null, '', href);
+
+                            if ('onscrollend' in window) {
+                                window.addEventListener('scrollend', function () {
+                                    isNavigating = false;
+                                }, { once: true });
+                            } else {
+                                var lastY = window.scrollY, stable = 0;
+                                var t = setInterval(function () {
+                                    if (Math.abs(window.scrollY - lastY) < 2) {
+                                        if (++stable >= 3) { clearInterval(t); isNavigating = false; }
+                                    } else { stable = 0; lastY = window.scrollY; }
+                                }, 50);
+                            }
+                        }
+                    }
+                });
+            });
+        });
+    })();
 </script>

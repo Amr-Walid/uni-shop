@@ -52,61 +52,119 @@
             </div>
 
             <div class="hero-visual">
-                <div class="orbit-frame o1"></div>
-                <div class="orbit-frame o2"></div>
-                <div class="orbit-frame o3"></div>
-                <div class="hero-hub">
-                    @if (!string.IsNullOrEmpty(heroProduct.ImagePath))
-                    {
-                        <img src="@heroProduct.ImagePath" alt="@heroProduct.NameEn" style="max-height:160px;object-fit:contain;z-index:1;animation:floaty 6s ease-in-out infinite;">
-                    }
-                    else
-                    {
-                        <span style="font-size:72px;z-index:1;animation:floaty 6s ease-in-out infinite;">@(heroProduct.Emoji ?? "🍃")</span>
-                    }
-                </div>
-                <div class="hero-product-card">
-                    <div class="thumb">
-                        <span class="badge badge-hot">@(heroProduct.Badge ?? "HOT")</span>
-                        @if (!string.IsNullOrEmpty(heroProduct.ImagePath))
+                <div class="showcase-slider">
+                    @{
+                        var featuredList = Model.FeaturedProducts.Take(5).ToList();
+                        if (!featuredList.Any())
                         {
-                            <img src="@heroProduct.ImagePath" alt="@heroProduct.NameEn" style="max-height:100px;object-fit:contain;">
+                            featuredList.Add(heroProduct);
                         }
-                        else
-                        {
-                            <span style="font-size:48px;">@(heroProduct.Emoji ?? "🍃")</span>
-                        }
+                    }
+
+                    @for (int i = 0; i < featuredList.Count; i++)
+                    {
+                        var prod = featuredList[i];
+                        <div class="showcase-slide @(i == 0 ? "active" : "")" data-slide-index="@i">
+                            <div class="showcase-card">
+                                <div class="showcase-badge">
+                                    <span class="dot-live"></span>
+                                    <span>@prod.BrandName?.ToUpper()</span>
+                                </div>
+                                <div class="showcase-media">
+                                    @if (!string.IsNullOrEmpty(prod.ImagePath))
+                                    {
+                                        <img src="@prod.ImagePath" alt="@prod.NameEn">
+                                    }
+                                    else
+                                    {
+                                        <span class="fallback-emoji">@(prod.Emoji ?? "📦")</span>
+                                    }
+                                </div>
+                                <div class="showcase-info">
+                                    <h3 class="showcase-title">
+                                        <span data-ar>@prod.NameAr</span>
+                                        <span data-en>@prod.NameEn</span>
+                                    </h3>
+                                    <p class="showcase-desc">
+                                        <span data-ar>@prod.ShortDescAr</span>
+                                        <span data-en>@prod.ShortDescEn</span>
+                                    </p>
+                                    <div class="showcase-footer">
+                                        <div class="showcase-price">
+                                            <span class="currency">EGP</span>
+                                            <span class="amt">@prod.Price.ToString("N0")</span>
+                                        </div>
+                                        <a href="/products/@prod.Slug" class="showcase-btn">
+                                            <span data-ar>تصفح المنتج</span><span data-en>View Product</span>
+                                            <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Slider Controls -->
+                    <div class="showcase-controls">
+                        <button class="ctrl-btn prev" onclick="prevShowcaseSlide()" aria-label="Previous Slide">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                        </button>
+                        <div class="showcase-dots">
+                            @for (int i = 0; i < featuredList.Count; i++)
+                            {
+                                <button class="dot-indicator @(i == 0 ? "active" : "")" onclick="setShowcaseSlide(@i)" aria-label="Go to slide @(i+1)"></button>
+                            }
+                        </div>
+                        <button class="ctrl-btn next" onclick="nextShowcaseSlide()" aria-label="Next Slide">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </button>
                     </div>
-                    <div class="brand">@heroProduct.BrandName?.ToUpper() · SKU @heroProduct.Id.ToString("D2")</div>
-                    <div class="name">
-                        <span data-ar>@heroProduct.NameAr</span>
-                        <span data-en>@heroProduct.NameEn</span>
-                    </div>
-                    <div class="price">EGP @heroProduct.Price.ToString("N0")</div>
-                    <a href="/products/@heroProduct.Slug" class="cta"><span data-ar>عرض المنتج ←</span><span data-en>View Product →</span></a>
-                </div>
-                <div class="hero-panel">
-                    <div class="label"><span data-ar>شحن فوري · مستودع مصر</span><span data-en>Uptime · Egypt Warehouse</span></div>
-                    <div class="value">99.8<span class="unit">%</span></div>
-                    <svg class="spark" viewBox="0 0 200 24" preserveAspectRatio="none">
-                        <defs>
-                            <linearGradient id="spark-grad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0" stop-color="#00d4ff" stop-opacity="0.5"/>
-                                <stop offset="1" stop-color="#00d4ff" stop-opacity="0"/>
-                            </linearGradient>
-                        </defs>
-                        <path class="fill" d="M0,20 L10,18 L25,14 L40,16 L55,10 L70,12 L85,8 L100,11 L115,6 L130,9 L150,4 L165,7 L180,5 L200,8 L200,24 L0,24 Z"/>
-                        <path d="M0,20 L10,18 L25,14 L40,16 L55,10 L70,12 L85,8 L100,11 L115,6 L130,9 L150,4 L165,7 L180,5 L200,8"/>
-                    </svg>
-                </div>
-                <div class="scroll-indicator">
-                    <span>Scroll</span>
-                    <svg width="10" height="24" viewBox="0 0 10 24" fill="none"><path d="M5 2v20M2 18l3 3 3-3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
                 </div>
             </div>
         </div>
     </div>
 </section>
+
+<script>
+    var currentShowcaseIndex = 0;
+    var totalShowcaseSlides = @featuredList.Count;
+    var showcaseAutoplayTimer = null;
+
+    function setShowcaseSlide(index) {
+        if (index < 0 || index >= totalShowcaseSlides) return;
+        currentShowcaseIndex = index;
+        
+        document.querySelectorAll('.showcase-slide').forEach(function(slide, idx) {
+            slide.classList.toggle('active', idx === index);
+        });
+
+        document.querySelectorAll('.dot-indicator').forEach(function(dot, idx) {
+            dot.classList.toggle('active', idx === index);
+        });
+
+        resetShowcaseAutoplay();
+    }
+
+    function nextShowcaseSlide() {
+        var nextIndex = (currentShowcaseIndex + 1) % totalShowcaseSlides;
+        setShowcaseSlide(nextIndex);
+    }
+
+    function prevShowcaseSlide() {
+        var prevIndex = (currentShowcaseIndex - 1 + totalShowcaseSlides) % totalShowcaseSlides;
+        setShowcaseSlide(prevIndex);
+    }
+
+    function resetShowcaseAutoplay() {
+        clearInterval(showcaseAutoplayTimer);
+        showcaseAutoplayTimer = setInterval(nextShowcaseSlide, 5000); // switch every 5 seconds
+    }
+
+    // Initialize autoplay on load
+    document.addEventListener('DOMContentLoaded', function() {
+        resetShowcaseAutoplay();
+    });
+</script>
 
 <!-- ============ BRAND MARQUEE ============ -->
 <section class="marquee">

@@ -243,24 +243,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
     });
 
-    // Smooth scroll for hash links
-    document.querySelectorAll('a[href^="/#"]').forEach(function (link) {
-        link.addEventListener('click', function (e) {
-            var hash = this.getAttribute('href').substring(1);
-            var el = document.querySelector(hash);
-            if (el) {
-                e.preventDefault();
-                el.scrollIntoView({ behavior: 'smooth' });
-                window.history.pushState(null, '', hash);
-            }
-        });
-    });
+    // Hash-link smooth scroll is handled by the navbar component script
 
-    // If on home page and has hash
-    if (location.hash) {
-        setTimeout(function () {
-            var el = document.querySelector(location.hash);
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-        }, 150);
-    }
+    // Note: hash-on-load scroll handled natively by the browser
 });

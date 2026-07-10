@@ -186,6 +186,8 @@ graph TD
 15. **`179e057`**: `style: enhance UI aesthetics with custom indigo rose color system and glassmorphism styling` (ترقية التنسيق البصري وكروت المنتجات وشريط الملاحة).
 16. **`3c9e036`**: `checkpoint: backup current state before applying structural overhaul` (أخذ لقطة احتياطية قبل التعديلات الهيكلية الكبيرة).
 17. **`f1e5a2b`**: `style: integrate modern Aetheric Command Light visual layout and dynamic templates overhaul` (تطبيق المظهر العصري الفاخر Aetheric على الهيرو والتذييل وصفحات المنتجات والسلة والدفع).
+18. **`13e2ee9`**: `style: resolve search overlay layout break by restoring and updating CSS styles` (إصلاح تداخل وتمدد شريط البحث المنبثق).
+19. **`f0a91e5`**: `style: implement smooth scroll spy freeze and replace hero orbits with interactive premium showcase slider` (حل أخطاء انتقال الهيدر وتصميم سلايدر المنتجات التفاعلي وتعديل الفوتر المكسور).
 
 ---
 
