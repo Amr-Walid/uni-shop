@@ -10,400 +10,403 @@
 }
 
 @Html.AntiForgeryToken()
-@* ── BRAND/CATEGORY HERO ── *@
-@if (brand != null)
-{
-    if (!string.IsNullOrEmpty(brand.BannerPath))
-    {
-        <div class="brand-hero" style="background-image:url('@brand.BannerPath');background-size:cover;background-position:center;min-height:220px">
-          <div style="position:absolute;inset:0;background:rgba(10,13,20,.65)"></div>
-          <div style="position:relative;z-index:1;text-align:center">
-            <h1 class="brand-hero-title"><span data-ar>@brand.NameAr</span><span data-en>@brand.NameEn</span></h1>
-            @if (!string.IsNullOrEmpty(brand.DescAr))
-            {
-                <p class="brand-hero-desc"><span data-ar>@brand.DescAr</span><span data-en>@brand.DescEn</span></p>
-            }
-          </div>
+
+<main>
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="/"><span data-ar>الرئيسية</span><span data-en>Home</span></a>
+            <span class="sep">/</span>
+            <span class="current"><span data-ar>المنتجات</span><span data-en>Products</span></span>
         </div>
-    }
-    else
-    {
-        <div class="brand-hero">
-          <div class="brand-hero-icon">📱</div>
-          <h1 class="brand-hero-title">
-            <span data-ar>@brand.NameAr</span><span data-en>@brand.NameEn</span>
-          </h1>
-          <p class="brand-hero-desc">
-            <span data-ar>@(brand.DescAr ?? "اكتشف مجموعتنا الكاملة من أحدث الأجهزة التقنية")</span>
-            <span data-en>@(brand.DescEn ?? "Discover our complete collection of the latest tech devices")</span>
-          </p>
-        </div>
-    }
-}
-else
-{
-    <div style="padding-top:var(--nav-h);background:var(--dark)">
-      <div style="padding:2.5rem 5%;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
-        <div>
-          <h1 style="color:white;font-size:1.8rem;font-weight:900">
-            <span data-ar>@(cat != null ? cat.NameAr : "كل المنتجات")</span>
-            <span data-en>@(cat != null ? cat.NameEn : "All Products")</span>
-          </h1>
-        </div>
-        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-          <a href="/Products" class="filter-btn @(Model.BrandFilter == null && Model.CategoryFilter == null ? "active" : "")" style="color:white;border-color:rgba(255,255,255,.2)">
-            <span data-ar>الكل</span><span data-en>All</span>
-          </a>
-          @foreach (var b in Model.Brands)
-          {
-              <a href="/Products?brand=@b.Slug" class="filter-btn @(Model.BrandFilter == b.Slug ? "active" : "")" style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.15)">@b.NameEn</a>
-          }
-        </div>
-      </div>
-    </div>
-}
-
-@* ── MAIN LAYOUT ── *@
-<div style="padding:2rem 5% 4rem;display:flex;gap:2rem;align-items:flex-start;max-width:1400px;margin:0 auto">
-
-  @* ── FILTERS SIDEBAR ── *@
-  <aside id="filtersSidebar" style="width:240px;flex-shrink:0;position:sticky;top:calc(var(--nav-h) + 1rem)">
-    <div style="background:white;border:1px solid var(--border);border-radius:var(--rl);overflow:hidden">
-      <div style="padding:1rem 1.2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-        <span style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text2)">
-          <span data-ar>تصفية النتائج</span><span data-en>Filter Results</span>
-        </span>
-        <button onclick="clearAllFilters()" id="clearBtn"
-                style="font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:var(--font);font-weight:700;display:none">
-          <span data-ar>مسح الكل</span><span data-en>Clear All</span>
-        </button>
-      </div>
-
-      @* Active filter tags *@
-      <div id="activeTags" style="padding:.6rem 1.2rem;display:none;flex-wrap:wrap;gap:5px;background:rgba(26,107,255,.04);border-bottom:1px solid var(--border)"></div>
-
-      @* Category filter — hidden on brand pages *@
-      @if (Model.CurrentBrand == null)
-      {
-          <div class="flt-group" id="flt-cat">
-            <div class="flt-group-hdr" onclick="toggleFltGroup('flt-cat')">
-              <span data-ar>التصنيفات</span><span data-en>Category</span>
-              <span class="flt-arrow">▾</span>
-            </div>
-            <div class="flt-opts">
-              @foreach (var c in Model.Categories)
-              {
-                  var isCatActive = Model.CategoryFilter == c.Slug;
-                  <label class="flt-opt @(isCatActive ? "checked" : "")" onclick="toggleCatFilter('@c.Slug', this)">
-                    <span class="flt-chk"></span>
-                    <span class="flt-lbl"><span data-ar>@c.NameAr</span><span data-en>@c.NameEn</span></span>
-                  </label>
-              }
-            </div>
-          </div>
-      }
-
-      @* Brand filter (only if not already on brand page) *@
-      @if (brand == null)
-      {
-          <div class="flt-group" id="flt-brand">
-            <div class="flt-group-hdr" onclick="toggleFltGroup('flt-brand')">
-              <span data-ar>البراند</span><span data-en>Brand</span>
-              <span class="flt-arrow">▾</span>
-            </div>
-            <div class="flt-opts">
-              @foreach (var b in Model.Brands)
-              {
-                  var isBrandActive = Model.BrandFilter == b.Slug;
-                  <label class="flt-opt @(isBrandActive ? "checked" : "")" onclick="toggleBrandFilter('@b.Slug', this)">
-                    <span class="flt-chk"></span>
-                    <span class="flt-lbl">@b.NameEn</span>
-                  </label>
-              }
-            </div>
-          </div>
-      }
-
-      @* Attribute filters (dynamic from available products) *@
-      <div id="attrFilters">
-        @foreach (var grp in Model.AttributeGroups)
-        {
-            <div class="flt-group" id="flt-attr-@grp.AttributeId">
-              <div class="flt-group-hdr" onclick="toggleFltGroup('flt-attr-@grp.AttributeId')">
-                <span data-ar>@grp.NameAr</span><span data-en>@grp.NameEn</span>
-                <span class="flt-arrow">▾</span>
-              </div>
-              <div class="flt-opts">
-                @foreach (var opt in grp.Options)
-                {
-                    var isActive = Model.SelectedAttrValues.Contains(opt.ValueId);
-                    <label class="flt-opt @(isActive ? "checked" : "")" onclick="toggleAttrFilter(@opt.ValueId, this)">
-                      <span class="flt-chk"></span>
-                      <span class="flt-lbl"><span data-ar>@opt.ValueAr</span><span data-en>@opt.ValueEn</span></span>
-                      <span class="flt-count">@opt.Count</span>
-                    </label>
-                }
-              </div>
-            </div>
-        }
-      </div>
-
-    </div>
-  </aside>
-
-  @* ── PRODUCTS AREA ── *@
-  <div style="flex:1;min-width:0">
-
-    @* Toolbar *@
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;padding:.8rem 1rem;background:white;border-radius:var(--rl);border:1px solid var(--border);flex-wrap:wrap;gap:.8rem">
-      <div style="font-size:13px;color:var(--text2)">
-        <span data-ar>عرض </span><span data-en>Showing </span>
-        <strong id="resultCount">@Model.TotalCount</strong>
-        <span data-ar> منتج</span><span data-en> products</span>
-      </div>
-      @{
-          var sortVal = Model.SortBy ?? "featured";
-      }
-      <select id="sortSelect" onchange="applySort(this.value)"
-              style="font-size:13px;font-family:var(--font);color:var(--text);border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;background:var(--bg);cursor:pointer;outline:none">
-        <option value="featured" selected="@(sortVal == "featured" ? "selected" : null)">★ الأبرز</option>
-        <option value="newest"     selected="@(sortVal == "newest"     ? "selected" : null)">الأحدث أولاً</option>
-        <option value="price_asc"  selected="@(sortVal == "price_asc"  ? "selected" : null)">السعر: من الأرخص</option>
-        <option value="price_desc" selected="@(sortVal == "price_desc" ? "selected" : null)">السعر: من الأغلى</option>
-      </select>
     </div>
 
-    @* Grid *@
-    <div class="products-grid" id="productsGrid">
-      @if (!Model.Products.Any())
-      {
-          <div style="text-align:center;padding:4rem 2rem;color:var(--text3);grid-column:1/-1">
-            <div style="font-size:3rem;margin-bottom:1rem">🔍</div>
-            <p style="font-size:15px;font-weight:600"><span data-ar>لا توجد منتجات</span><span data-en>No products found</span></p>
-          </div>
-      }
-      @foreach (var p in Model.Products)
-      {
-          <partial name="_ProductCard" model="p" />
-      }
-    </div>
-  </div>
-</div>
+    <!-- HERO -->
+    <section class="products-hero">
+        <div class="container">
+            <div class="products-hero-inner">
+                <div class="products-hero-top">
+                    <div>
+                        <span class="eyebrow"><span data-ar>كل المنتجات</span><span data-en>All Products</span></span>
+                        <h1>
+                            @if (brand != null)
+                            {
+                                <span>@brand.NameEn</span>
+                            }
+                            else if (cat != null)
+                            {
+                                <span>@cat.NameEn</span>
+                            }
+                            else
+                            {
+                                <span data-ar>الكتالوج الكامل<br>في نظرة واحدة.</span>
+                                <span data-en>The complete catalog<br>at a glance.</span>
+                            }
+                        </h1>
+                        <p class="sub">
+                            @if (brand != null)
+                            {
+                                <span data-ar>@brand.DescAr</span>
+                                <span data-en>@brand.DescEn</span>
+                            }
+                            else if (cat != null)
+                            {
+                                <span>@cat.Description</span>
+                            }
+                            else
+                            {
+                                <span data-ar>تصفح كل الأجهزة المتوفرة في المخزون — قم بالتصفية حسب الماركة أو الفئة للعثور على ما تحتاجه تماماً.</span>
+                                <span data-en>Browse every hardware unit in stock — filter by brand, category, or price to find exactly what you need.</span>
+                            }
+                        </p>
+                    </div>
+                    @if (brand == null)
+                    {
+                        <div class="brand-pills" id="brand-pills">
+                            <button class="brand-pill @(string.IsNullOrEmpty(Model.BrandFilter) ? "active" : "")" onclick="toggleBrandFilter('', this)">
+                                <span data-ar>الكل</span><span data-en>All</span> <span class="count">@Model.TotalCount</span>
+                            </button>
+                            @foreach (var b in Model.Brands)
+                            {
+                                <button class="brand-pill @(Model.BrandFilter == b.Slug ? "active" : "")" onclick="toggleBrandFilter('@b.Slug', this)">
+                                    @b.NameEn
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="products-hero-stats">
+                    <div class="stat-tile">
+                        <div class="l"><span data-ar>المتوفر</span><span data-en>In Stock</span></div>
+                        <div class="v"><span id="statsCount">@Model.TotalCount</span> <span class="accent">SKUs</span></div>
+                    </div>
+                    <div class="stat-tile">
+                        <div class="l"><span data-ar>الماركات</span><span data-en>Brands</span></div>
+                        <div class="v">@Model.Brands.Count</div>
+                    </div>
+                    <div class="stat-tile">
+                        <div class="l"><span data-ar>نطاق السعر</span><span data-en>Price Range</span></div>
+                        <div class="v">EGP 899 – 12,500</div>
+                    </div>
+                    <div class="stat-tile">
+                        <div class="l"><span data-ar>الضمان</span><span data-en>Warranty</span></div>
+                        <div class="v"><span data-ar>معتمد</span><span data-en>Certified</span> <span class="accent">✓</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-@section Styles {
-<style>
-/* ── FILTER SIDEBAR ── */
-.flt-group { border-bottom: 1px solid var(--border) }
-.flt-group:last-child { border-bottom: none }
-.flt-group-hdr {
-    padding: .9rem 1.2rem;
-    display: flex; align-items: center; justify-content: space-between;
-    cursor: pointer; font-weight: 700; font-size: 13px; user-select: none;
-}
-.flt-group-hdr:hover { background: var(--bg) }
-.flt-arrow { font-size: 11px; color: var(--text3); transition: transform .2s }
-.flt-group.closed .flt-arrow { transform: rotate(-90deg) }
-.flt-opts { padding: .3rem 1.2rem .8rem }
-.flt-group.closed .flt-opts { display: none }
+    <!-- CATALOG -->
+    <section style="padding: 40px 0 100px;">
+        <div class="container">
+            <div class="catalog">
+                <!-- Sidebar -->
+                <aside class="catalog-sidebar" id="filtersSidebar">
+                    <div class="sidebar-card">
+                        <h4>
+                            <span data-ar>تصفية النتائج</span><span data-en>Filter Results</span>
+                            <span class="clear" onclick="clearAllFilters()"><span data-ar>مسح الكل</span><span data-en>Clear all</span></span>
+                        </h4>
 
-.flt-opt {
-    display: flex; align-items: center; gap: 8px;
-    padding: .38rem 0; cursor: pointer;
-}
-.flt-opt:hover .flt-lbl { color: var(--blue) }
-.flt-chk {
-    width: 16px; height: 16px; flex-shrink: 0;
-    border: 1.5px solid var(--border); border-radius: 4px;
-    display: flex; align-items: center; justify-content: center;
-    transition: all .15s;
-}
-.flt-opt.checked .flt-chk { background: var(--blue); border-color: var(--blue) }
-.flt-opt.checked .flt-chk::after { content: '✓'; color: white; font-size: 10px; font-weight: 700 }
-.flt-opt.checked .flt-lbl { color: var(--blue); font-weight: 700 }
-.flt-lbl { font-size: 13px; color: var(--text2); flex: 1 }
-.flt-count {
-    font-size: 11px; color: var(--text3);
-    background: var(--bg); padding: 2px 7px; border-radius: 100px;
-}
-.flt-tag {
-    display: inline-flex; align-items: center; gap: 4px;
-    background: rgba(26,107,255,.1); color: var(--blue);
-    font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 100px;
-    cursor: pointer; border: 1px solid rgba(26,107,255,.2);
-}
-.flt-tag:hover { background: rgba(26,107,255,.2) }
+                        @if (cat == null)
+                        {
+                            <div class="filter-group" id="flt-cat">
+                                <div class="filter-group-title" onclick="this.parentElement.classList.toggle('collapsed')">
+                                    <span data-ar>الفئة</span><span data-en>Category</span>
+                                    <svg class="arrow" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </div>
+                                <div class="filter-options">
+                                    @foreach (var c in Model.Categories)
+                                    {
+                                        var isChecked = Model.CategoryFilter == c.Slug;
+                                        <label class="filter-opt @(isChecked ? "checked" : "")" onclick="toggleCatFilter('@c.Slug', this)">
+                                            <span class="check"></span>
+                                            <span><span data-ar>@c.NameAr</span><span data-en>@c.NameEn</span></span>
+                                        </label>
+                                    }
+                                </div>
+                            </div>
+                        }
 
-/* Loading state */
-#productsGrid.loading { opacity: .5; pointer-events: none; transition: opacity .2s }
+                        @if (brand == null)
+                        {
+                            <div class="filter-group" id="flt-brand">
+                                <div class="filter-group-title" onclick="this.parentElement.classList.toggle('collapsed')">
+                                    <span data-ar>الماركة</span><span data-en>Brand</span>
+                                    <svg class="arrow" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </div>
+                                <div class="filter-options">
+                                    @foreach (var b in Model.Brands)
+                                    {
+                                        var isChecked = Model.BrandFilter == b.Slug;
+                                        <label class="filter-opt @(isChecked ? "checked" : "")" onclick="toggleBrandFilter('@b.Slug', this)">
+                                            <span class="check"></span>
+                                            <span>@b.NameEn</span>
+                                        </label>
+                                    }
+                                </div>
+                            </div>
+                        }
 
-@@media(max-width:900px) {
-    #filtersSidebar { display: none }
-    #filtersSidebar.mobile-open { display: block; position: fixed; inset: 0; z-index: 500; width: 280px; overflow-y: auto; background: white }
-}
-</style>
-}
+                        <div id="attrFilters">
+                            @foreach (var grp in Model.AttributeGroups)
+                            {
+                                <div class="filter-group" id="flt-attr-@grp.AttributeId">
+                                    <div class="filter-group-title" onclick="this.parentElement.classList.toggle('collapsed')">
+                                        <span><span data-ar>@grp.NameAr</span><span data-en>@grp.NameEn</span></span>
+                                        <svg class="arrow" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </div>
+                                    <div class="filter-options">
+                                        @foreach (var opt in grp.Options)
+                                        {
+                                            var isActive = Model.SelectedAttrValues.Contains(opt.ValueId);
+                                            <label class="filter-opt @(isActive ? "checked" : "")" onclick="toggleAttrFilter(@opt.ValueId, this)">
+                                                <span class="check"></span>
+                                                <span><span data-ar>@opt.ValueAr</span><span data-en>@opt.ValueEn</span></span>
+                                                <span class="n">@opt.Count</span>
+                                            </label>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="sidebar-card" style="background: var(--navy); color: white; border: none;">
+                        <h4 style="color: var(--accent);"><span data-ar>تحتاج مساعدة؟</span><span data-en>Need Help?</span></h4>
+                        <p style="font-size: 13px; line-height: 20px; color: rgba(255,255,255,0.7); margin-bottom: 16px;">
+                            <span data-ar>يمكن لخبرائنا مساعدتك في اختيار الجهاز المناسب لاحتياجاتك.</span>
+                            <span data-en>Our specialists can help you choose the right device for your needs.</span>
+                        </p>
+                        <a href="/#contact" class="btn btn-sm" style="background: var(--accent); color: var(--navy); width: 100%; justify-content: center;">
+                            <span data-ar>تحدث معنا ←</span><span data-en>Talk to us →</span>
+                        </a>
+                    </div>
+                </aside>
+
+                <!-- Main Grid area -->
+                <div style="flex: 1; min-width: 0;">
+                    <div class="catalog-toolbar">
+                        <div class="catalog-count">
+                            <span class="live"></span>
+                            <span data-ar>عرض </span><span data-en>Showing </span>
+                            <strong id="resultCount">@Model.TotalCount</strong>
+                            <span data-ar> من أصل </span><span data-en> of </span>
+                            <strong id="statsTotal">@Model.TotalCount</strong>
+                            <span data-ar> منتجات</span><span data-en> products</span>
+                        </div>
+                        @{
+                            var sortVal = Model.SortBy ?? "featured";
+                        }
+                        <select id="sortSelect" onchange="applySort(this.value)" class="sort-select">
+                            <option value="featured" selected="@(sortVal == "featured" ? "selected" : null)">★ الأبرز / Featured</option>
+                            <option value="newest"     selected="@(sortVal == "newest"     ? "selected" : null)">الأحدث أولاً / Newest</option>
+                            <option value="price_asc"  selected="@(sortVal == "price_asc"  ? "selected" : null)">السعر: الأقل أولاً / Price: Low to High</option>
+                            <option value="price_desc" selected="@(sortVal == "price_desc" ? "selected" : null)">السعر: الأعلى أولاً / Price: High to Low</option>
+                        </select>
+                    </div>
+
+                    <div class="products-grid" id="productsGrid">
+                        @if (!Model.Products.Any())
+                        {
+                            <div style="text-align:center;padding:4rem 2rem;color:var(--on-surface-muted);grid-column:1/-1">
+                                <div style="font-size:3rem;margin-bottom:1rem">🔍</div>
+                                <p style="font-size:15px;font-weight:600"><span data-ar>لا توجد منتجات</span><span data-en>No products found</span></p>
+                            </div>
+                        }
+                        @foreach (var p in Model.Products)
+                        {
+                            <partial name="_ProductCard" model="p" />
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
 
 @section Scripts {
 <script>
-// ── STATE ──────────────────────────────────────────────────────────────────
-var _brand    = '@(Model.BrandFilter ?? "")';
-var _category = '@(Model.CategoryFilter ?? "")';
-var _sort     = '@(Model.SortBy ?? "featured")';
-var _attrVals = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SelectedAttrValues));
+    var _brand    = '@(Model.BrandFilter ?? "")';
+    var _category = '@(Model.CategoryFilter ?? "")';
+    var _sort     = '@(Model.SortBy ?? "featured")';
+    var _attrVals = [@string.Join(",", Model.SelectedAttrValues)];
 
-// ── FILTER GROUPS TOGGLE ──────────────────────────────────────────────────
-function toggleFltGroup(id) {
-    document.getElementById(id).classList.toggle('closed');
-}
-
-// ── FILTER HANDLERS ───────────────────────────────────────────────────────
-function toggleCatFilter(slug, el) {
-    _category = (_category === slug) ? '' : slug;
-    document.querySelectorAll('#flt-cat .flt-opt').forEach(function(o) { o.classList.remove('checked'); });
-    if (_category) el.classList.add('checked');
-    fetchProducts();
-}
-
-function toggleBrandFilter(slug, el) {
-    _brand = (_brand === slug) ? '' : slug;
-    document.querySelectorAll('#flt-brand .flt-opt').forEach(function(o) { o.classList.remove('checked'); });
-    if (_brand) el.classList.add('checked');
-    fetchProducts();
-}
-
-function toggleAttrFilter(valueId, el) {
-    el.classList.toggle('checked');
-    var idx = _attrVals.indexOf(valueId);
-    if (idx === -1) _attrVals.push(valueId);
-    else _attrVals.splice(idx, 1);
-    fetchProducts();
-}
-
-function applySort(val) {
-    _sort = val;
-    fetchProducts();
-}
-
-function clearAllFilters() {
-    _category = ''; _brand = ''; _attrVals = [];
-    document.querySelectorAll('.flt-opt.checked').forEach(function(o) { o.classList.remove('checked'); });
-    fetchProducts();
-}
-
-// ── AJAX FETCH ────────────────────────────────────────────────────────────
-var _fetchTimer;
-function fetchProducts() {
-    clearTimeout(_fetchTimer);
-    _fetchTimer = setTimeout(_doFetch, 150);
-}
-
-async function _doFetch() {
-    var grid = document.getElementById('productsGrid');
-    grid.classList.add('loading');
-
-    var params = new URLSearchParams();
-    if (_brand)    params.append('brand',    _brand);
-    if (_category) params.append('category', _category);
-    if (_sort)     params.append('sort',     _sort);
-    _attrVals.forEach(function(v) { params.append('av', v); });
-
-    try {
-        var res  = await fetch('/Products/Filter?' + params.toString());
-        var data = await res.json();
-
-        // Update count
-        document.getElementById('resultCount').textContent = data.count;
-
-        // Re-render products
-        if (data.count === 0) {
-            grid.innerHTML = '<div style="text-align:center;padding:4rem 2rem;color:var(--text3);grid-column:1/-1"><div style="font-size:3rem;margin-bottom:1rem">🔍</div><p style="font-size:15px;font-weight:600">لا توجد منتجات</p></div>';
-        } else {
-            grid.innerHTML = data.products.map(function(p) {
-                var disc = p.oldPrice && p.oldPrice > p.price
-                    ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
-                var img = p.imagePath
-                    ? '<img src="' + p.imagePath + '" alt="' + p.nameEn + '" style="max-height:120px;object-fit:contain">'
-                    : '<span style="font-size:52px">' + (p.emoji || '📦') + '</span>';
-                return '<div class="product-card" onclick="location.href=\'' + p.url + '\'">'
-                    + '<div class="card-img">'
-                    + (p.badge ? '<span class="card-badge badge-blue">' + p.badge + '</span>' : '')
-                    + img + '</div>'
-                    + '<div class="card-body">'
-                    + '<div class="card-brand">' + (p.brandName || '') + '</div>'
-                    + '<div class="card-name">' + p.nameAr + '</div>'
-                    + '</div>'
-                    + '<div class="card-footer">'
-                    + '<div><div class="card-price">EGP ' + Number(p.price).toLocaleString() + '</div>'
-                    + (disc > 0 ? '<div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;color:var(--text3);text-decoration:line-through">EGP ' + Number(p.oldPrice).toLocaleString() + '</span><span style="background:#FF3B30;color:white;font-size:9px;font-weight:800;padding:2px 6px;border-radius:100px">-' + disc + '%</span></div>' : '')
-                    + '</div>'
-                    + '<div style="display:flex;gap:6px">'
-                    + '<button class="card-btn" onclick="event.stopPropagation();location.href=\'' + p.url + '\'">التفاصيل</button>'
-                    + '<button class="card-btn" style="padding:7px 10px;background:#F4F6FA;color:#0A0D14;border:1.5px solid #E4E8F0" onclick="event.stopPropagation();addToCartQuick(' + p.id + ',this)" title="أضف للسلة">🛒</button>'
-                    + '</div>'
-                    + '</div></div>';
-            }).join('');
-        }
-
-        // Update attribute filters
-        updateAttrFilters(data.attrGroups);
-
-        // Update URL without reload
-        var url = new URL(window.location);
-        _brand    ? url.searchParams.set('brand',    _brand)    : url.searchParams.delete('brand');
-        _category ? url.searchParams.set('category', _category) : url.searchParams.delete('category');
-        _sort !== 'featured' ? url.searchParams.set('sort', _sort) : url.searchParams.delete('sort');
-        url.searchParams.delete('av');
-        _attrVals.forEach(function(v) { url.searchParams.append('av', v); });
-        history.replaceState({}, '', url);
-
-        // Update clear button and tags
-        updateActiveTags();
-
-    } catch(e) {
-        console.error('Filter error:', e);
+    function toggleFltGroup(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.toggle('collapsed');
     }
-    grid.classList.remove('loading');
-}
 
-function updateAttrFilters(groups) {
-    var container = document.getElementById('attrFilters');
-    if (!groups || !groups.length) { container.innerHTML = ''; return; }
+    function toggleBrandFilter(slug, el) {
+        // Toggle active design for brand pills if clicked, or sidebar filters
+        _brand = (_brand === slug && slug !== '') ? '' : slug;
+        
+        // Remove active class from other elements
+        if (el && el.classList.contains('brand-pill')) {
+            document.querySelectorAll('.brand-pill').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+        }
+        
+        _doFetch();
+    }
 
-    container.innerHTML = groups.map(function(g) {
-        return '<div class="flt-group" id="flt-attr-' + g.attributeId + '">'
-            + '<div class="flt-group-hdr" onclick="toggleFltGroup(\'flt-attr-' + g.attributeId + '\')">'
-            + '<span>' + g.nameAr + '</span><span class="flt-arrow">▾</span></div>'
-            + '<div class="flt-opts">'
-            + g.options.map(function(o) {
-                var checked = _attrVals.indexOf(o.valueId) !== -1;
-                return '<label class="flt-opt ' + (checked ? 'checked' : '') + '" onclick="toggleAttrFilter(' + o.valueId + ', this)">'
-                    + '<span class="flt-chk"></span>'
-                    + '<span class="flt-lbl">' + o.valueAr + '</span>'
-                    + '<span class="flt-count">' + o.count + '</span>'
-                    + '</label>';
-            }).join('')
-            + '</div></div>';
-    }).join('');
-}
+    function toggleCatFilter(slug, el) {
+        _category = (_category === slug) ? '' : slug;
+        if (el) {
+            el.classList.toggle('checked');
+        }
+        _doFetch();
+    }
 
-function updateActiveTags() {
-    var container = document.getElementById('activeTags');
-    var clearBtn  = document.getElementById('clearBtn');
-    var tags = [];
+    function toggleAttrFilter(valId, el) {
+        var idx = _attrVals.indexOf(valId);
+        if (idx === -1) {
+            _attrVals.push(valId);
+            if (el) el.classList.add('checked');
+        } else {
+            _attrVals.splice(idx, 1);
+            if (el) el.classList.remove('checked');
+        }
+        _doFetch();
+    }
 
-    if (_brand)    tags.push({ label: _brand,    fn: 'clearAllFilters()' });
-    if (_category) tags.push({ label: _category, fn: 'clearAllFilters()' });
-    _attrVals.forEach(function(v) {
-        var el = document.querySelector('.flt-opt.checked [data-value="' + v + '"]');
-        tags.push({ label: 'فلتر #' + v, fn: 'toggleAttrFilter(' + v + ', null)' });
-    });
+    function applySort(val) {
+        _sort = val;
+        _doFetch();
+    }
 
-    var hasFilters = _brand || _category || _attrVals.length;
-    container.style.display = hasFilters ? 'flex' : 'none';
-    clearBtn.style.display  = hasFilters ? 'block' : 'none';
-}
+    function clearAllFilters() {
+        _brand = '';
+        _category = '';
+        _attrVals = [];
+        
+        document.querySelectorAll('.filter-opt').forEach(el => el.classList.remove('checked'));
+        document.querySelectorAll('.brand-pill').forEach(b => b.classList.remove('active'));
+        var firstPill = document.querySelector('.brand-pill');
+        if (firstPill) firstPill.classList.add('active');
+        
+        _doFetch();
+    }
 
-// Init
-updateActiveTags();
+    async function _doFetch() {
+        var grid = document.getElementById('productsGrid');
+        grid.style.opacity = '0.5';
+        grid.style.pointerEvents = 'none';
+
+        var params = new URLSearchParams();
+        if (_brand)    params.append('brand',    _brand);
+        if (_category) params.append('category', _category);
+        if (_sort)     params.append('sort',     _sort);
+        _attrVals.forEach(function(v) { params.append('av', v); });
+
+        try {
+            var res  = await fetch('/Products/Filter?' + params.toString());
+            var data = await res.json();
+
+            // Update stats & count
+            document.getElementById('resultCount').textContent = data.count;
+            document.getElementById('statsCount').textContent = data.count;
+
+            // Re-render products
+            if (data.count === 0) {
+                grid.innerHTML = '<div style="text-align:center;padding:4rem 2rem;color:var(--on-surface-muted);grid-column:1/-1"><div style="font-size:3rem;margin-bottom:1rem">🔍</div><p style="font-size:15px;font-weight:600">لا توجد منتجات / No products</p></div>';
+            } else {
+                grid.innerHTML = data.products.map(function(p) {
+                    var disc = p.oldPrice && p.oldPrice > p.price
+                        ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
+                    
+                    var badgeHtml = p.badge ? '<div class="badge-wrap"><span class="badge badge-new">' + p.badge + '</span></div>' : '';
+                    var mediaContent = p.imagePath
+                        ? '<img src="' + p.imagePath + '" alt="' + p.nameEn + '" style="max-height:120px;object-fit:contain;z-index:1;">'
+                        : '<span style="font-size:54px;z-index:1;">' + (p.emoji || '📦') + '</span>';
+                    
+                    var discHtml = disc > 0 
+                        ? '<div style="display:flex;align-items:center;gap:5px;margin-top:2px">'
+                          + '<span style="font-size:11px;color:var(--on-surface-muted);text-decoration:line-through">EGP ' + Number(p.oldPrice).toLocaleString() + '</span>'
+                          + '<span style="background:#FF3B30;color:white;font-size:9px;font-weight:800;padding:1px 5px;border-radius:100px">-' + disc + '%</span>'
+                          + '</div>'
+                        : '';
+
+                    return '<article class="product-card" onclick="location.href=\'/products/' + p.slug + '\'">'
+                        + '<div class="media">'
+                        + badgeHtml
+                        + '<a href="/products/' + p.slug + '" class="quick-view" aria-label="Quick view" onclick="event.stopPropagation()">'
+                        + '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+                        + '</a>'
+                        + mediaContent
+                        + '</div>'
+                        + '<div class="info">'
+                        + '<div class="brand-line">'
+                        + '<span class="brand">' + (p.brandName || '').toUpperCase() + '</span>'
+                        + '<span class="sku">SKU · ' + String(p.id).padStart(2, '0') + '</span>'
+                        + '</div>'
+                        + '<h3><a href="/products/' + p.slug + '" onclick="event.stopPropagation()">'
+                        + '<span data-ar>' + p.nameAr + '</span>'
+                        + '<span data-en>' + p.nameEn + '</span>'
+                        + '</a></h3>'
+                        + '<p class="desc">'
+                        + '<span data-ar>' + (p.shortDescAr || '') + '</span>'
+                        + '<span data-en>' + (p.shortDescEn || '') + '</span>'
+                        + '</p>'
+                        + '<div class="price-row">'
+                        + '<div style="display:flex; flex-direction:column;">'
+                        + '<span class="price">EGP ' + Number(p.price).toLocaleString() + '</span>'
+                        + discHtml
+                        + '</div>'
+                        + '<div class="actions">'
+                        + '<a href="/products/' + p.slug + '" class="btn btn-dark btn-sm" onclick="event.stopPropagation()">'
+                        + '<span data-ar>التفاصيل</span><span data-en>Details</span>'
+                        + '</a>'
+                        + '<button class="icon-only" onclick="event.stopPropagation(); addToCartQuick(' + p.id + ', this)" aria-label="Add to cart">'
+                        + '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 5h9l-1 6H5L4 5zM4 5L3.5 3H2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="13" r="1" fill="currentColor"/><circle cx="11" cy="13" r="1" fill="currentColor"/></svg>'
+                        + '</button>'
+                        + '</div>'
+                        + '</div>'
+                        + '</div>'
+                        + '</article>';
+                }).join('');
+            }
+
+            // Update attributes
+            updateAttrFilters(data.attrGroups);
+
+            // Update URL without reload
+            var url = new URL(window.location);
+            _brand    ? url.searchParams.set('brand',    _brand)    : url.searchParams.delete('brand');
+            _category ? url.searchParams.set('category', _category) : url.searchParams.delete('category');
+            _sort !== 'featured' ? url.searchParams.set('sort', _sort) : url.searchParams.delete('sort');
+            url.searchParams.delete('av');
+            _attrVals.forEach(function(v) { url.searchParams.append('av', v); });
+            history.replaceState({}, '', url);
+
+        } catch(e) {
+            console.error('Filter error:', e);
+        }
+        grid.style.opacity = '1';
+        grid.style.pointerEvents = 'auto';
+    }
+
+    function updateAttrFilters(groups) {
+        var container = document.getElementById('attrFilters');
+        if (!groups || !groups.length) { container.innerHTML = ''; return; }
+
+        container.innerHTML = groups.map(function(g) {
+            return '<div class="filter-group" id="flt-attr-' + g.attributeId + '">'
+                + '<div class="filter-group-title" onclick="toggleFltGroup(\'flt-attr-' + g.attributeId + '\')">'
+                + '<span>' + g.nameEn + '</span>'
+                + '<svg class="arrow" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+                + '</div>'
+                + '<div class="filter-options">'
+                + g.options.map(function(o) {
+                    var checked = _attrVals.indexOf(o.valueId) !== -1;
+                    return '<label class="filter-opt ' + (checked ? 'checked' : '') + '" onclick="toggleAttrFilter(' + o.valueId + ', this)">'
+                        + '<span class="check"></span>'
+                        + '<span>' + o.valueEn + '</span>'
+                        + '<span class="n">' + o.count + '</span>'
+                        + '</label>';
+                }).join('')
+                + '</div></div>';
+        }).join('');
+    }
 </script>
 }

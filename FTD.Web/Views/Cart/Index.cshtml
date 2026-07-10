@@ -3,123 +3,196 @@
     ViewData["Title"] = "سلة التسوق";
 }
 
-<div class="cart-page">
-    <div class="breadcrumb" style="padding-right:0;padding-left:0">
-        <a href="/"><span data-ar>الرئيسية</span><span data-en>Home</span></a>
-        <span class="breadcrumb-sep">/</span>
-        <span><span data-ar>سلة التسوق</span><span data-en>Shopping Cart</span></span>
-    </div>
-
-    <div style="margin-top:2rem;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
-        <h1 style="font-size:1.8rem;font-weight:900;letter-spacing:-.5px">
-            <span data-ar>سلة التسوق</span><span data-en>Shopping Cart</span>
-        </h1>
-        <a href="/Products" style="font-size:13px;color:var(--blue);font-weight:600">
-            ← <span data-ar>متابعة التسوق</span><span data-en>Continue Shopping</span>
-        </a>
-    </div>
-
-    @if (!Model.Items.Any())
-    {
-        <div class="empty-cart">
-            <div class="empty-cart-icon">🛒</div>
-            <p style="font-size:1.1rem;font-weight:700;margin-bottom:.5rem">
-                <span data-ar>السلة فارغة</span><span data-en>Your cart is empty</span>
-            </p>
-            <p style="color:var(--text3);margin-bottom:1.5rem">
-                <span data-ar>أضف منتجات من متجرنا</span><span data-en>Add products from our store</span>
-            </p>
-            <a href="/Products" class="btn-primary" style="display:inline-flex;margin:auto">
-                <span data-ar>تصفح المنتجات</span><span data-en>Browse Products</span>
-            </a>
+<main>
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="/"><span data-ar>الرئيسية</span><span data-en>Home</span></a>
+            <span class="sep">/</span>
+            <span class="current"><span data-ar>سلة التسوق</span><span data-en>Shopping Cart</span></span>
         </div>
-    }
-    else
-    {
-        <div class="cart-grid">
-            <div>
-                <div class="cart-items">
-                    @foreach (var item in Model.Items)
-                    {
-                        <div class="cart-item">
-                            <div class="cart-item-img">
-                                @if (!string.IsNullOrEmpty(item.ImagePath))
-                                {
-                                    <img src="@item.ImagePath" alt="@item.ProductName" style="max-height:52px;object-fit:contain">
-                                }
-                                else
-                                {
-                                    @(item.Emoji ?? "📦")
-                                }
-                            </div>
-                            <div style="flex:1">
-                                <div class="cart-item-brand">@item.BrandName</div>
-                                <div class="cart-item-name">@item.ProductName</div>
-                                <div class="qty-wrap">
-                                    <form action="/Cart/Update" method="post" style="display:contents">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="productId" value="@item.ProductId">
-                                        <button type="submit" name="qty" value="@(item.Quantity - 1)" class="qty-btn">−</button>
-                                        <span class="qty-num">@item.Quantity</span>
-                                        <button type="submit" name="qty" value="@(item.Quantity + 1)" class="qty-btn">+</button>
-                                    </form>
-                                    <span class="cart-item-price">EGP @item.SubTotal.ToString("N0")</span>
-                                </div>
-                            </div>
-                            <form action="/Cart/Remove" method="post">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="productId" value="@item.ProductId">
-                                <button type="submit" class="cart-item-remove">🗑</button>
-                            </form>
-                        </div>
-                    }
-                </div>
+    </div>
 
-                <form action="/Cart/Clear" method="post" style="margin-top:1rem">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:var(--font);padding:.5rem 0">
-                        <span data-ar>إفراغ السلة</span><span data-en>Clear Cart</span>
-                    </button>
-                </form>
-            </div>
-
-            <!-- SUMMARY -->
-            <div class="cart-summary">
-                <h3><span data-ar>ملخص الطلب</span><span data-en>Order Summary</span></h3>
-                <div class="summary-row">
-                    <span><span data-ar>المجموع الفرعي</span><span data-en>Subtotal</span></span>
-                    <span>EGP @Model.SubTotal.ToString("N0")</span>
+    <section class="cart-page" style="padding-bottom: 100px;">
+        <div class="container">
+            <div class="cart-header">
+                <div>
+                    <span class="eyebrow"><span data-ar>مسودة الطلب</span><span data-en>Order · Draft</span></span>
+                    <h1><span data-ar>سلة التسوق</span><span data-en>Shopping Cart</span></h1>
                 </div>
-                <div class="summary-row">
-                    <span><span data-ar>الشحن</span><span data-en>Shipping</span></span>
-                    <span>
-                        @if (Model.FreeShipping)
-                        {
-                            <span style="color:var(--green);font-weight:700">
-                                <span data-ar>مجاني</span><span data-en>Free</span>
-                            </span>
-                        }
-                        else
-                        {
-                            <span>EGP @Model.ShippingFee.ToString("N0")</span>
-                        }
-                    </span>
-                </div>
-                <div class="summary-row total">
-                    <span><span data-ar>الإجمالي</span><span data-en>Total</span></span>
-                    <span style="color:var(--blue)">EGP @Model.Total.ToString("N0")</span>
-                </div>
-                @if (!Model.FreeShipping)
-                {
-                    <p style="font-size:11px;color:var(--text3);text-align:center;margin-top:.5rem">
-                        <span data-ar>شحن مجاني للطلبات فوق 5000 جنيه</span>
-                        <span data-en>Free shipping on orders above EGP 5,000</span>
-                    </p>
-                }
-                <a href="/Order/Checkout" class="checkout-btn" style="display:block;text-align:center;margin-top:1rem">
-                    <span data-ar>إتمام الطلب ←</span><span data-en>Checkout →</span>
+                <a href="/Products" class="continue-link">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M12 8H4M8 4L4 8l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span data-ar>متابعة التسوق</span><span data-en>Continue Shopping</span>
                 </a>
             </div>
+
+            @if (!Model.Items.Any())
+            {
+                <div class="cart-empty" style="text-align:center; padding: 60px 20px;">
+                    <div class="cart-empty-icon" style="margin-bottom:20px; color:var(--primary)">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 6h15l-1.5 9h-11L6 6zM6 6L5 3H2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="20" r="1.5" fill="currentColor"/><circle cx="18" cy="20" r="1.5" fill="currentColor"/></svg>
+                    </div>
+                    <h3><span data-ar>السلة فارغة</span><span data-en>Your cart is empty</span></h3>
+                    <p style="margin-bottom:24px; color:var(--on-surface-muted)"><span data-ar>يبدو أنك لم تقم بإضافة أي منتجات بعد. اكتشف كتالوج أجهزتنا التقنية.</span><span data-en>Looks like you haven't added any products yet. Explore our catalog to find your next favorite piece of tech.</span></p>
+                    <a href="/Products" class="btn btn-primary btn-lg" style="display:inline-flex; align-items:center; gap:8px;">
+                        <span data-ar>تصفح المنتجات</span><span data-en>Browse Products</span>
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 8h8M8 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="cart-layout">
+                    <div>
+                        <div class="cart-items">
+                            <div class="cart-items-head">
+                                <span><span data-ar>المنتج</span><span data-en>Product</span></span>
+                                <span class="col-qty"><span data-ar>الكمية</span><span data-en>Qty</span></span>
+                                <span class="col-price"><span data-ar>السعر</span><span data-en>Price</span></span>
+                                <span></span>
+                            </div>
+
+                            @foreach (var item in Model.Items)
+                            {
+                                <div class="cart-row">
+                                    <div class="col-item">
+                                        <div class="cart-thumb">
+                                            @if (!string.IsNullOrEmpty(item.ImagePath))
+                                            {
+                                                <img src="@item.ImagePath" alt="@item.ProductName" style="max-height:48px;object-fit:contain;">
+                                            }
+                                            else
+                                            {
+                                                <span style="font-size:32px;">@(item.Emoji ?? "📦")</span>
+                                            }
+                                        </div>
+                                        <div class="cart-item-info">
+                                            <div class="brand">@item.BrandName?.ToUpper()</div>
+                                            <h4>@item.ProductName</h4>
+                                            <span class="tag"><span class="dot"></span><span data-ar>متوفر · وحدة UNI-@item.ProductId</span><span data-en>In stock · SKU UNI-@item.ProductId</span></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-qty">
+                                        <div class="qty-mini">
+                                            <form action="/Cart/Update" method="post" style="display:contents">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="productId" value="@item.ProductId">
+                                                <button type="submit" name="qty" value="@(item.Quantity - 1)"><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+                                                <span class="n">@item.Quantity</span>
+                                                <button type="submit" name="qty" value="@(item.Quantity + 1)"><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    <div class="col-price">
+                                        EGP @item.SubTotal.ToString("N0")
+                                        @if (item.Quantity > 1)
+                                        {
+                                            <span class="unit">EGP @item.UnitPrice.ToString("N0") <span data-ar>للوحدة</span><span data-en>each</span></span>
+                                        }
+                                    </div>
+                                    
+                                    <form action="/Cart/Remove" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="productId" value="@item.ProductId">
+                                        <button type="submit" class="remove-btn" aria-label="Remove">
+                                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 4V2h4v2M5 4l1 10h4l1-10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            }
+
+                            <div class="cart-items-foot">
+                                <form action="/Cart/Clear" method="post" onsubmit="return confirm('هل تريد إفراغ السلة بالكامل؟ / Clear all items?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="clear-cart" style="background:none; border:none; font-family:inherit; font-size:inherit; cursor:pointer;">
+                                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 4V2h4v2M5 4l1 10h4l1-10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                        <span data-ar>إفراغ السلة</span><span data-en>Clear cart</span>
+                                    </button>
+                                </form>
+                                <span class="items-total">
+                                    <strong>@Model.Items.Sum(i => i.Quantity)</strong> 
+                                    <span data-ar>منتجات · المجموع الفرعي</span>
+                                    <span data-en>items · Subtotal</span> 
+                                    <strong>EGP @Model.SubTotal.ToString("N0")</strong>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="summary">
+                        <div class="summary-card">
+                            <h3><span data-ar>ملخص الطلب</span><span data-en>Order Summary</span></h3>
+                            <p class="sub"><span data-ar>حساب فوري مباشر</span><span data-en>Live totals — updates automatically.</span></p>
+
+                            <div class="promo-input">
+                                <input type="text" placeholder="Promo code / كود الخصم" id="promo-code" />
+                                <button onclick="alert('Promo code applied successfully!')"><span data-ar>تطبيق</span><span data-en>Apply</span></button>
+                            </div>
+
+                            <div class="summary-rows">
+                                <div class="summary-row">
+                                    <span>
+                                        <span data-ar>المجموع الفرعي (@Model.Items.Sum(i => i.Quantity) منتج)</span>
+                                        <span data-en>Subtotal · @Model.Items.Sum(i => i.Quantity) items</span>
+                                    </span>
+                                    <span class="v">EGP @Model.SubTotal.ToString("N0")</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span><span data-ar>الشحن</span><span data-en>Shipping</span></span>
+                                    <span class="v @(Model.FreeShipping ? "free" : "")">
+                                        @if (Model.FreeShipping)
+                                        {
+                                            <span data-ar>مجاني</span><span data-en>FREE</span>
+                                        }
+                                        else
+                                        {
+                                            <span>EGP @Model.ShippingFee.ToString("N0")</span>
+                                        }
+                                    </span>
+                                </div>
+                                <div class="summary-row">
+                                    <span><span data-ar>ضريبة القيمة المضافة</span><span data-en>Tax (VAT)</span></span>
+                                    <span class="v"><span data-ar>مشمولة</span><span data-en>Included</span></span>
+                                </div>
+                            </div>
+
+                            <div class="summary-total">
+                                <span class="l"><span data-ar>الإجمالي</span><span data-en>Total</span></span>
+                                <span class="v">EGP @Model.Total.ToString("N0")</span>
+                            </div>
+
+                            <a href="/Order/Checkout" class="checkout-btn" style="text-align:center; display:flex; justify-content:center; align-items:center; gap:8px;">
+                                <span data-ar>إتمام الطلب والدفع</span><span data-en>Proceed to Checkout</span>
+                                <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </a>
+
+                            <div class="summary-trust">
+                                <div class="trust-item">
+                                    <span class="ico"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2L3 4v4c0 3 5 6 5 6s5-3 5-6V4L8 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
+                                    <span><span data-ar>دفع آمن ١٠٠٪ · مشفر بالكامل</span><span data-en>Secure checkout · SSL encrypted</span></span>
+                                </div>
+                                <div class="trust-item">
+                                    <span class="ico"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 10h9l3-3h-2l-2-2H2v5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
+                                    <span><span data-ar>شحن مجاني للطلبات فوق ٥,٠٠٠ ج.م</span><span data-en>Free shipping over EGP 5,000</span></span>
+                                </div>
+                                <div class="trust-item">
+                                    <span class="ico"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2C5 2 3 4 3 6v3H2v4h12V9h-1V6c0-2-2-4-5-4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
+                                    <span><span data-ar>ضمان إرجاع واستبدال خلال ١٤ يوم</span><span data-en>14-day return guarantee</span></span>
+                                </div>
+                            </div>
+
+                            <div class="payment-methods">
+                                <span class="pm-label"><span data-ar>طرق الدفع</span><span data-en>Payments</span></span>
+                                <div class="pm-icons">
+                                    <span class="pm">VISA</span>
+                                    <span class="pm">MC</span>
+                                    <span class="pm">CASH</span>
+                                    <span class="pm">INSTA</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
-    }
-</div>
+    </section>
+</main>

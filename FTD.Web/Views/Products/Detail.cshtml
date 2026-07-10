@@ -1,165 +1,256 @@
 @model FTD.Web.ViewModels.ProductDetailViewModel
 @{
+    Layout = "_Layout";
     var p = Model.Product;
     ViewData["Title"] = p.NameAr;
-    var badgeClass = p.Badge switch
+    var badgeKind = p.Badge?.ToLower() switch
     {
-        "NEW" => "badge-blue",
-        "HOT" => "badge-green",
-        "4K" => "badge-orange",
-        _ => "badge-dark"
+        "new" => "new",
+        "hot" => "hot",
+        "4k" => "4k",
+        "rugged" => "rugged",
+        _ => "new"
     };
 }
-<div class="product-detail-page">
-    <!-- BREADCRUMB -->
-    <div class="breadcrumb">
-        <a href="/"><span data-ar>الرئيسية</span><span data-en>Home</span></a>
-        <span class="breadcrumb-sep">/</span>
-        <a href="/Products?category=@p.Category?.Slug">
-            <span data-ar>@p.Category?.NameAr</span><span data-en>@p.Category?.NameEn</span>
-        </a>
-        <span class="breadcrumb-sep">/</span>
-        <span><span data-ar>@p.NameAr</span><span data-en>@p.NameEn</span></span>
+
+<main>
+    <div class="container">
+        <div class="breadcrumb" id="crumb">
+            <a href="/"><span data-ar>الرئيسية</span><span data-en>Home</span></a>
+            <span class="sep">/</span>
+            <a href="/Products"><span data-ar>المنتجات</span><span data-en>Products</span></a>
+            <span class="sep">/</span>
+            <a href="/Products?brand=@p.Brand?.Slug">@p.BrandName</a>
+            <span class="sep">/</span>
+            <span class="current"><span data-ar>@p.NameAr</span><span data-en>@p.NameEn</span></span>
+        </div>
     </div>
-    <div class="detail-grid">
-        <!-- IMAGE COLUMN -->
-        @{
-            var allImages = new List<string>();
-            if (!string.IsNullOrEmpty(p.ImagePath)) allImages.Add(p.ImagePath);
-            foreach (var img in p.Images.OrderBy(i => i.SortOrder))
-                if (!allImages.Contains(img.ImagePath)) allImages.Add(img.ImagePath);
-        }
-        <div>
-            <!-- MAIN IMAGE / SLIDER -->
-            <div class="detail-img-wrap" style="position:relative;border-radius:20px;overflow:hidden">
-                @if (!string.IsNullOrEmpty(p.Badge))
-                {
-                    <span class="detail-badge @badgeClass" style="z-index:5">@p.Badge</span>
-                }
-                @if (allImages.Count > 1)
-                {
-                    <div class="pslider" id="pslider_@p.Id">
-                        @for (int si = 0; si < allImages.Count; si++)
+
+    <section class="product-page" style="padding-bottom: 100px;">
+        <div class="container">
+            <div class="pd-hero">
+                <!-- Gallery -->
+                <div class="pd-gallery">
+                    @{
+                        var allImages = new List<string>();
+                        if (!string.IsNullOrEmpty(p.ImagePath)) allImages.Add(p.ImagePath);
+                        foreach (var img in p.Images.OrderBy(i => i.SortOrder))
+                            if (!allImages.Contains(img.ImagePath)) allImages.Add(img.ImagePath);
+                    }
+                    <div class="pd-main-media" id="pslider_@p.Id">
+                        <span class="corner-tl"></span>
+                        <span class="corner-br"></span>
+                        <div class="pd-media-tag"><span class="dot"></span>Studio · 360°</div>
+                        
+                        @if (allImages.Any())
                         {
-                            <div class="pslide @(si == 0 ? "active" : "")" data-idx="@si">
-                                <img src="@allImages[si]" alt="@p.NameEn @(si + 1)"
-                                     style="width:100%;max-height:340px;object-fit:contain;padding:2rem;background:var(--bg)">
+                            @for (int si = 0; si < allImages.Count; si++)
+                            {
+                                <div class="pslide @(si == 0 ? "active" : "")" data-idx="@si" style="display:@(si == 0 ? "grid" : "none"); place-items:center; height:100%;">
+                                    <img src="@allImages[si]" alt="@p.NameEn @(si + 1)" style="max-height:300px;object-fit:contain;z-index:1;">
+                                </div>
+                            }
+                            @if (allImages.Count > 1)
+                            {
+                                <button class="pslider-arrow pslider-prev" onclick="pslide(@p.Id,-1)" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); z-index:5;">&#8249;</button>
+                                <button class="pslider-arrow pslider-next" onclick="pslide(@p.Id, 1)" style="position:absolute; left:15px; top:50%; transform:translateY(-50%); z-index:5;">&#8250;</button>
+                            }
+                        }
+                        else
+                        {
+                            <span style="font-size:120px;z-index:1;">@(p.Emoji ?? "📦")</span>
+                        }
+                    </div>
+
+                    @if (allImages.Count > 1)
+                    {
+                        <div class="pd-thumbs" id="pthumbs_@p.Id">
+                            @for (int si = 0; si < allImages.Count; si++)
+                            {
+                                <div class="pd-thumb @(si == 0 ? "active" : "")" data-idx="@si" onclick="pslideGo(@p.Id, @si)">
+                                    <span class="n">0@(si+1)</span>
+                                    <img src="@allImages[si]" alt="thumb @(si + 1)" style="width:100%;height:100%;object-fit:contain;">
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <!-- Info -->
+                <div class="pd-info">
+                    <div class="brand-row">
+                        <span class="brand-mark">@p.BrandName?.ToUpper()</span>
+                        @if (!string.IsNullOrEmpty(p.Badge))
+                        {
+                            <span class="badge badge-@badgeKind">@p.Badge</span>
+                        }
+                        <span class="sku">SKU · UNI-@p.Id.ToString("D2")-01</span>
+                    </div>
+                    <h1>
+                        <span data-ar>@p.NameAr</span>
+                        <span data-en>@p.NameEn</span>
+                    </h1>
+                    <p class="tagline">
+                        <span data-ar>@p.ShortDescAr</span>
+                        <span data-en>@p.ShortDescEn</span>
+                    </p>
+
+                    <div class="pd-rating">
+                        <div class="stars">
+                            @for (int i = 0; i < 5; i++)
+                            {
+                                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l2.2 4.5 5 .7-3.6 3.5.8 5L8 12.5 3.6 14.7l.8-5L.8 6.2l5-.7L8 1z"/></svg>
+                            }
+                        </div>
+                        <span class="txt"><strong>4.9</strong> · <span data-ar>بناءً على ٢٤٧ تقييم معتمد</span><span data-en>Based on 247 verified reviews</span></span>
+                    </div>
+
+                    <div class="pd-price-card">
+                        <div class="pd-price-row">
+                            <div class="pd-price"><span class="currency">EGP</span>@p.Price.ToString("N0")</div>
+                            <span class="pd-installment">
+                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                <span data-ar>تقسيط بدون فوائد ١٢ شهر</span><span data-en>0% for 12 months</span>
+                            </span>
+                        </div>
+                        <div class="pd-stock">
+                            <span class="dot"></span>
+                            <span data-ar>متوفر في المخزون</span><span data-en>In stock</span>
+                            <span class="n"> · <span data-ar>يشحن خلال ٢٤ ساعة · مخزن القاهرة</span><span data-en>Ships within 24h · Cairo warehouse</span></span>
+                        </div>
+                    </div>
+
+                    <div class="pd-cta">
+                        <div class="qty">
+                            <button onclick="changeQty(-1)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+                            <span class="n" id="qty-n">1</span>
+                            <button onclick="changeQty(1)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+                        </div>
+                        
+                        <form action="/Cart/Add" method="post" id="addToCartForm" style="flex:1;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="productId" value="@p.Id">
+                            <input type="hidden" name="qty" id="form-qty" value="1">
+                            <button type="submit" class="btn btn-primary btn-lg" style="width:100%; justify-content:center">
+                                <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M5 6h11l-1 8H6L5 6zM5 6L4 3H2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="17" r="1.5" fill="currentColor"/><circle cx="14" cy="17" r="1.5" fill="currentColor"/></svg>
+                                <span data-ar>أضف إلى السلة</span><span data-en>Add to Cart</span> · EGP <span id="btnPrice">@p.Price.ToString("N0")</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="pd-trust">
+                        <div class="trust">
+                            <span class="ico"><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 2L4 5v4c0 4 6 8 6 8s6-4 6-8V5l-6-3z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
+                            <span class="l"><span data-ar>الضمان</span><span data-en>Warranty</span></span>
+                            <span class="s"><span data-ar>١٨ شهر معتمد</span><span data-en>18 months certified</span></span>
+                        </div>
+                        <div class="trust">
+                            <span class="ico"><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M2 12h11l3-3h-2l-2-2H2v5zM4 14a2 2 0 100-4 2 2 0 000 4zM13 14a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
+                            <span class="l"><span data-ar>التوصيل</span><span data-en>Delivery</span></span>
+                            <span class="s"><span data-ar>مجاني فوق ٥,٠٠٠ ج.م</span><span data-en>Free over 5,000 EGP</span></span>
+                        </div>
+                        <div class="trust">
+                            <span class="ico"><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M10 6v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+                            <span class="l"><span data-ar>الدعم</span><span data-en>Support</span></span>
+                            <span class="s"><span data-ar>خط ساخن ٢٤/٧</span><span data-en>24/7 hotline</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Specs + Description -->
+            <div class="spec-section">
+                <div class="spec-card">
+                    <span class="eyebrow"><span data-ar>التقرير التقني</span><span data-en>Technical Readout</span></span>
+                    <h3><span data-ar>المواصفات</span><span data-en>Specifications</span></h3>
+                    <p class="sub"><span data-ar>تم التحقق من جميع القياسات من الشركة المصنعة.</span><span data-en>All measurements verified per manufacturer QA batch.</span></p>
+                    
+                    <div class="spec-list">
+                        @{
+                            var specs = Model.Attributes
+                            .Where(av => av.Attribute != null && av.AttributeValue != null)
+                            .ToList();
+                        }
+                        @if (specs.Any())
+                        {
+                            @foreach (var av in specs)
+                            {
+                                <div class="spec-row">
+                                    <span class="k">
+                                        <span data-ar>@av.Attribute!.NameAr</span>
+                                        <span data-en>@av.Attribute!.NameEn</span>
+                                    </span>
+                                    <span class="v">
+                                        <span data-ar>@av.AttributeValue!.ValueAr</span>
+                                        <span data-en>@av.AttributeValue!.ValueEn</span>
+                                    </span>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="spec-row">
+                                <span class="k"><span data-ar>التصنيف الرئيسي</span><span data-en>Main Category</span></span>
+                                <span class="v">@p.Category?.NameEn</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="k"><span data-ar>الماركة</span><span data-en>Brand</span></span>
+                                <span class="v">@p.BrandName</span>
                             </div>
                         }
-                        <button class="pslider-arrow pslider-prev" onclick="pslide(@p.Id,-1)">&#8249;</button>
-                        <button class="pslider-arrow pslider-next" onclick="pslide(@p.Id, 1)">&#8250;</button>
                     </div>
-                }
-                else if (allImages.Count == 1)
-                {
-                    <img src="@allImages[0]" alt="@p.NameEn"
-                         style="width:100%;max-height:340px;object-fit:contain;padding:2rem;background:var(--bg)">
-                }
-                else
-                {
-                    <span style="font-size:8rem;padding:2rem;display:flex;align-items:center;justify-content:center;min-height:280px">@(p.Emoji ?? "📦")</span>
-                }
+                </div>
+
+                <div class="desc-card">
+                    <span class="eyebrow"><span data-ar>حول المنتج</span><span data-en>About</span></span>
+                    <h3><span data-ar>ماذا يوجد في العلبة</span><span data-en>What's in the box</span></h3>
+                    <p>
+                        <span data-ar>@p.DescAr</span>
+                        <span data-en>@p.DescEn</span>
+                    </p>
+                    <div class="feature-grid">
+                        <div class="f">
+                            <span class="ico"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 2L4 5v5c0 4 6 8 6 8s6-4 6-8V5l-6-3z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                            <span class="t"><span data-ar>ضمان ١٨ شهر معتمد</span><span data-en>18-month warranty</span></span>
+                        </div>
+                        <div class="f">
+                            <span class="ico"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="2" y="6" width="12" height="9" rx="1" stroke="currentColor" stroke-width="1.5"/><path d="M14 8l4-2v11l-4-2" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
+                            <span class="t"><span data-ar>شحن مجاني فوق ٥,٠٠٠ ج.م</span><span data-en>Free shipping over EGP 5,000</span></span>
+                        </div>
+                        <div class="f">
+                            <span class="ico"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 2C5.6 2 2 5.6 2 10s3.6 8 8 8 8-3.6 8-8M14 6l4-4M18 2v4h-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                            <span class="t"><span data-ar>سياسة إرجاع خلال ١٤ يوم</span><span data-en>14-day return policy</span></span>
+                        </div>
+                        <div class="f">
+                            <span class="ico"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M2 8h16M4 4h12v12H4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
+                            <span class="t"><span data-ar>تقسيط بدون فوائد حتى ١٢ شهر</span><span data-en>0% installments up to 12mo</span></span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- THUMBNAILS — تحت الصورة مباشرة -->
-            @if (allImages.Count > 1)
+            <!-- Related -->
+            @if (Model.RelatedProducts.Any())
             {
-                <div class="pslider-thumbs" id="pthumbs_@p.Id" style="margin-top:10px">
-                    @for (int si = 0; si < allImages.Count; si++)
-                    {
-                        <div class="pthumb @(si == 0 ? "active" : "")" data-idx="@si"
-                             onclick="pslideGo(@p.Id, @si)">
-                            <img src="@allImages[si]" alt="thumb @(si + 1)">
+                <div class="related-section">
+                    <div class="related-header">
+                        <div>
+                            <span class="eyebrow"><span data-ar>قد يعجبك أيضاً</span><span data-en>You might also like</span></span>
+                            <h2 class="headline-md" style="margin-top:12px"><span data-ar>منتجات ذات صلة</span><span data-en>Related products</span></h2>
                         </div>
-                    }
+                        <a href="/Products" class="btn btn-ghost btn-sm"><span data-ar>عرض الكل ←</span><span data-en>View all →</span></a>
+                    </div>
+                    <div class="related-grid">
+                        @foreach (var rel in Model.RelatedProducts.Take(3))
+                        {
+                            <partial name="_ProductCard" model="rel" />
+                        }
+                    </div>
                 </div>
             }
         </div>
-
-        <!-- INFO -->
-        <div>
-            <div class="detail-brand">@p.BrandName</div>
-            <h1 class="detail-title">
-                <span data-ar>@p.NameAr</span>
-                <span data-en>@p.NameEn</span>
-            </h1>
-            <div class="detail-price-wrap">
-                @if (p.OldPrice.HasValue && p.OldPrice.Value > p.Price)
-                {
-                    var discount = (int)Math.Round((1 - p.Price / p.OldPrice.Value) * 100);
-                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:.3rem">
-                        <span class="detail-price">EGP @p.Price.ToString("N0")</span>
-                        <span style="font-size:1rem;color:var(--text3);text-decoration:line-through;font-weight:500">EGP @p.OldPrice.Value.ToString("N0")</span>
-                        <span style="background:#FF3B30;color:white;font-size:11px;font-weight:800;padding:3px 9px;border-radius:100px">-@discount%</span>
-                    </div>
-                }
-                else
-                {
-                    <div class="detail-price">EGP @p.Price.ToString("N0")</div>
-                }
-            </div>
-            <p class="detail-desc">
-                <span data-ar>@p.DescAr</span>
-                <span data-en>@p.DescEn</span>
-            </p>
-            <!-- SPECS -->
-            @{
-                var specs = Model.Attributes
-                .Where(av => av.Attribute != null && av.AttributeValue != null)
-                .ToList();
-            }
-            @if (specs.Any())
-            {
-                <div class="detail-specs">
-                    <h4 style="font-size:14px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.8rem">
-                        <span data-ar>المواصفات التقنية</span>
-                        <span data-en>Specifications</span>
-                    </h4>
-                    @foreach (var av in specs)
-                    {
-                        <div class="spec-row">
-                            <span class="spec-label">
-                                <span data-ar>@av.Attribute!.NameAr</span>
-                                <span data-en>@av.Attribute!.NameEn</span>
-                            </span>
-                            <span class="spec-val">
-                                <span data-ar>@av.AttributeValue!.ValueAr</span>
-                                <span data-en>@av.AttributeValue!.ValueEn</span>
-                            </span>
-                        </div>
-                    }
-                </div>
-            }
-            <!-- ACTIONS -->
-            <div class="detail-actions">
-                <form action="/Cart/Add" method="post" style="display:inline">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="productId" value="@p.Id">
-                    <input type="hidden" name="qty" value="1">
-                    <button type="submit" class="add-cart-btn">
-                        🛒 <span data-ar>أضف للسلة</span><span data-en>Add to Cart</span>
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- RELATED -->
-    @if (Model.RelatedProducts.Any())
-    {
-        <div class="related-section section" style="padding-top:3rem">
-            <h3 style="font-size:1.4rem;font-weight:800;margin-bottom:1.5rem">
-                <span data-ar>منتجات مشابهة</span><span data-en>Related Products</span>
-            </h3>
-            <div class="products-grid">
-                @foreach (var rel in Model.RelatedProducts)
-                {
-                    <partial name="_ProductCard" model="rel" />
-                }
-            </div>
-        </div>
-    }
-</div>
+    </section>
+</main>
 
 @if (TempData["CartAdded"] != null)
 {
@@ -168,130 +259,63 @@
     </div>
 }
 
-@section Styles {
-    <style>
-        .pslider {
-            position: relative;
-            background: var(--bg);
-            overflow: hidden;
-        }
-
-        .pslide {
-            display: none;
-        }
-
-            .pslide.active {
-                display: block;
-            }
-
-            .pslide img {
-                display: block;
-                transition: opacity .3s ease;
-            }
-
-        .pslider-arrow {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 50%;
-            width: 38px;
-            height: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 20px;
-            color: var(--text);
-            transition: all .2s;
-            z-index: 4;
-            box-shadow: 0 2px 8px rgba(0,0,0,.1);
-        }
-
-            .pslider-arrow:hover {
-                background: var(--blue);
-                color: white;
-                border-color: var(--blue);
-            }
-
-        .pslider-prev {
-            right: 12px;
-        }
-
-        .pslider-next {
-            left: 12px;
-        }
-
-        .pslider-thumbs {
-            display: flex;
-            gap: 8px;
-            padding: 8px 4px;
-            overflow-x: auto;
-            border-radius: 12px;
-        }
-
-        .pthumb {
-            width: 64px;
-            height: 64px;
-            flex-shrink: 0;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 2px solid var(--border);
-            cursor: pointer;
-            transition: border-color .2s;
-            background: var(--bg);
-        }
-
-            .pthumb img {
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-            }
-
-            .pthumb.active, .pthumb:hover {
-                border-color: var(--blue);
-            }
-
-            .pthumb.active {
-                box-shadow: 0 0 0 2px rgba(26,107,255,.2);
-            }
-    </style>
-}
-
 @section Scripts {
-    <script>
-        var psliders = {};
-        function pslideGo(productId, idx) {
-            var slider = document.getElementById('pslider_' + productId);
-            var thumbs = document.getElementById('pthumbs_' + productId);
-            if (!slider) return;
-            slider.querySelectorAll('.pslide').forEach(function(s) { s.classList.remove('active'); });
-            if (thumbs) thumbs.querySelectorAll('.pthumb').forEach(function(t) { t.classList.remove('active'); });
-            var slides = slider.querySelectorAll('.pslide');
-            var total  = slides.length;
-            idx = ((idx % total) + total) % total;
-            slides[idx].classList.add('active');
-            if (thumbs) {
-                var th = thumbs.querySelectorAll('.pthumb')[idx];
-                if (th) { th.classList.add('active'); th.scrollIntoView({block:'nearest',inline:'center'}); }
-            }
-            psliders[productId] = idx;
+<script>
+    var psliders = {};
+    var basePrice = @p.Price;
+    var currentQty = 1;
+
+    function changeQty(n) {
+        currentQty = Math.max(1, Math.min(10, currentQty + n));
+        document.getElementById('qty-n').textContent = currentQty;
+        document.getElementById('form-qty').value = currentQty;
+        document.getElementById('btnPrice').textContent = (basePrice * currentQty).toLocaleString('en-US');
+    }
+
+    function pslideGo(productId, idx) {
+        var slider = document.getElementById('pslider_' + productId);
+        var thumbs = document.getElementById('pthumbs_' + productId);
+        if (!slider) return;
+        
+        var slides = slider.querySelectorAll('.pslide');
+        slides.forEach(function(s) { s.style.display = 'none'; s.classList.remove('active'); });
+        if (thumbs) thumbs.querySelectorAll('.pd-thumb').forEach(function(t) { t.classList.remove('active'); });
+        
+        var total  = slides.length;
+        idx = ((idx % total) + total) % total;
+        slides[idx].style.display = 'grid';
+        slides[idx].classList.add('active');
+        
+        if (thumbs) {
+            var th = thumbs.querySelectorAll('.pd-thumb')[idx];
+            if (th) { th.classList.add('active'); th.scrollIntoView({block:'nearest',inline:'center'}); }
         }
-        function pslide(productId, dir) {
-            var current = psliders[productId] || 0;
-            pslideGo(productId, current + dir);
-        }
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.pslider').forEach(function(el) {
-                var startX = 0;
-                var pid = el.id.replace('pslider_', '');
-                el.addEventListener('touchstart', function(e) { startX = e.touches[0].clientX; }, {passive:true});
-                el.addEventListener('touchend',   function(e) {
-                    var diff = startX - e.changedTouches[0].clientX;
-                    if (Math.abs(diff) > 40) pslide(pid, diff > 0 ? 1 : -1);
-                }, {passive:true});
-            });
+        psliders[productId] = idx;
+    }
+
+    function pslide(productId, dir) {
+        var current = psliders[productId] || 0;
+        pslideGo(productId, current + dir);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.pd-main-media').forEach(function(el) {
+            var startX = 0;
+            var pid = el.id.replace('pslider_', '');
+            el.addEventListener('touchstart', function(e) { startX = e.touches[0].clientX; }, {passive:true});
+            el.addEventListener('touchend',   function(e) {
+                var diff = startX - e.changedTouches[0].clientX;
+                if (Math.abs(diff) > 40) pslide(pid, diff > 0 ? 1 : -1);
+            }, {passive:true});
         });
-    </script>
+        
+        // Hide cart toast after 3 seconds
+        var toast = document.getElementById('cartToast');
+        if (toast) {
+            setTimeout(function() {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    });
+</script>
 }

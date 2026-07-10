@@ -164,6 +164,8 @@ graph TD
 | **12** | تأمين العمليات وتحسين البحث | تفعيل التحقق من كمية المدخلات السنوية بسلة الشراء (>0)، وتعديل محرك البحث عن المنتجات بالماركات ليشمل الكيانات المربوطة برمجياً، وربط نظام الشحن بالإعدادات الديناميكية كلياً. |
 | **13** | تغيير هوية المتجر إلى Uni-Shop | استبدال التسمية القديمة "FTD TechZone" كلياً بـ "Uni-Shop" في واجهات العرض، والتذييل، والترويسات، والرسائل والبيانات الافتراضية في قاعدة البيانات. |
 | **14** | ترقية التنسيق البصري والتصميم | إعادة بناء استايلات `site.css` بنظام ألوان Indigo/Rose الراقي وتطبيق تأثيرات Glassmorphism على شريط الملاحة وكروت عرض المنتجات الحديثة. |
+| **15** | دمج وتطبيق التصميم المطور (Aetheric) | نقل الهوية التقنية الفاخرة للفرونت إند، ودمج كروت المنتجات الدائرية وشريط التنقل والفوتر وصفحة تفاصيل المنتج كاملة. |
+
 
 ### 🛠️ سجل الـ Commits المعتمدة في مستودع المشروع (Git):
 
@@ -182,6 +184,8 @@ graph TD
 13. **`a43d7cb`**: `feat: add run-all.bat script to concurrently run MVC and API apps` (إضافة سكربت التشغيل المزدوج).
 14. **`1b2f83b`**: `chore: complete rebranding of FTD TechZone to Uni-Shop in all user facing views, layouts, database seed configuration and templates` (تحديث مسمى العلامة التجارية للمتجر).
 15. **`179e057`**: `style: enhance UI aesthetics with custom indigo rose color system and glassmorphism styling` (ترقية التنسيق البصري وكروت المنتجات وشريط الملاحة).
+16. **`3c9e036`**: `checkpoint: backup current state before applying structural overhaul` (أخذ لقطة احتياطية قبل التعديلات الهيكلية الكبيرة).
+17. **`f1e5a2b`**: `style: integrate modern Aetheric Command Light visual layout and dynamic templates overhaul` (تطبيق المظهر العصري الفاخر Aetheric على الهيرو والتذييل وصفحات المنتجات والسلة والدفع).
 
 ---
 

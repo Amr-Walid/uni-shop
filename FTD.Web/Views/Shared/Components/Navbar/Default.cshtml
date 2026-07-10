@@ -1,102 +1,55 @@
 @model FTD.Web.ViewModels.NavbarViewModel
-<!-- NAV -->
-<nav id="mainNav">
-    <button class="hamburger" id="hamburger" aria-label="Menu">
-        <span></span><span></span><span></span>
-    </button>
-    <div class="nav-logo">
-        <a href="/" style="display:flex;align-items:center;text-decoration:none;gap:10px;">
-            <div class="logo-icon-sm" style="width:34px;height:34px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:white;box-shadow:var(--shadow-blue)">
-                U
-            </div>
-            <span class="logo-text" style="font-family:'Sora','Tajawal',sans-serif;font-size:20px;font-weight:800;color:var(--dark);letter-spacing:-0.5px">Uni<span style="color:var(--orange)">-Shop</span></span>
+<div class="nav-wrap">
+    <nav class="nav">
+        <a href="/" class="logo">
+            <span class="logo-mark"><span>U</span></span>
+            <span>Uni<strong>-Shop</strong></span>
         </a>
-    </div>
-    <ul class="nav-center">
-        <li>
-            <a href="/" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")">
+        <div class="nav-links">
+            <a href="/" class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")">
                 <span data-ar>الرئيسية</span><span data-en>Home</span>
             </a>
-        </li>
-        <li><a href="/#about"><span data-ar>عننا</span><span data-en>About</span></a></li>
-        <li class="nav-megabtn" id="productsMegaBtn">
-            <a href="/Products" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Products" ? "active" : "")" id="productsMegaTrigger">
-                <span data-ar>المنتجات</span><span data-en>Products</span>
-                <span class="mega-arrow">▾</span>
+            <a href="/#about" class="nav-link">
+                <span data-ar>عننا</span><span data-en>About</span>
             </a>
-            <div class="mega-panel" id="productsMegaPanel">
-                <a href="/Products" class="mega-all">
-                    <span class="d-icon">🛍️</span>
-                    <span data-ar>كل المنتجات</span><span data-en>All Products</span>
-                </a>
-                <div class="mega-divider"></div>
-                @foreach (var nb in Model.NavBrands)
-                {
-                    <a href="/brand/@nb.Slug" class="mega-brand-link">
-                        @if (!string.IsNullOrEmpty(nb.LogoPath))
-                        {
-                            <img src="@nb.LogoPath" alt="@nb.NameEn" style="height:18px;object-fit:contain;max-width:70px">
-                        }
-                        else
-                        {
-                            <span>@nb.NameEn</span>
-                        }
-                    </a>
-                }
-            </div>
-        </li>
-        <li><a href="/#contact"><span data-ar>تواصل معنا</span><span data-en>Contact</span></a></li>
-        @foreach (var ni in Model.NavItems)
-        {
-            var niUrl = ni.LinkType == "ContentPage" ? "/page/" + ni.PageSlug
-            : ni.LinkType == "External" ? ni.ExternalUrl
-            : ni.StaticRoute;
-            <li>
-                <a href="@niUrl" @(ni.OpenInNewTab ? "target=_blank" : "")>
-                    <span data-ar>@ni.LabelAr</span><span data-en>@ni.LabelEn</span>
-                </a>
-            </li>
-        }
-    </ul>
-    <div class="nav-right">
-        <div class="search-trigger" onclick="openSearch()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
-            <span><span data-ar>بحث...</span><span data-en>Search...</span></span>
+            <a href="/Products" class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Products" ? "active" : "")">
+                <span data-ar>المنتجات</span><span data-en>Products</span>
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <a href="/#contact" class="nav-link">
+                <span data-ar>تواصل معنا</span><span data-en>Contact</span>
+            </a>
         </div>
-        <a href="/Cart" class="cart-btn">
-            <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" /></svg>
-            <div class="cart-count" id="cartCount">0</div>
-        </a>
-        <button class="lang-btn" onclick="toggleLang()">
-            <span data-ar>EN</span><span data-en>AR</span>
-        </button>
+        <div class="nav-actions">
+            <button class="search-btn" onclick="openSearch()">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M14 14L11 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <span><span data-ar>ابحث عن المنتجات...</span><span data-en>Search products</span></span>
+                <kbd>⌘K</kbd>
+            </button>
+            <a href="/Cart" class="icon-btn primary" aria-label="Cart">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M5 6h11l-1 8H6L5 6zM5 6L4 3H2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="17" r="1.5" fill="currentColor"/><circle cx="14" cy="17" r="1.5" fill="currentColor"/></svg>
+                <span class="cart-badge" id="cartCount" data-cart-count style="display:none">0</span>
+            </a>
+            <button class="lang-toggle" onclick="toggleLang()">
+                <span data-ar>EN</span><span data-en>AR</span>
+            </button>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Menu">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </button>
+        </div>
+    </nav>
+    <div class="mobile-menu" id="mobile-menu">
+        <a href="/" class="mobile-menu-link"><span data-ar>الرئيسية</span><span data-en>Home</span></a>
+        <a href="/#about" class="mobile-menu-link"><span data-ar>عننا</span><span data-en>About</span></a>
+        <a href="/Products" class="mobile-menu-link"><span data-ar>المنتجات</span><span data-en>Products</span></a>
+        <a href="/#contact" class="mobile-menu-link"><span data-ar>تواصل معنا</span><span data-en>Contact</span></a>
     </div>
-</nav>
-<!-- MOBILE NAV DRAWER -->
-<div class="mobile-nav" id="mobileNav">
-    <a href="/">
-        <span data-ar>الرئيسية</span><span data-en>Home</span>
-    </a>
-    <a href="/#about">
-        <span data-ar>عننا</span><span data-en>About</span>
-    </a>
-    <a href="/Products">
-        <span data-ar>كل المنتجات</span><span data-en>All Products</span>
-    </a>
-    @foreach (var nb in Model.NavBrands)
-    {
-        <a href="/brand/@nb.Slug">@nb.NameEn</a>
-    }
-    @foreach (var ni in Model.NavItems)
-    {
-        var niUrl = ni.LinkType == "ContentPage" ? "/page/" + ni.PageSlug
-        : ni.LinkType == "External" ? ni.ExternalUrl
-        : ni.StaticRoute;
-        <a href="@niUrl">
-            <span data-ar>@ni.LabelAr</span><span data-en>@ni.LabelEn</span>
-        </a>
-    }
-    <a href="/#contact">
-        <span data-ar>تواصل معنا</span><span data-en>Contact</span>
-    </a>
 </div>
+<script>
+    function toggleMobileMenu() {
+        var menu = document.getElementById('mobile-menu');
+        if (menu) {
+            menu.classList.toggle('open');
+        }
+    }
+</script>
