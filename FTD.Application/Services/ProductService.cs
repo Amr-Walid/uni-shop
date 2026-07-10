@@ -75,7 +75,7 @@ namespace FTD.Application.Services
         }
 
         // Filtered query for products page with AJAX filters
-        public async Task<List<ProductDto>> GetFilteredAsync(
+        public async Task<List<ProductDto>> GetFilteredBySlugAsync(
             string? brandSlug, string? categorySlug,
             List<int>? attributeValueIds, string? sortBy)
         {
@@ -120,7 +120,7 @@ namespace FTD.Application.Services
             return products.Select(p => p.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList();
         }
 
-        public async Task<List<ProductDto>> GetFilteredAsync(int? categoryId, int? brandId, string? query)
+        public async Task<List<ProductDto>> GetFilteredByIdAsync(int? categoryId, int? brandId, string? query)
         {
             var queryable = _db.Products
                 .Include(p => p.Category)

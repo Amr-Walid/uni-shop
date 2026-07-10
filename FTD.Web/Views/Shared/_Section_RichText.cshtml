@@ -15,6 +15,6 @@
     }
 }
 <div class="page-content" style="margin-bottom:2rem">
-  <span data-ar>@Html.Raw(bodyAr)</span>
-  <span data-en>@Html.Raw(bodyEn)</span>
+  <span data-ar>@Html.Raw(FTD.Application.Common.HtmlSanitizer.Sanitize(bodyAr))</span>
+  <span data-en>@Html.Raw(FTD.Application.Common.HtmlSanitizer.Sanitize(bodyEn))</span>
 </div>

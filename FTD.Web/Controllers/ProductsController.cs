@@ -46,7 +46,7 @@ namespace FTD.Web.Controllers
             if (!string.IsNullOrEmpty(q))
                 products = await _products.SearchAsync(q);
             else
-                products = await _products.GetFilteredAsync(brand, category, attrValues, sort);
+                products = await _products.GetFilteredBySlugAsync(brand, category, attrValues, sort);
 
             // Build attribute filter groups from visible products
             var attrGroups = await _products.BuildAttributeGroupsAsync(products);
@@ -76,7 +76,7 @@ namespace FTD.Web.Controllers
             string? brand, string? category, string? sort,
             [FromQuery(Name = "av")] List<int>? attrValues)
         {
-            var products = await _products.GetFilteredAsync(brand, category, attrValues, sort);
+            var products = await _products.GetFilteredBySlugAsync(brand, category, attrValues, sort);
             var rawGroups = await _products.BuildAttributeGroupsAsync(products);
 
             var result = new
@@ -124,7 +124,7 @@ namespace FTD.Web.Controllers
 
             var categories = await _products.GetActiveCategoriesAsync();
 
-            var products = await _products.GetFilteredAsync(brand.Slug, null, null, "featured");
+            var products = await _products.GetFilteredBySlugAsync(brand.Slug, null, null, "featured");
             var attrGroups = await _products.BuildAttributeGroupsAsync(products);
 
             var vm = new ProductsViewModel

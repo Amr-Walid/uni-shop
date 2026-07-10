@@ -5,7 +5,6 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using FTD.Application.DTOs;
 using FTD.Application.Interfaces;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace FTD.Application.Services
@@ -24,9 +23,9 @@ namespace FTD.Application.Services
             _db = db;
         }
 
-        public async Task<CartDto> GetCartAsync(ISession session)
+        public async Task<CartDto> GetCartAsync(ICartStorage storage)
         {
-            var cartData = session.GetString(CartKey);
+            var cartData = storage.GetRaw();
             var items = new List<CartItemDto>();
 
             if (!string.IsNullOrEmpty(cartData))
@@ -81,40 +80,40 @@ namespace FTD.Application.Services
             return cart;
         }
 
-        public void AddItem(ISession session, int productId, int qty = 1)
+        public void AddItem(ICartStorage storage, int productId, int qty = 1)
         {
-            var items = GetRawItems(session);
+            var items = GetRawItems(storage);
             var existing = items.FirstOrDefault(i => i.ProductId == productId);
             if (existing != null) existing.Qty += qty;
             else items.Add(new RawCartItem { ProductId = productId, Qty = qty });
-            SaveRawItems(session, items);
+            SaveRawItems(storage, items);
         }
 
-        public void UpdateQty(ISession session, int productId, int qty)
+        public void UpdateQty(ICartStorage storage, int productId, int qty)
         {
-            var items = GetRawItems(session);
+            var items = GetRawItems(storage);
             var item = items.FirstOrDefault(i => i.ProductId == productId);
             if (item != null)
             {
                 if (qty <= 0) items.Remove(item);
                 else item.Qty = qty;
             }
-            SaveRawItems(session, items);
+            SaveRawItems(storage, items);
         }
 
-        public void RemoveItem(ISession session, int productId)
+        public void RemoveItem(ICartStorage storage, int productId)
         {
-            var items = GetRawItems(session).Where(i => i.ProductId != productId).ToList();
-            SaveRawItems(session, items);
+            var items = GetRawItems(storage).Where(i => i.ProductId != productId).ToList();
+            SaveRawItems(storage, items);
         }
 
-        public void ClearCart(ISession session) => session.Remove(CartKey);
+        public void ClearCart(ICartStorage storage) => storage.Clear();
 
-        public int GetCount(ISession session) => GetRawItems(session).Sum(i => i.Qty);
+        public int GetCount(ICartStorage storage) => GetRawItems(storage).Sum(i => i.Qty);
 
-        private List<RawCartItem> GetRawItems(ISession session)
+        private List<RawCartItem> GetRawItems(ICartStorage storage)
         {
-            var data = session.GetString(CartKey);
+            var data = storage.GetRaw();
             if (string.IsNullOrEmpty(data))
                 return new List<RawCartItem>();
             try
@@ -127,8 +126,8 @@ namespace FTD.Application.Services
             }
         }
 
-        private void SaveRawItems(ISession session, List<RawCartItem> items)
-            => session.SetString(CartKey, JsonSerializer.Serialize(items));
+        private void SaveRawItems(ICartStorage storage, List<RawCartItem> items)
+            => storage.SetRaw(JsonSerializer.Serialize(items));
 
         private class RawCartItem { public int ProductId { get; set; } public int Qty { get; set; } }
     }

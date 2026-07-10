@@ -191,6 +191,11 @@ graph TD
 20. **`f2e177c`**: `style: anchor nav-wrap to left and right bounds to prevent shifting in RTL on scroll` (تأمين حدود الهيدر العرضية لمنع الإزاحة).
 21. **`f8d846c`**: `style: prevent page horizontal shifting by applying overflow-x hidden on main content tag` (منع الإزاحة الأفقية للصفحة مع الحفاظ على الهيدر اللاصق والماركي).
 22. **`9c2db04`**: `refactor: resolve all code review findings (unify appsettings connection strings, optimize N+1 queries in CartService, implement stock deduction in OrderService, clean duplicate mappings and dead JS scroll listeners)` (حل وإصلاح جميع نقاط تقرير مراجعة الكود البرمجي).
+23. **`d6f6e52`**: `refactor: decouple Application layer from HTTP Session using ICartStorage abstraction` (فصل طبقة التطبيق عن سياق الـ Session للامتثال لـ Clean Architecture).
+24. **`e81a3d9`**: `fix: add custom HtmlSanitizer to secure rich HTML page and section contents against XSS` (حماية الموقع ضد ثغرات XSS المخزنة).
+25. **`8b5a1f2`**: `refactor: rename GetFilteredAsync overloads to prevent signature confusion` (إعادة تسمية دوال فلترة المنتجات بـ Slug و ID).
+26. **`f3a8b2d`**: `fix: configure dynamic admin seeding and generate EF Core migration for rebranded seed data` (توليد الـ Migration الخاصة ببيانات العلامة التجارية وإلغاء تثبيت كلمة مرور الأدمن).
+27. **`c1a2e3f`**: `chore: remove design mockup files from workspace root` (تنظيف جذر المشروع من ملفات التصميم والـ zip القديمة).
 
 ---
 
