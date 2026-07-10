@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FTD.Application.Services
 {
-    public class ProductService
+    public class ProductService : IProductService
     {
         private readonly IAppDbContext _db;
         public ProductService(IAppDbContext db) => _db = db;
@@ -118,6 +118,47 @@ namespace FTD.Application.Services
             }
 
             return products.Select(p => p.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList();
+        }
+
+        public async Task<List<ProductDto>> GetFilteredAsync(int? categoryId, int? brandId, string? query)
+        {
+            var queryable = _db.Products
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
+                .Where(p => p.IsActive)
+                .AsQueryable();
+
+            if (categoryId.HasValue)
+            {
+                queryable = queryable.Where(p => p.CategoryId == categoryId.Value);
+            }
+
+            if (brandId.HasValue)
+            {
+                queryable = queryable.Where(p => p.BrandId == brandId.Value);
+            }
+
+            if (!string.IsNullOrEmpty(query))
+            {
+                var q = query.ToLower().Trim();
+                queryable = queryable.Where(p =>
+                    p.NameAr.ToLower().Contains(q) ||
+                    p.NameEn.ToLower().Contains(q) ||
+                    (p.BrandName != null && p.BrandName.ToLower().Contains(q)) ||
+                    (p.ShortDescAr != null && p.ShortDescAr.ToLower().Contains(q)) ||
+                    (p.ShortDescEn != null && p.ShortDescEn.ToLower().Contains(q)) ||
+                    (p.DescAr != null && p.DescAr.ToLower().Contains(q)) ||
+                    (p.DescEn != null && p.DescEn.ToLower().Contains(q)) ||
+                    (p.Badge != null && p.Badge.ToLower().Contains(q)) ||
+                    (p.Category != null && p.Category.NameAr.ToLower().Contains(q)) ||
+                    (p.Category != null && p.Category.NameEn.ToLower().Contains(q))
+                );
+            }
+
+            queryable = queryable.OrderByDescending(p => p.IsFeatured).ThenBy(p => p.SortOrder);
+
+            var entities = await queryable.ToListAsync();
+            return entities.Select(p => p.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList();
         }
 
         public async Task<ProductDto?> GetBySlugAsync(string slug)
