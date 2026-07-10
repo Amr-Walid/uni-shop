@@ -32,6 +32,9 @@ namespace FTD.Api.Controllers
             var cartItems = new List<CartItemDto>();
             foreach (var item in request.Items)
             {
+                if (item.Quantity <= 0)
+                    return BadRequest("كمية المنتج يجب أن تكون أكبر من الصفر");
+
                 var product = await _productService.GetByIdAsync(item.ProductId);
                 if (product != null && product.IsActive)
                 {
@@ -57,7 +60,7 @@ namespace FTD.Api.Controllers
             var freeAboveStr = await _contentService.GetSettingAsync("shipping.free.above", "5000");
             var freeAbove = decimal.TryParse(freeAboveStr, out var fa) ? fa : 5000m;
 
-            var cartDto = new CartDto { Items = cartItems, ShippingFee = shippingFee };
+            var cartDto = new CartDto { Items = cartItems, ShippingFee = shippingFee, FreeShippingAbove = freeAbove };
             if (cartDto.SubTotal >= freeAbove) cartDto.ShippingFee = 0;
 
             var checkoutDto = new CheckoutDto

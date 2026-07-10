@@ -285,7 +285,8 @@ namespace FTD.Application.DTOs
         public List<CartItemDto> Items { get; set; } = new();
         public decimal SubTotal => Items.Sum(i => i.SubTotal);
         public decimal ShippingFee { get; set; }
-        public bool FreeShipping => SubTotal >= 5000;
+        public decimal FreeShippingAbove { get; set; } = 5000;
+        public bool FreeShipping => SubTotal >= FreeShippingAbove;
         public decimal Total => SubTotal + (FreeShipping ? 0 : ShippingFee);
     }
 

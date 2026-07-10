@@ -31,7 +31,7 @@ namespace FTD.Application.Services
                 Governorate = checkout.Governorate,
                 Notes = checkout.Notes,
                 SubTotal = cart.SubTotal,
-                ShippingFee = cart.FreeShipping ? 0 : cart.ShippingFee,
+                ShippingFee = cart.ShippingFee,
                 TotalAmount = cart.Total,
                 CreatedAt = DateTime.UtcNow,
                 Details = cart.Items.Select(item => new SalesOrderDetail

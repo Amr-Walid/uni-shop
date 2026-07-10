@@ -145,6 +145,8 @@ namespace FTD.Application.Services
                     p.NameAr.ToLower().Contains(q) ||
                     p.NameEn.ToLower().Contains(q) ||
                     (p.BrandName != null && p.BrandName.ToLower().Contains(q)) ||
+                    (p.Brand != null && p.Brand.NameAr.ToLower().Contains(q)) ||
+                    (p.Brand != null && p.Brand.NameEn.ToLower().Contains(q)) ||
                     (p.ShortDescAr != null && p.ShortDescAr.ToLower().Contains(q)) ||
                     (p.ShortDescEn != null && p.ShortDescEn.ToLower().Contains(q)) ||
                     (p.DescAr != null && p.DescAr.ToLower().Contains(q)) ||
@@ -205,10 +207,13 @@ namespace FTD.Application.Services
             var q = query.ToLower().Trim();
             var entities = await _db.Products
                 .Include(p => p.Category)
+                .Include(p => p.Brand)
                 .Where(p => p.IsActive && (
                     p.NameAr.ToLower().Contains(q) ||
                     p.NameEn.ToLower().Contains(q) ||
                     (p.BrandName != null && p.BrandName.ToLower().Contains(q)) ||
+                    (p.Brand != null && p.Brand.NameAr.ToLower().Contains(q)) ||
+                    (p.Brand != null && p.Brand.NameEn.ToLower().Contains(q)) ||
                     (p.ShortDescAr != null && p.ShortDescAr.ToLower().Contains(q)) ||
                     (p.ShortDescEn != null && p.ShortDescEn.ToLower().Contains(q)) ||
                     (p.DescAr != null && p.DescAr.ToLower().Contains(q)) ||
