@@ -313,8 +313,8 @@ namespace FTD.Infrastructure.Data
                 new ContentBlock { Id = 12, Key = "hero.slide1.tag.ar", BodyAr = "وصل حديثاً", UpdatedAt = new DateTime(2026, 1, 1) },
                 new ContentBlock { Id = 13, Key = "hero.slide1.tag.en", BodyEn = "New Arrival", UpdatedAt = new DateTime(2026, 1, 1) },
                 // ── Features Section ──────────────────────────────────────────
-                new ContentBlock { Id = 14, Key = "features.title.ar", BodyAr = "لماذا FTD TechZone؟", UpdatedAt = new DateTime(2026, 1, 1) },
-                new ContentBlock { Id = 15, Key = "features.title.en", BodyEn = "Why FTD TechZone?", UpdatedAt = new DateTime(2026, 1, 1) },
+                new ContentBlock { Id = 14, Key = "features.title.ar", BodyAr = "لماذا Uni-Shop؟", UpdatedAt = new DateTime(2026, 1, 1) },
+                new ContentBlock { Id = 15, Key = "features.title.en", BodyEn = "Why Uni-Shop?", UpdatedAt = new DateTime(2026, 1, 1) },
                 new ContentBlock { Id = 16, Key = "features.1", TitleAr = "✓", BodyAr = "ضمان أصلي على جميع المنتجات", BodyEn = "Original warranty on all products", UpdatedAt = new DateTime(2026, 1, 1) },
                 new ContentBlock { Id = 17, Key = "features.2", TitleAr = "🚚", BodyAr = "توصيل سريع لجميع المحافظات", BodyEn = "Fast delivery to all governorates", UpdatedAt = new DateTime(2026, 1, 1) },
                 new ContentBlock { Id = 18, Key = "features.3", TitleAr = "💬", BodyAr = "دعم فني على مدار الساعة", BodyEn = "24/7 technical support", UpdatedAt = new DateTime(2026, 1, 1) },
@@ -328,12 +328,12 @@ namespace FTD.Infrastructure.Data
             {
                 Id = 1,
                 Phone = "+20 100 000 0000",
-                Email = "info@ftdtechzone.com",
+                Email = "info@unishop.com",
                 AddressAr = "القاهرة، مصر الجديدة",
                 AddressEn = "Cairo, Heliopolis",
                 City = "Cairo",
-                Facebook = "https://facebook.com/ftdtechzone",
-                Instagram = "https://instagram.com/ftdtechzone",
+                Facebook = "https://facebook.com/unishop",
+                Instagram = "https://instagram.com/unishop",
                 WhatsApp = "+201000000000",
                 WorkingHoursAr = "السبت – الخميس: 10ص – 10م",
                 WorkingHoursEn = "Sat – Thu: 10AM – 10PM",
@@ -352,13 +352,13 @@ namespace FTD.Infrastructure.Data
 
             // ── SEED: Site Settings ──────────────────────────────────────────
             builder.Entity<SiteSetting>().HasData(
-                new SiteSetting { Id = 1, Key = "site.name", Value = "FTD TechZone", Description = "اسم الموقع", Type = "text", UpdatedAt = new DateTime(2026, 1, 1) },
-                new SiteSetting { Id = 2, Key = "site.tagline.ar", Value = "الفجر للتجارة", Description = "الشعار بالعربي", Type = "text", UpdatedAt = new DateTime(2026, 1, 1) },
-                new SiteSetting { Id = 3, Key = "site.tagline.en", Value = "Alfajr For Trade", Description = "Tagline English", Type = "text", UpdatedAt = new DateTime(2026, 1, 1) },
+                new SiteSetting { Id = 1, Key = "site.name", Value = "Uni-Shop", Description = "اسم الموقع", Type = "text", UpdatedAt = new DateTime(2026, 1, 1) },
+                new SiteSetting { Id = 2, Key = "site.tagline.ar", Value = "يونى شوب للمبيعات", Description = "الشعار بالعربي", Type = "text", UpdatedAt = new DateTime(2026, 1, 1) },
+                new SiteSetting { Id = 3, Key = "site.tagline.en", Value = "Uni-Shop E-Commerce", Description = "Tagline English", Type = "text", UpdatedAt = new DateTime(2026, 1, 1) },
                 new SiteSetting { Id = 4, Key = "site.primary.color", Value = "#1A6BFF", Description = "اللون الأساسي", Type = "color", UpdatedAt = new DateTime(2026, 1, 1) },
                 new SiteSetting { Id = 5, Key = "shipping.free.above", Value = "5000", Description = "شحن مجاني فوق (EGP)", Type = "text", UpdatedAt = new DateTime(2026, 1, 1) },
                 new SiteSetting { Id = 6, Key = "shipping.fee", Value = "150", Description = "رسوم الشحن (EGP)", Type = "text", UpdatedAt = new DateTime(2026, 1, 1) },
-                new SiteSetting { Id = 7, Key = "meta.title.ar", Value = "FTD TechZone — الفجر للتجارة", Description = "Meta Title", Type = "text", UpdatedAt = new DateTime(2026, 1, 1) },
+                new SiteSetting { Id = 7, Key = "meta.title.ar", Value = "Uni-Shop — وجهتك للتسوق", Description = "Meta Title", Type = "text", UpdatedAt = new DateTime(2026, 1, 1) },
                 new SiteSetting { Id = 8, Key = "meta.desc.ar", Value = "وجهتك الأولى لأحدث التكنولوجيا في مصر", Description = "Meta Desc AR", Type = "text", UpdatedAt = new DateTime(2026, 1, 1) },
                 new SiteSetting { Id = 9, Key = "meta.desc.en", Value = "Your first destination for the latest technology in Egypt", Description = "Meta Desc EN", Type = "text", UpdatedAt = new DateTime(2026, 1, 1) }
             );

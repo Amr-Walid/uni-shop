@@ -12,7 +12,7 @@ namespace FTD.Infrastructure.Services
         public string SmtpHost    { get; set; } = "smtp.gmail.com";
         public int    SmtpPort    { get; set; } = 587;
         public string SenderEmail { get; set; } = "";
-        public string SenderName  { get; set; } = "FTD TechZone";
+        public string SenderName  { get; set; } = "Uni-Shop";
         public string Password    { get; set; } = "";
         public string NotifyEmail { get; set; } = "";
     }
@@ -43,7 +43,7 @@ namespace FTD.Infrastructure.Services
                 var mail = new MailMessage
                 {
                     From       = new MailAddress(_settings.SenderEmail, _settings.SenderName),
-                    Subject    = $"رسالة جديدة من {name} — FTD TechZone",
+                    Subject    = $"رسالة جديدة من {name} — Uni-Shop",
                     IsBodyHtml = true,
                     Body       = $@"
 <div style='font-family:Tahoma,sans-serif;direction:rtl;max-width:600px;margin:0 auto'>
