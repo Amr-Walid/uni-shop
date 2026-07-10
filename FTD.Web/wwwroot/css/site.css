@@ -599,20 +599,29 @@ body.en .dropdown-menu {
 .slide {
     position: absolute;
     inset: 0;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     padding: 0 5%;
-    opacity: 0;
-    transition: opacity .8s ease;
-    pointer-events: none;
-    gap: 4rem
+    gap: 4rem;
+    background: transparent;
 }
 
-    .slide.active {
-        opacity: 1;
-        pointer-events: all
+.slide.active {
+    display: flex;
+    animation: slideFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
     }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
 .slide-tag {
     display: inline-flex;
@@ -693,15 +702,21 @@ body.en .slide-visual {
 }
 
 .product-showcase {
-    background: rgba(255,255,255,.06);
-    border: 1px solid rgba(255,255,255,.1);
-    border-radius: 28px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--rl);
     padding: 2.5rem 2rem;
     text-align: center;
-    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-lg);
     position: relative;
-    overflow: hidden
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+    .product-showcase:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 30px 60px -15px rgba(19, 27, 46, 0.08);
+    }
 
     .product-showcase::before {
         content: '';
@@ -710,15 +725,15 @@ body.en .slide-visual {
         left: -50%;
         width: 200%;
         height: 200%;
-        background: radial-gradient(circle,rgba(26,107,255,.08) 0%,transparent 60%)
+        background: radial-gradient(circle,rgba(0,210,253,.04) 0%,transparent 60%)
     }
 
 .showcase-badge {
     position: absolute;
     top: 1rem;
     right: 1rem;
-    background: var(--blue);
-    color: white;
+    background: var(--orange);
+    color: var(--dark);
     font-size: 10px;
     font-weight: 700;
     padding: 4px 10px;
@@ -736,7 +751,7 @@ body.en .showcase-badge {
     line-height: 1;
     margin-bottom: 1rem;
     display: block;
-    filter: drop-shadow(0 8px 24px rgba(26,107,255,.3))
+    filter: drop-shadow(0 8px 24px rgba(0,122,153,.2))
 }
 
 .showcase-brand {
@@ -749,9 +764,10 @@ body.en .showcase-badge {
 }
 
 .showcase-name {
+    font-family: 'Sora', 'Tajawal', sans-serif;
     font-size: 16px;
     font-weight: 700;
-    color: white;
+    color: var(--dark);
     margin-bottom: 1.2rem
 }
 
@@ -760,7 +776,7 @@ body.en .showcase-badge {
     background: var(--blue);
     color: white;
     font-size: 17px;
-    font-weight: 800;
+    font-weight: 700;
     padding: 8px 22px;
     border-radius: 100px;
     letter-spacing: -.5px
@@ -780,7 +796,7 @@ body.en .showcase-badge {
     width: 8px;
     height: 8px;
     border-radius: 100px;
-    background: rgba(255,255,255,.25);
+    background: rgba(19, 27, 46, 0.15);
     border: none;
     cursor: pointer;
     transition: all .3s;
@@ -796,8 +812,8 @@ body.en .showcase-badge {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    background: rgba(255,255,255,.07);
-    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(0, 96, 121, 0.05);
+    border: 1px solid rgba(0, 96, 121, 0.12);
     border-radius: 50%;
     width: 46px;
     height: 46px;
@@ -808,7 +824,7 @@ body.en .showcase-badge {
     z-index: 10;
     font-size: 20px;
     transition: all .2s;
-    color: white
+    color: var(--blue);
 }
 
     .slider-arrow:hover {
