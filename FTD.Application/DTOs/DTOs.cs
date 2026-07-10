@@ -133,7 +133,7 @@ namespace FTD.Application.DTOs
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
-        public OrderStatusDto Status { get; set; } = new();
+        public OrderStatusDto? Status { get; set; }
         public List<SalesOrderDetailDto> Details { get; set; } = new();
     }
 
@@ -272,6 +272,9 @@ namespace FTD.Application.DTOs
     {
         public int ProductId { get; set; }
         public string ProductName { get; set; } = "";
+        public string? Emoji { get; set; }
+        public string? ImagePath { get; set; }
+        public string? BrandName { get; set; }
         public decimal UnitPrice { get; set; }
         public int Quantity { get; set; }
         public decimal SubTotal => UnitPrice * Quantity;

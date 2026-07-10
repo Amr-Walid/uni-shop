@@ -1,4 +1,5 @@
 using FTD.Application.Services;
+using FTD.Application.Interfaces;
 using FTD.Application.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,8 +10,8 @@ namespace FTD.Web.Controllers.Admin
     [Authorize(Roles = "Admin")]
     public class AdminMessagesController : Controller
     {
-        private readonly MessageService _messages;
-        public AdminMessagesController(MessageService messages) => _messages = messages;
+        private readonly IMessageService _messages;
+        public AdminMessagesController(IMessageService messages) => _messages = messages;
 
         public async Task<IActionResult> Index()
         {

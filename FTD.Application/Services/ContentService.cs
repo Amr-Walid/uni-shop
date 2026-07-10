@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FTD.Application.Services
 {
-    public class ContentService
+    public class ContentService : IContentService
     {
         private readonly IAppDbContext _db;
         public ContentService(IAppDbContext db) => _db = db;

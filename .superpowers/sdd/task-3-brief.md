@@ -1,28 +1,118 @@
-# Task 3: Create FTD.Infrastructure Layer
-
-**Goal:** Create the Infrastructure Layer holding EF Core AppDbContext implementation, Migrations, and SMTP EmailService.
-
+### Task 3: Implement AuthController for Admin JWT Token Generation
 **Files:**
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Infrastructure/FTD.Infrastructure.csproj`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Infrastructure/Data/AppDbContext.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Infrastructure/Services/EmailService.cs`
-- Move: `c:/Users/dell/Documents/unigroup/New folder/FTD.Infrastructure/Migrations/`
+- Create: `FTD.Api/Controllers/AuthController.cs`
 
-- [ ] **Step 1: Scaffold FTD.Infrastructure project**
-  Run: `dotnet new classlib -o FTD.Infrastructure` (CWD: `c:\Users\dell\Documents\unigroup\New folder`)
-- [ ] **Step 2: Add references and EF Core packages**
-  Run: `dotnet sln FTD.Web/FTD.Web.sln add FTD.Infrastructure/FTD.Infrastructure.csproj` (CWD: `c:\Users\dell\Documents\unigroup\New folder`)
-  Run: `dotnet add FTD.Infrastructure/FTD.Infrastructure.csproj reference FTD.Application/FTD.Application.csproj` (CWD: `c:\Users\dell\Documents\unigroup\New folder`)
-  Run: `dotnet add FTD.Infrastructure/FTD.Infrastructure.csproj reference FTD.Domain/FTD.Domain.csproj` (CWD: `c:\Users\dell\Documents\unigroup\New folder`)
-  Run: `dotnet add FTD.Infrastructure/FTD.Infrastructure.csproj package Microsoft.EntityFrameworkCore.SqlServer --version 9.0.0` (CWD: `c:\Users\dell\Documents\unigroup\New folder`)
-  Run: `dotnet add FTD.Infrastructure/FTD.Infrastructure.csproj package Microsoft.AspNetCore.Identity.EntityFrameworkCore --version 9.0.0` (CWD: `c:\Users\dell\Documents\unigroup\New folder`)
-- [ ] **Step 3: Refactor and Move AppDbContext**
-  Move the DB context file from [AppDbContext.cs](file:///c:/Users/dell/Documents/unigroup/New%20folder/FTD.Web/Data/AppDbContext.cs) to `FTD.Infrastructure/Data/AppDbContext.cs`.
-  Implement `IAppDbContext` interface on `AppDbContext`. Update model binding namespaces to `FTD.Domain.Entities`. Ensure the namespace of `AppDbContext` is `FTD.Infrastructure.Data`.
-- [ ] **Step 4: Move Migrations folder**
-  Move all migrations from [Migrations](file:///c:/Users/dell/Documents/unigroup/New%20folder/FTD.Web/Migrations) to `FTD.Infrastructure/Migrations/`. Update namespaces inside all migration files to match `FTD.Infrastructure.Migrations`.
-- [ ] **Step 5: Move EmailService**
-  Move [EmailService.cs](file:///c:/Users/dell/Documents/unigroup/New%20folder/FTD.Web/Services/EmailService.cs) to `FTD.Infrastructure/Services/EmailService.cs`. Implement `IEmailService` interface. Update namespace to `FTD.Infrastructure.Services`.
-- [ ] **Step 6: Verify Infrastructure builds**
-  Run: `dotnet build FTD.Infrastructure/FTD.Infrastructure.csproj`
-  Expected: BUILD SUCCESS.
+**Interfaces:**
+- Consumes: Identity `SignInManager<IdentityUser>`, Identity `UserManager<IdentityUser>`
+- Produces: API endpoint `POST /api/auth/login` returning token.
+
+- [ ] **Step 1: Create AuthController**
+  Create `FTD.Api/Controllers/AuthController.cs`:
+  ```csharp
+  using Microsoft.AspNetCore.Identity;
+  using Microsoft.AspNetCore.Mvc;
+  using Microsoft.IdentityModel.Tokens;
+  using System.IdentityModel.Tokens.Jwt;
+  using System.Security.Claims;
+  using System.Text;
+
+  namespace FTD.Api.Controllers
+  {
+      [ApiController]
+      [Route("api/[controller]")]
+      public class AuthController : ControllerBase
+      {
+          private readonly UserManager<IdentityUser> _userManager;
+          private readonly SignInManager<IdentityUser> _signInManager;
+          private readonly IConfiguration _config;
+
+          public AuthController(
+              UserManager<IdentityUser> userManager,
+              SignInManager<IdentityUser> signInManager,
+              IConfiguration config)
+          {
+              _userManager = userManager;
+              _signInManager = signInManager;
+              _config = config;
+          }
+
+          [HttpPost("login")]
+          public async Task<IActionResult> Login([FromBody] LoginRequest request)
+          {
+              if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
+                  return BadRequest("البريد الإلكتروني وكلمة المرور مطلوبة");
+
+              var user = await _userManager.FindByEmailAsync(request.Email);
+              if (user == null)
+                  return Unauthorized("البريد الإلكتروني أو كلمة المرور غير صحيحة");
+
+              var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, false);
+              if (!result.Succeeded)
+                  return Unauthorized("البريد الإلكتروني أو كلمة المرور غير صحيحة");
+
+              var roles = await _userManager.GetRolesAsync(user);
+              if (!roles.Contains("Admin"))
+                  return Forbid("غير مصرح بالدخول لغير المسؤولين");
+
+              var token = GenerateJwtToken(user, roles);
+              return Ok(new
+              {
+                  token,
+                  email = user.Email,
+                  roles
+              });
+          }
+
+          private string GenerateJwtToken(IdentityUser user, IList<string> roles)
+          {
+              var secret = _config["JwtSettings:Secret"] ?? throw new InvalidOperationException("JWT Secret not configured.");
+              var issuer = _config["JwtSettings:Issuer"];
+              var audience = _config["JwtSettings:Audience"];
+              var expiryMinutesStr = _config["JwtSettings:ExpiryMinutes"];
+              var expiryMinutes = double.TryParse(expiryMinutesStr, out var mins) ? mins : 120;
+
+              var key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secret));
+              var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+              var claims = new List<Claim>
+              {
+                  new Claim(ClaimTypes.NameIdentifier, user.Id),
+                  new Claim(ClaimTypes.Email, user.Email ?? "")
+              };
+
+              foreach (var role in roles)
+                  claims.Add(new Claim(ClaimTypes.Role, role));
+
+              var tokenDescriptor = new SecurityTokenDescriptor
+              {
+                  Subject = new ClaimsIdentity(claims),
+                  Expires = DateTime.UtcNow.AddMinutes(expiryMinutes),
+                  SigningCredentials = creds,
+                  Issuer = issuer,
+                  Audience = audience
+              };
+
+              var tokenHandler = new JwtSecurityTokenHandler();
+              var token = tokenHandler.CreateToken(tokenDescriptor);
+              return tokenHandler.WriteToken(token);
+          }
+
+          public class LoginRequest
+          {
+              public string Email { get; set; } = "";
+              public string Password { get; set; } = "";
+          }
+      }
+  }
+  ```
+
+- [ ] **Step 2: Verify Build**
+  Run: `dotnet build FTD.Api/FTD.Api.csproj`
+  Expected: Build succeeds with 0 errors.
+
+- [ ] **Step 3: Commit Changes**
+  Run:
+  ```bash
+  git add FTD.Api/Controllers/AuthController.cs
+  git commit -m "feat: implement AuthController with JWT token generation for Admin users"
+  ```

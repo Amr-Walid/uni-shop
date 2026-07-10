@@ -1,5 +1,5 @@
 using FTD.Application.DTOs;
-using FTD.Application.Services;
+using FTD.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -15,8 +15,8 @@ namespace FTD.Web.Controllers.Admin
     [Authorize(Roles = "Admin")]
     public class AdminAttributesController : Controller
     {
-        private readonly ProductService _productService;
-        public AdminAttributesController(ProductService productService) => _productService = productService;
+        private readonly IProductService _productService;
+        public AdminAttributesController(IProductService productService) => _productService = productService;
 
         public async Task<IActionResult> Index(int? categoryId)
         {
@@ -106,8 +106,8 @@ namespace FTD.Web.Controllers.Admin
     [Authorize(Roles = "Admin")]
     public class AdminPageSectionsController : Controller
     {
-        private readonly ContentService _contentService;
-        public AdminPageSectionsController(ContentService contentService) => _contentService = contentService;
+        private readonly IContentService _contentService;
+        public AdminPageSectionsController(IContentService contentService) => _contentService = contentService;
 
         // GET /Admin/AdminPageSections/Manage/{pageId}
         public async Task<IActionResult> Manage(int id)

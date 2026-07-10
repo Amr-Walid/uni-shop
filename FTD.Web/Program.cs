@@ -2,7 +2,6 @@ using FTD.Application.Interfaces;
 using FTD.Application.Services;
 using FTD.Infrastructure.Data;
 using FTD.Infrastructure.Services;
-using FTD.Web.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -64,12 +63,12 @@ builder.Services.AddSession(options =>
 builder.Services.AddHttpContextAccessor();
 
 // ── APPLICATION SERVICES ──────────────────────────────────────────────────────
-builder.Services.AddScoped<ProductService>();
-builder.Services.AddScoped<ContentService>();
-builder.Services.AddScoped<OrderService>();
-builder.Services.AddScoped<CartService>();
-builder.Services.AddScoped<MessageService>();
-builder.Services.AddScoped<DashboardService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IContentService, ContentService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 // ── EMAIL SERVICE ─────────────────────────────────────────────────────────────
 var emailSettings = builder.Configuration.GetSection("EmailSettings").Get<EmailSettings>()

@@ -22,7 +22,7 @@ namespace FTD.Api.Controllers
         [HttpPost("checkout")]
         public async Task<IActionResult> Checkout([FromBody] ApiCheckoutRequest request)
         {
-            if (request.Items == null || !request.Items.Any())
+            if (request == null || request.Items == null || !request.Items.Any())
                 return BadRequest("سلة التسوق فارغة");
 
             if (string.IsNullOrEmpty(request.CustomerName) || string.IsNullOrEmpty(request.CustomerPhone) || string.IsNullOrEmpty(request.Address))

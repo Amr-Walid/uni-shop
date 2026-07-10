@@ -1,6 +1,6 @@
 using System.Linq;
 using System.Threading.Tasks;
-using FTD.Application.Services;
+using FTD.Application.Interfaces;
 using FTD.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,9 +8,9 @@ namespace FTD.Web.ViewComponents
 {
     public class FooterViewComponent : ViewComponent
     {
-        private readonly ContentService _contentService;
+        private readonly IContentService _contentService;
 
-        public FooterViewComponent(ContentService contentService)
+        public FooterViewComponent(IContentService contentService)
         {
             _contentService = contentService;
         }

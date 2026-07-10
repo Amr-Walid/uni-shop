@@ -1,4 +1,5 @@
 using FTD.Application.Services;
+using FTD.Application.Interfaces;
 using FTD.Application.DTOs;
 using FTD.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
@@ -10,9 +11,9 @@ namespace FTD.Web.Controllers
 {
     public class ProductsController : Controller
     {
-        private readonly ProductService _products;
+        private readonly IProductService _products;
 
-        public ProductsController(ProductService products)
+        public ProductsController(IProductService products)
         {
             _products = products;
         }
@@ -48,20 +49,7 @@ namespace FTD.Web.Controllers
                 products = await _products.GetFilteredAsync(brand, category, attrValues, sort);
 
             // Build attribute filter groups from visible products
-            var rawGroups = await _products.BuildAttributeGroupsAsync(products);
-            var attrGroups = rawGroups.Select(g => new AttributeFilterGroup
-            {
-                AttributeId = g.AttributeId,
-                NameAr = g.NameAr,
-                NameEn = g.NameEn,
-                Options = g.Options.Select(o => new AttributeFilterOption
-                {
-                    ValueId = o.ValueId,
-                    ValueAr = o.ValueAr,
-                    ValueEn = o.ValueEn,
-                    Count = o.Count
-                }).ToList()
-            }).ToList();
+            var attrGroups = await _products.BuildAttributeGroupsAsync(products);
 
             var vm = new ProductsViewModel
             {
@@ -137,20 +125,7 @@ namespace FTD.Web.Controllers
             var categories = await _products.GetActiveCategoriesAsync();
 
             var products = await _products.GetFilteredAsync(brand.Slug, null, null, "featured");
-            var rawGroups = await _products.BuildAttributeGroupsAsync(products);
-            var attrGroups = rawGroups.Select(g => new AttributeFilterGroup
-            {
-                AttributeId = g.AttributeId,
-                NameAr = g.NameAr,
-                NameEn = g.NameEn,
-                Options = g.Options.Select(o => new AttributeFilterOption
-                {
-                    ValueId = o.ValueId,
-                    ValueAr = o.ValueAr,
-                    ValueEn = o.ValueEn,
-                    Count = o.Count
-                }).ToList()
-            }).ToList();
+            var attrGroups = await _products.BuildAttributeGroupsAsync(products);
 
             var vm = new ProductsViewModel
             {

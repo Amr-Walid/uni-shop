@@ -11,14 +11,14 @@ namespace FTD.Web.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ProductService _products;
-        private readonly ContentService _content;
-        private readonly MessageService _messages;
+        private readonly IProductService _products;
+        private readonly IContentService _content;
+        private readonly IMessageService _messages;
 
         public HomeController(
-            ProductService products,
-            ContentService content,
-            MessageService messages)
+            IProductService products,
+            IContentService content,
+            IMessageService messages)
         {
             _products = products;
             _content = content;

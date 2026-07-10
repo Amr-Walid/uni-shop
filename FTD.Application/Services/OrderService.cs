@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FTD.Application.Services
 {
-    public class OrderService
+    public class OrderService : IOrderService
     {
         private readonly IAppDbContext _db;
         public OrderService(IAppDbContext db) => _db = db;

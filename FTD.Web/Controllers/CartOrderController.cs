@@ -1,6 +1,5 @@
 using FTD.Application.DTOs;
-using FTD.Application.Services;
-using FTD.Web.Services;
+using FTD.Application.Interfaces;
 using FTD.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
@@ -11,13 +10,14 @@ namespace FTD.Web.Controllers
     // ── CART ──────────────────────────────────────────────────────────────────
     public class CartController : Controller
     {
-        private readonly CartService _cart;
+        private readonly ICartService _cart;
 
-        public CartController(CartService cart) => _cart = cart;
+        public CartController(ICartService cart) => _cart = cart;
 
         public async Task<IActionResult> Index()
         {
-            var vm = await _cart.GetCartAsync(HttpContext.Session);
+            var cartDto = await _cart.GetCartAsync(HttpContext.Session);
+            var vm = CartViewModelMapper.FromDto(cartDto);
             return View(vm);
         }
 
@@ -60,10 +60,10 @@ namespace FTD.Web.Controllers
     // ── ORDER ─────────────────────────────────────────────────────────────────
     public class OrderController : Controller
     {
-        private readonly CartService _cart;
-        private readonly OrderService _orders;
+        private readonly ICartService _cart;
+        private readonly IOrderService _orders;
 
-        public OrderController(CartService cart, OrderService orders)
+        public OrderController(ICartService cart, IOrderService orders)
         {
             _cart = cart;
             _orders = orders;
@@ -72,11 +72,11 @@ namespace FTD.Web.Controllers
         // GET /Order/Checkout
         public async Task<IActionResult> Checkout()
         {
-            var cart = await _cart.GetCartAsync(HttpContext.Session);
-            if (!cart.Items.Any())
+            var cartDto = await _cart.GetCartAsync(HttpContext.Session);
+            if (!cartDto.Items.Any())
                 return Redirect("/Cart");
 
-            var vm = new CheckoutViewModel { Cart = cart };
+            var vm = new CheckoutViewModel { Cart = CartViewModelMapper.FromDto(cartDto) };
             return View(vm);
         }
 
@@ -85,9 +85,10 @@ namespace FTD.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Checkout(CheckoutViewModel vm)
         {
-            vm.Cart = await _cart.GetCartAsync(HttpContext.Session);
+            var cartDto = await _cart.GetCartAsync(HttpContext.Session);
+            vm.Cart = CartViewModelMapper.FromDto(cartDto);
 
-            if (!vm.Cart.Items.Any())
+            if (!cartDto.Items.Any())
                 return Redirect("/Cart");
 
             if (!ModelState.IsValid)
@@ -102,18 +103,6 @@ namespace FTD.Web.Controllers
                 City = vm.City,
                 Governorate = vm.Governorate,
                 Notes = vm.Notes
-            };
-
-            var cartDto = new CartDto
-            {
-                ShippingFee = vm.Cart.ShippingFee,
-                Items = vm.Cart.Items.Select(i => new CartItemDto
-                {
-                    ProductId = i.ProductId,
-                    ProductName = i.ProductName,
-                    UnitPrice = i.UnitPrice,
-                    Quantity = i.Quantity
-                }).ToList()
             };
 
             var order = await _orders.CreateOrderAsync(checkoutDto, cartDto);
@@ -133,9 +122,9 @@ namespace FTD.Web.Controllers
     // ── PAGE ──────────────────────────────────────────────────────────────────
     public class PageController : Controller
     {
-        private readonly ContentService _content;
+        private readonly IContentService _content;
 
-        public PageController(ContentService content) => _content = content;
+        public PageController(IContentService content) => _content = content;
 
         public async Task<IActionResult> Show(string slug)
         {

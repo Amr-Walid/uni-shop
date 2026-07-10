@@ -31,8 +31,8 @@ namespace FTD.Web.ViewModels
         public string? SearchQuery { get; set; }
         public string? SortBy { get; set; }
         public List<int> SelectedAttrValues { get; set; } = new();
-        // Attribute filter groups
-        public List<AttributeFilterGroup> AttributeGroups { get; set; } = new();
+        // Uses AttributeFilterGroupDto from Application — no duplicate class
+        public List<AttributeFilterGroupDto> AttributeGroups { get; set; } = new();
         public int TotalCount { get; set; }
     }
 
@@ -121,14 +121,8 @@ namespace FTD.Web.ViewModels
         public decimal TodayRevenue { get; set; }
         public decimal MonthRevenue { get; set; }
         public List<SalesOrderDto> RecentOrders { get; set; } = new();
-        public List<OrderStatusCount> OrdersByStatus { get; set; } = new();
-    }
-
-    public class OrderStatusCount
-    {
-        public string StatusName { get; set; } = "";
-        public string ColorHex { get; set; } = "";
-        public int Count { get; set; }
+        // Uses OrderStatusCountDto directly — no duplicate class needed
+        public List<OrderStatusCountDto> OrdersByStatus { get; set; } = new();
     }
 
     // ── ADMIN: Product Form ───────────────────────────────────────────────────
@@ -144,46 +138,11 @@ namespace FTD.Web.ViewModels
         public List<ProductImageDto> ExistingImages { get; set; } = new();
     }
 
-    // ── PRODUCTS PAGE VIEWMODEL ───────────────────────────────────────────────
-    public class ProductsPageViewModel
-    {
-        public List<ProductDto> Products { get; set; } = new();
-        public List<CategoryDto> Categories { get; set; } = new();
-        public List<BrandDto> Brands { get; set; } = new();
-        public List<ProductAttributeDto> Attributes { get; set; } = new();
-
-        // Active filters
-        public int? CategoryId { get; set; }
-        public int? BrandId { get; set; }
-        public string? SearchQuery { get; set; }
-        public Dictionary<int, List<int>> AttrFilters { get; set; } = new();
-
-        public int TotalCount { get; set; }
-        public string? SortBy { get; set; }
-    }
-
     // ── ADMIN: Order Detail ───────────────────────────────────────────────────
     public class OrderDetailViewModel
     {
         public SalesOrderDto Order { get; set; } = null!;
         public List<OrderStatusDto> AllStatuses { get; set; } = new();
-    }
-
-    // ── PRODUCTS FILTER HELPERS ───────────────────────────────────────────────
-    public class AttributeFilterGroup
-    {
-        public int AttributeId { get; set; }
-        public string NameAr { get; set; } = "";
-        public string NameEn { get; set; } = "";
-        public List<AttributeFilterOption> Options { get; set; } = new();
-    }
-
-    public class AttributeFilterOption
-    {
-        public int ValueId { get; set; }
-        public string ValueAr { get; set; } = "";
-        public string ValueEn { get; set; } = "";
-        public int Count { get; set; }
     }
 
     // ── LAYOUT VIEW COMPONENTS ────────────────────────────────────────────────

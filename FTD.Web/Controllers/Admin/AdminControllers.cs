@@ -2,7 +2,6 @@ using FTD.Application.Interfaces;
 using FTD.Application.DTOs;
 using FTD.Application.Mappers;
 using FTD.Domain.Entities;
-using FTD.Application.Services;
 using FTD.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -21,13 +20,13 @@ namespace FTD.Web.Controllers.Admin
     [Authorize(Roles = "Admin")]
     public class DashboardController : Controller
     {
-        private readonly DashboardService _dashboardService;
-        public DashboardController(DashboardService dashboardService) => _dashboardService = dashboardService;
+        private readonly IDashboardService _dashboardService;
+        public DashboardController(IDashboardService dashboardService) => _dashboardService = dashboardService;
 
         public async Task<IActionResult> Index()
         {
             var data = await _dashboardService.GetDashboardDataAsync();
-            
+
             var vm = new DashboardViewModel
             {
                 TotalProducts = data.TotalProducts,
@@ -37,12 +36,7 @@ namespace FTD.Web.Controllers.Admin
                 TodayRevenue = data.TodayRevenue,
                 MonthRevenue = data.MonthRevenue,
                 RecentOrders = data.RecentOrders,
-                OrdersByStatus = data.OrdersByStatus.Select(s => new OrderStatusCount
-                {
-                    StatusName = s.StatusName,
-                    ColorHex = s.ColorHex,
-                    Count = s.Count
-                }).ToList()
+                OrdersByStatus = data.OrdersByStatus
             };
             return View("~/Views/Admin/Dashboard/Index.cshtml", vm);
         }
@@ -52,9 +46,9 @@ namespace FTD.Web.Controllers.Admin
     [Authorize(Roles = "Admin")]
     public class AdminProductsController : Controller
     {
-        private readonly ProductService _productService;
+        private readonly IProductService _productService;
         private readonly IWebHostEnvironment _env;
-        public AdminProductsController(ProductService productService, IWebHostEnvironment env)
+        public AdminProductsController(IProductService productService, IWebHostEnvironment env)
         { _productService = productService; _env = env; }
 
         public async Task<IActionResult> Index()
@@ -215,8 +209,8 @@ namespace FTD.Web.Controllers.Admin
     [Authorize(Roles = "Admin")]
     public class AdminCategoriesController : Controller
     {
-        private readonly ProductService _productService;
-        public AdminCategoriesController(ProductService productService) => _productService = productService;
+        private readonly IProductService _productService;
+        public AdminCategoriesController(IProductService productService) => _productService = productService;
 
         public async Task<IActionResult> Index()
         {
@@ -261,8 +255,8 @@ namespace FTD.Web.Controllers.Admin
     [Authorize(Roles = "Admin")]
     public class AdminOrdersController : Controller
     {
-        private readonly OrderService _orders;
-        public AdminOrdersController(OrderService orders) => _orders = orders;
+        private readonly IOrderService _orders;
+        public AdminOrdersController(IOrderService orders) => _orders = orders;
 
         public async Task<IActionResult> Index(int? statusId)
         {
@@ -302,8 +296,8 @@ namespace FTD.Web.Controllers.Admin
     [Authorize(Roles = "Admin")]
     public class AdminContentController : Controller
     {
-        private readonly ContentService _content;
-        public AdminContentController(ContentService content) => _content = content;
+        private readonly IContentService _content;
+        public AdminContentController(IContentService content) => _content = content;
 
         public async Task<IActionResult> Blocks()
         {
@@ -359,8 +353,8 @@ namespace FTD.Web.Controllers.Admin
     [Authorize(Roles = "Admin")]
     public class AdminSettingsController : Controller
     {
-        private readonly ContentService _content;
-        public AdminSettingsController(ContentService content) => _content = content;
+        private readonly IContentService _content;
+        public AdminSettingsController(IContentService content) => _content = content;
 
         public async Task<IActionResult> Index()
         {

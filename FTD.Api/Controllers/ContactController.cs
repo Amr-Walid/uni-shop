@@ -14,7 +14,7 @@ namespace FTD.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> SendMessage([FromBody] ContactMessageDto dto)
         {
-            if (string.IsNullOrEmpty(dto.Name) || string.IsNullOrEmpty(dto.Email) || string.IsNullOrEmpty(dto.Message))
+            if (dto == null || string.IsNullOrEmpty(dto.Name) || string.IsNullOrEmpty(dto.Email) || string.IsNullOrEmpty(dto.Message))
                 return BadRequest("جميع الحقول الإلزامية مطلوبة (الاسم، البريد الإلكتروني، الرسالة)");
 
             await _messageService.SaveMessageAsync(dto);

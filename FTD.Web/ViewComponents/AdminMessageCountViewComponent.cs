@@ -1,14 +1,14 @@
 using System.Threading.Tasks;
-using FTD.Application.Services;
+using FTD.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FTD.Web.ViewComponents
 {
     public class AdminMessageCountViewComponent : ViewComponent
     {
-        private readonly MessageService _messageService;
+        private readonly IMessageService _messageService;
 
-        public AdminMessageCountViewComponent(MessageService messageService)
+        public AdminMessageCountViewComponent(IMessageService messageService)
         {
             _messageService = messageService;
         }

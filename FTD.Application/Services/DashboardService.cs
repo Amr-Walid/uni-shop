@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FTD.Application.Services
 {
-    public class DashboardService
+    public class DashboardService : IDashboardService
     {
         private readonly IAppDbContext _db;
 

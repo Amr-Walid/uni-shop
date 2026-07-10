@@ -1,36 +1,51 @@
-# Task 1: Create FTD.Domain Layer
-
-**Goal:** Create a clean Domain project holding the entities without external web or DB context references.
-
+### Task 1: Scaffold FTD.Api Project
 **Files:**
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Domain/FTD.Domain.csproj`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Domain/Entities/Brand.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Domain/Entities/Category.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Domain/Entities/Product.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Domain/Entities/ProductImage.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Domain/Entities/ProductAttribute.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Domain/Entities/AttributeValue.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Domain/Entities/ProductAttributeValue.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Domain/Entities/OrderStatus.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Domain/Entities/SalesOrder.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Domain/Entities/SalesOrderDetail.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Domain/Entities/ContentBlock.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Domain/Entities/ContentPage.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Domain/Entities/PageSection.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Domain/Entities/NavigationItem.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Domain/Entities/ContactInfo.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Domain/Entities/ContactMessage.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Domain/Entities/SiteSetting.cs`
-- Modify: `c:/Users/dell/Documents/unigroup/New folder/FTD.Web/FTD.Web.sln`
+- Create: `FTD.Api/FTD.Api.csproj`
+- Modify: `FTD.Web/FTD.Web.sln` (Register project)
 
-- [ ] **Step 1: Scaffold FTD.Domain project**
-  Run: `dotnet new classlib -o FTD.Domain` (CWD: `c:\Users\dell\Documents\unigroup\New folder`)
-- [ ] **Step 2: Add FTD.Domain to the solution file**
-  Run: `dotnet sln FTD.Web/FTD.Web.sln add FTD.Domain/FTD.Domain.csproj` (CWD: `c:\Users\dell\Documents\unigroup\New folder`)
-- [ ] **Step 3: Extract Domain Entities**
-  Extract all domain classes from [DomainModels.cs](file:///c:/Users/dell/Documents/unigroup/New%20folder/FTD.Web/Models/DomainModels.cs) into individual files inside `FTD.Domain/Entities/`. Use namespace `FTD.Domain.Entities`. Remove web-specific properties such as `IFormFile` from entities.
-- [ ] **Step 4: Verify Domain builds**
-  Run: `dotnet build FTD.Domain/FTD.Domain.csproj`
-  Expected: BUILD SUCCESS.
-- [ ] **Step 5: Commit Domain setup**
-  Run: `git add FTD.Domain/` followed by a commit.
+**Interfaces:**
+- Consumes: `FTD.Application/FTD.Application.csproj`, `FTD.Infrastructure/FTD.Infrastructure.csproj`
+- Produces: Base project structure for FTD.Api
+
+- [ ] **Step 1: Create FTD.Api project file**
+  Create `FTD.Api/FTD.Api.csproj` with the following content:
+  ```xml
+  <Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+      <TargetFramework>net9.0</TargetFramework>
+      <Nullable>enable</Nullable>
+      <ImplicitUsings>enable</ImplicitUsings>
+      <RootNamespace>FTD.Api</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\FTD.Application\FTD.Application.csproj" />
+      <ProjectReference Include="..\FTD.Infrastructure\FTD.Infrastructure.csproj" />
+    </ItemGroup>
+
+  </Project>
+  ```
+
+- [ ] **Step 2: Add FTD.Api project to the Solution**
+  Run: `dotnet sln FTD.Web/FTD.Web.sln add FTD.Api/FTD.Api.csproj`
+  Expected: Command returns successfully, adding FTD.Api to the solution configuration.
+
+- [ ] **Step 3: Verify Solution Build**
+  Run: `dotnet build FTD.Web/FTD.Web.sln`
+  Expected: Build succeeds with 0 errors and 0 warnings.
+
+- [ ] **Step 4: Commit Changes**
+  Run:
+  ```bash
+  git add FTD.Api/FTD.Api.csproj FTD.Web/FTD.Web.sln
+  git commit -m "chore: scaffold FTD.Api project and link to solution"
+  ```

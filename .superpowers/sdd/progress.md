@@ -17,8 +17,10 @@
 
 - [x] Task 7: Configure AppSettings, JWT, CORS, and Services in Program.cs
   * Task 7: complete (commits 76c8f96..c38bf0f, review clean)
-- [ ] Task 8: Implement AuthController for Admin JWT Token Generation
-- [ ] Task 9: Implement Public Catalog Endpoints (Products, Categories, Brands)
+- [x] Task 8: Implement AuthController for Admin JWT Token Generation
+  * Task 8: complete (commits 907bdf1..5ac2313, review clean)
+- [x] Task 9: Implement Public Catalog Endpoints (Products, Categories, Brands)
+  * Task 9: complete (commits 5ac2313..47bdc1f, review clean)
 - [ ] Task 10: Implement Public Checkout and Contact Endpoints
 - [ ] Task 11: Implement Secured Admin Dashboard and Orders Management API
 

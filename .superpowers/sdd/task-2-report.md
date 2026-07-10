@@ -1,70 +1,53 @@
-# Task 2 Report: Create FTD.Application Layer
+# Task 2 Report: Configure AppSettings, JWT, CORS, and Services in Program.cs
 
-## What was Implemented
+## What was implemented
+1. **FTD.Api/appsettings.json**:
+   - Added configuration settings for Database Connection (`DefaultConnection`).
+   - Added `JwtSettings` with a secure 256-bit secret key, issuer, audience, and expiration period (120 minutes).
+   - Added SMTP settings under `EmailSettings`.
+2. **FTD.Api/Properties/launchSettings.json**:
+   - Created the launch settings profile configured to run the web API locally on port `5100` (`http://localhost:5100`).
+3. **FTD.Api/Program.cs**:
+   - Registered `AppDbContext` using SQL Server.
+   - Configured Scoped registration for `IAppDbContext` resolved via `AppDbContext`.
+   - Configured ASP.NET Core Identity with password complexity rules.
+   - Set up JWT Bearer authentication with validation parameters (Symmetric key, issuer/audience validation, zero clock skew).
+   - Configured a CORS policy named `"AllowAll"` to permit any origin, method, and headers.
+   - Registered all Core business services (`IProductService`, `IContentService`, `IOrderService`, `ICartService`, `IMessageService`, `IDashboardService`) with Scoped lifetimes.
+   - Registered `EmailSettings` as a Singleton and `IEmailService` (mapped to `EmailService`) as Scoped.
+   - Arranged the middleware pipeline to use CORS, authentication, authorization, and controller routing.
 
-In this task, we created and structured the **FTD.Application** layer to hold decoupled interfaces, data transfer objects (DTOs), mappers, and business services, aligning with Clean Architecture principles.
+## Test Results & Verification
+- Ran local build for the `FTD.Api` project.
+- **Build Output Evidence**:
+  ```text
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  FTD.Domain -> C:\Users\dell\Documents\unigroup\New folder\FTD.Domain\bin\Debug\net9.0\FTD.Domain.dll
+  FTD.Application -> C:\Users\dell\Documents\unigroup\New folder\FTD.Application\bin\Debug\net9.0\FTD.Application.dll
+  FTD.Infrastructure -> C:\Users\dell\Documents\unigroup\New folder\FTD.Infrastructure\bin\Debug\net9.0\FTD.Infrastructure.dll
+  FTD.Api -> C:\Users\dell\Documents\unigroup\New folder\FTD.Api\bin\Debug\net9.0\FTD.Api.dll
 
-1. **Scaffolded FTD.Application Project**:
-   - Created `FTD.Application.csproj` as a Class Library (`net9.0`).
-   - Added reference to `FTD.Domain`.
-   - Associated the new project with the solution `FTD.Web.sln`.
-   - Added reference package `Microsoft.EntityFrameworkCore` to support generic DbSets in the context interface.
+  Build succeeded.
+      0 Warning(s)
+      0 Error(s)
+  ```
 
-2. **Defined Core Application Interfaces**:
-   - `IAppDbContext.cs`: Declared Entity Framework `DbSet<T>` properties matching all 17 domain entities from the domain layer and defined `SaveChangesAsync()`.
-   - `IEmailService.cs`: Declared `SendContactNotificationAsync` method for sending contact messages.
-
-3. **Created DTOs and Mappers**:
-   - `DTOs.cs`: Defined plain data-transfer representation objects (`BrandDto`, `CategoryDto`, `ProductDto`, `ProductImageDto`, `ProductAttributeDto`, `AttributeValueDto`, `ProductAttributeValueDto`, `OrderStatusDto`, `SalesOrderDto`, `SalesOrderDetailDto`, `ContentBlockDto`, `ContentPageDto`, `PageSectionDto`, `NavigationItemDto`, `ContactInfoDto`, `SiteSettingDto`, `ContactMessageDto`).
-   - Added decoupled input models (`CheckoutDto`, `CartItemDto`, `CartDto`) to represent checkout data passed to `OrderService` without coupling the application services to presentation ViewModels.
-   - `MappingExtensions.cs`: Created manual extension mapper methods mapping domain entity types to their respective DTO types. Implemented cyclic-reference protection for `NavigationItemDto` by avoiding infinite recursive calls on parent/child relationships.
-
-4. **Moved and Refactored Business Services**:
-   - Created `ProductService.cs`, `ContentService.cs`, and `OrderService.cs` in `FTD.Application/Services/`.
-   - Refactored the database operations to rely on the new `IAppDbContext` interface instead of the concrete `AppDbContext` dependency.
-   - Refactored query results to return DTO objects (e.g. `ProductDto`, `SalesOrderDto`, `ContentPageDto`, `ContactInfoDto`) using mapping extension methods.
-
----
-
-## Files Changed/Created
-
-- **Created**:
-  - `FTD.Application/FTD.Application.csproj`
-  - `FTD.Application/Interfaces/IAppDbContext.cs`
-  - `FTD.Application/Interfaces/IEmailService.cs`
-  - `FTD.Application/DTOs/DTOs.cs`
-  - `FTD.Application/Mappers/MappingExtensions.cs`
-  - `FTD.Application/Services/ProductService.cs`
-  - `FTD.Application/Services/ContentService.cs`
-  - `FTD.Application/Services/OrderService.cs`
-- **Modified**:
-  - `FTD.Web/FTD.Web.sln` (associated new FTD.Application project)
-  - `.superpowers/sdd/progress.md` (updated progress ledger)
-
----
+## Files Changed
+- `FTD.Api/appsettings.json` (created)
+- `FTD.Api/Properties/launchSettings.json` (created)
+- `FTD.Api/Program.cs` (created/updated)
 
 ## Self-Review Findings
-
-- **Compilation**: Successfully compiled the newly created `FTD.Application` project with zero errors and zero warnings.
-- **Decoupling**: Business services are fully decoupled from concrete database context (`AppDbContext`) and presentation layer view models (`CheckoutViewModel`, `CartViewModel`). Instead, they communicate using generic interfaces (`IAppDbContext`) and plain-object DTOs (`CheckoutDto`, `CartDto`).
-- **Safety**: Safe handling of recursive/cyclic parent-child relations in `NavigationItem` mapping to DTO.
-
----
+- Verified that all required namespaces (like `FTD.Application.Interfaces`, `FTD.Infrastructure.Services`, `FTD.Infrastructure.Data`) exist and match the actual implementation namespaces in the solution.
+- Checked that Identity password requirements matches exactly with Task Brief requirements:
+  - `RequireDigit = true`
+  - `RequiredLength = 8`
+  - `RequireUppercase = false`
+  - `RequireNonAlphanumeric = false`
+  - `SignIn.RequireConfirmedAccount = false`
+- JWT validation logic utilizes `ClockSkew = TimeSpan.Zero` for exact token expiration enforcement.
+- CORS policy matches `"AllowAll"`.
 
 ## Issues or Concerns
-
-- None. Refactoring followed clean architecture principles and compiled correctly.
-
----
-
-## Resolved Reviewer Issues
-
-In response to the reviewer feedback, the following issues were resolved:
-
-1. **Unscalable In-Memory Filtering in ProductService.cs & ProductsController.cs**:
-   - **Location**: `GetFilteredAsync` in `FTD.Application/Services/ProductService.cs` and `BuildAttributeGroupsAsync` in `FTD.Web/Controllers/ProductsController.cs`.
-   - **Fix**: Replaced the inefficient call `_db.ProductAttributeValues.ToListAsync()` (which fetched all records into web server memory before filtering) with database-level filtering. The query now uses `.Where(av => productIds.Contains(av.ProductId)).ToListAsync()` to filter records on the database server before retrieving them.
-   
-2. **Transactional Integrity in OrderService.cs**:
-   - **Location**: `CreateOrderAsync` in `FTD.Application/Services/OrderService.cs`.
-   - **Fix**: Replaced the two separate `SaveChangesAsync()` calls (which first saved the order to retrieve its ID, and then saved details, leaving room for orphaned orders if the second call failed) with a single atomic transaction. The `Details` collection on `SalesOrder` is now populated directly in-memory and committed to the database in a single `SaveChangesAsync()` call, guaranteeing transactional integrity.
+- None.

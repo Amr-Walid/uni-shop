@@ -1,5 +1,5 @@
 using FTD.Application.DTOs;
-using FTD.Application.Services;
+using FTD.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
@@ -14,10 +14,10 @@ namespace FTD.Web.Controllers.Admin
     [Authorize(Roles = "Admin")]
     public class AdminBrandsController : Controller
     {
-        private readonly ProductService _productService;
+        private readonly IProductService _productService;
         private readonly IWebHostEnvironment _env;
 
-        public AdminBrandsController(ProductService productService, IWebHostEnvironment env)
+        public AdminBrandsController(IProductService productService, IWebHostEnvironment env)
         {
             _productService = productService;
             _env = env;

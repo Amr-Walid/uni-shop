@@ -66,8 +66,8 @@
     <div class="a-card" style="margin-bottom:1rem">
       <h3 class="a-card-title">الحالة الحالية</h3>
       <div style="margin:1rem 0">
-        <span class="status-badge" style="font-size:14px;padding:8px 16px;background:@(o.Status.ColorHex)20;color:@o.Status.ColorHex;border:1px solid @(o.Status.ColorHex)40">
-          @o.Status.Icon @o.Status.NameAr
+        <span class="status-badge" style="font-size:14px;padding:8px 16px;background:@(o.Status?.ColorHex ?? "#888888")20;color:@(o.Status?.ColorHex ?? "#888888");border:1px solid @(o.Status?.ColorHex ?? "#888888")40">
+          @o.Status?.Icon @o.Status?.NameAr
         </span>
       </div>
       <form action="/Admin/AdminOrders/UpdateStatus" method="post">

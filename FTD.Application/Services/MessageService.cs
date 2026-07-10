@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FTD.Application.Services
 {
-    public class MessageService
+    public class MessageService : IMessageService
     {
         private readonly IAppDbContext _db;
         private readonly IEmailService _email;

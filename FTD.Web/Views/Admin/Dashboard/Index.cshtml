@@ -94,8 +94,8 @@
               <td style="direction:ltr">@order.CustomerPhone</td>
               <td><strong>EGP @order.TotalAmount.ToString("N0")</strong></td>
               <td>
-                <span class="status-badge" style="background:@order.Status.ColorHex + '20';color:@order.Status.ColorHex;border:1px solid @order.Status.ColorHex + '40'">
-                  @order.Status.NameAr
+                <span class="status-badge" style="background:@(order.Status?.ColorHex ?? "#888888")20;color:@(order.Status?.ColorHex ?? "#888888");border:1px solid @(order.Status?.ColorHex ?? "#888888")40">
+                  @order.Status?.NameAr
                 </span>
               </td>
               <td style="font-size:12px;color:var(--a-text2)">@order.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>

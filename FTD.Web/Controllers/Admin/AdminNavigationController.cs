@@ -1,5 +1,5 @@
 using FTD.Application.DTOs;
-using FTD.Application.Services;
+using FTD.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
@@ -10,9 +10,9 @@ namespace FTD.Web.Controllers.Admin
     [Authorize(Roles = "Admin")]
     public class AdminNavigationController : Controller
     {
-        private readonly ContentService _contentService;
+        private readonly IContentService _contentService;
 
-        public AdminNavigationController(ContentService contentService)
+        public AdminNavigationController(IContentService contentService)
         {
             _contentService = contentService;
         }

@@ -1,32 +1,169 @@
-# Task 2: Create FTD.Application Layer
-
-**Goal:** Create the Application Layer holding interfaces, DTOs, mappers, and services returning DTOs.
-
+### Task 2: Configure AppSettings, JWT, CORS, and Services in Program.cs
 **Files:**
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Application/FTD.Application.csproj`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Application/Interfaces/IAppDbContext.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Application/Interfaces/IEmailService.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Application/DTOs/DTOs.cs` (ProductDto, CategoryDto, BrandDto, SalesOrderDto, SalesOrderDetailDto, NavigationItemDto, ContactInfoDto, ContentPageDto, PageSectionDto, SiteSettingDto, ContactMessageDto, etc.)
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Application/Mappers/MappingExtensions.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Application/Services/ProductService.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Application/Services/ContentService.cs`
-- Create: `c:/Users/dell/Documents/unigroup/New folder/FTD.Application/Services/OrderService.cs`
+- Create: `FTD.Api/appsettings.json`
+- Create: `FTD.Api/Program.cs`
+- Create: `FTD.Api/Properties/launchSettings.json`
 
-- [ ] **Step 1: Scaffold FTD.Application project**
-  Run: `dotnet new classlib -o FTD.Application` (CWD: `c:\Users\dell\Documents\unigroup\New folder`)
-- [ ] **Step 2: Add references and solution association**
-  Run: `dotnet sln FTD.Web/FTD.Web.sln add FTD.Application/FTD.Application.csproj` (CWD: `c:\Users\dell\Documents\unigroup\New folder`)
-  Run: `dotnet add FTD.Application/FTD.Application.csproj reference FTD.Domain/FTD.Domain.csproj` (CWD: `c:\Users\dell\Documents\unigroup\New folder`)
-- [ ] **Step 3: Define Interfaces**
-  Create `IAppDbContext.cs` with EF Core sets mapped to interfaces, plus `SaveChangesAsync()`.
-  Create `IEmailService.cs` with `Task SendContactNotificationAsync(string name, string email, string phone, string message)`.
-- [ ] **Step 4: Create DTOs and Mappers**
-  Create `DTOs.cs` defining:
-  - `ProductDto`, `CategoryDto`, `BrandDto`, `SalesOrderDto`, `SalesOrderDetailDto`, `NavigationItemDto`, `ContactInfoDto`, `ContentPageDto`, `PageSectionDto`, `SiteSettingDto`, `ContactMessageDto`.
-  Create `MappingExtensions.cs` containing manual mapper extension methods for these DTOs.
-- [ ] **Step 5: Move and Refactor Services**
-  Move the services from [Services.cs](file:///c:/Users/dell/Documents/unigroup/New%20folder/FTD.Web/Services/Services.cs) into separate class files inside `FTD.Application/Services/` (e.g. `ProductService.cs`, `ContentService.cs`, `OrderService.cs`).
-  Refactor them to use `IAppDbContext` instead of direct `AppDbContext` dependencies, and return DTO classes. Make sure namespaces are `FTD.Application.Services`.
-- [ ] **Step 6: Verify Application builds**
-  Run: `dotnet build FTD.Application/FTD.Application.csproj`
-  Expected: BUILD SUCCESS.
+**Interfaces:**
+- Consumes: DbContext from FTD.Infrastructure, services from FTD.Application
+- Produces: Configured runtime pipeline supporting REST API, JWT validation, and CORS.
+
+- [ ] **Step 1: Create FTD.Api/appsettings.json**
+  Write configuration file containing connection strings and JWT configuration:
+  ```json
+  {
+    "Logging": {
+      "LogLevel": {
+        "Default": "Information",
+        "Microsoft.AspNetCore": "Warning"
+      }
+    },
+    "AllowedHosts": "*",
+    "ConnectionStrings": {
+      "DefaultConnection": "Server=localhost;Database=FTD_TechZone;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true"
+    },
+    "JwtSettings": {
+      "Secret": "A_VERY_LONG_AND_SECURE_JWT_SECRET_KEY_FOR_FTD_TECHZONE_2026_JWT_MUST_BE_AT_LEAST_256_BITS",
+      "Issuer": "FTD.Api",
+      "Audience": "FTD.Client",
+      "ExpiryMinutes": 120
+    },
+    "EmailSettings": {
+      "SmtpHost": "smtp.gmail.com",
+      "SmtpPort": 587,
+      "SenderEmail": "",
+      "SenderName": "FTD TechZone API",
+      "Password": "",
+      "NotifyEmail": ""
+    }
+  }
+  ```
+
+- [ ] **Step 2: Create FTD.Api/Properties/launchSettings.json**
+  Define local development ports (e.g., http port 5100, https port 7100):
+  ```json
+  {
+    "profiles": {
+      "http": {
+        "commandName": "Project",
+        "dotnetRunMessages": true,
+        "launchBrowser": false,
+        "applicationUrl": "http://localhost:5100",
+        "environmentVariables": {
+          "ASPNETCORE_ENVIRONMENT": "Development"
+        }
+      }
+    }
+  }
+  ```
+
+- [ ] **Step 3: Create FTD.Api/Program.cs**
+  Implement dependency injection, identity configuration, CORS policy, and JWT validation middleware:
+  ```csharp
+  using FTD.Application.Interfaces;
+  using FTD.Application.Services;
+  using FTD.Infrastructure.Data;
+  using FTD.Infrastructure.Services;
+  using Microsoft.AspNetCore.Authentication.JwtBearer;
+  using Microsoft.AspNetCore.Identity;
+  using Microsoft.EntityFrameworkCore;
+  using Microsoft.IdentityModel.Tokens;
+  using System.Text;
+
+  var builder = WebApplication.CreateBuilder(args);
+
+  // Add Controllers
+  builder.Services.AddControllers();
+
+  // Database Connection
+  builder.Services.AddDbContext<AppDbContext>(options =>
+      options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+  builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
+
+  // Identity Configuration
+  builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+  {
+      options.Password.RequireDigit = true;
+      options.Password.RequiredLength = 8;
+      options.Password.RequireUppercase = false;
+      options.Password.RequireNonAlphanumeric = false;
+      options.SignIn.RequireConfirmedAccount = false;
+  })
+  .AddEntityFrameworkStores<AppDbContext>()
+  .AddDefaultTokenProviders();
+
+  // JWT Configuration
+  var jwtSecret = builder.Configuration["JwtSettings:Secret"] ?? throw new InvalidOperationException("JWT Secret not configured.");
+  var jwtIssuer = builder.Configuration["JwtSettings:Issuer"];
+  var jwtAudience = builder.Configuration["JwtSettings:Audience"];
+  var key = Encoding.ASCII.GetBytes(jwtSecret);
+
+  builder.Services.AddAuthentication(options =>
+  {
+      options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+      options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+  })
+  .AddJwtBearer(options =>
+  {
+      options.RequireHttpsMetadata = false;
+      options.SaveToken = true;
+      options.TokenValidationParameters = new TokenValidationParameters
+      {
+          ValidateIssuerSigningKey = true,
+          IssuerSigningKey = new SymmetricSecurityKey(key),
+          ValidateIssuer = true,
+          ValidIssuer = jwtIssuer,
+          ValidateAudience = true,
+          ValidAudience = jwtAudience,
+          ValidateLifetime = true,
+          ClockSkew = TimeSpan.Zero
+      };
+  });
+
+  // CORS Policy
+  builder.Services.AddCors(options =>
+  {
+      options.AddPolicy("AllowAll", policy =>
+      {
+          policy.AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+      });
+  });
+
+  // Application Services Registration
+  builder.Services.AddScoped<IProductService, ProductService>();
+  builder.Services.AddScoped<IContentService, ContentService>();
+  builder.Services.AddScoped<IOrderService, OrderService>();
+  builder.Services.AddScoped<ICartService, CartService>();
+  builder.Services.AddScoped<IMessageService, MessageService>();
+  builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+  // Email Configuration
+  var emailSettings = builder.Configuration.GetSection("EmailSettings").Get<EmailSettings>() ?? new EmailSettings();
+  builder.Services.AddSingleton(emailSettings);
+  builder.Services.AddScoped<IEmailService, EmailService>();
+
+  var app = builder.Build();
+
+  app.UseHttpsRedirection();
+  app.UseCors("AllowAll");
+  app.UseAuthentication();
+  app.UseAuthorization();
+
+  app.MapControllers();
+
+  app.Run();
+  ```
+
+- [ ] **Step 4: Verify Project Compilation**
+  Run: `dotnet build FTD.Api/FTD.Api.csproj`
+  Expected: Build succeeds with 0 errors.
+
+- [ ] **Step 5: Commit changes**
+  Run:
+  ```bash
+  git add FTD.Api/appsettings.json FTD.Api/Program.cs FTD.Api/Properties/launchSettings.json
+  git commit -m "feat: configure FTD.Api appsettings, launchsettings, CORS, and Program.cs pipeline"
+  ```

@@ -74,7 +74,7 @@ namespace FTD.Application.Mappers
                 NameAr = entity.NameAr,
                 NameEn = entity.NameEn,
                 SortOrder = entity.SortOrder,
-                Category = entity.Category.ToDto(),
+                Category = entity.Category?.ToDto(),
                 Values = entity.Values?.Select(v => v.ToDto()).Where(x => x != null).Select(x => x!).ToList() ?? new()
             };
         }
@@ -102,8 +102,8 @@ namespace FTD.Application.Mappers
                 ProductId = entity.ProductId,
                 AttributeId = entity.AttributeId,
                 AttributeValueId = entity.AttributeValueId,
-                Attribute = entity.Attribute.ToDto(),
-                AttributeValue = entity.AttributeValue.ToDto()
+                Attribute = entity.Attribute?.ToDto(),
+                AttributeValue = entity.AttributeValue?.ToDto()
             };
         }
 
@@ -136,8 +136,8 @@ namespace FTD.Application.Mappers
                 CreatedAt = entity.CreatedAt,
                 MetaTitle = entity.MetaTitle,
                 MetaDesc = entity.MetaDesc,
-                Category = entity.Category.ToDto(),
-                Brand = entity.Brand.ToDto(),
+                Category = entity.Category?.ToDto(),
+                Brand = entity.Brand?.ToDto(),
                 AttributeValues = entity.AttributeValues?.Select(av => av.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList() ?? new(),
                 Images = entity.Images?.Select(i => i.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList() ?? new()
             };
@@ -171,7 +171,7 @@ namespace FTD.Application.Mappers
                 Quantity = entity.Quantity,
                 UnitPrice = entity.UnitPrice,
                 SubTotal = entity.SubTotal,
-                Product = entity.Product.ToDto()
+                Product = entity.Product?.ToDto()
             };
         }
 
@@ -197,7 +197,7 @@ namespace FTD.Application.Mappers
                 AdminNotes = entity.AdminNotes,
                 CreatedAt = entity.CreatedAt,
                 UpdatedAt = entity.UpdatedAt,
-                Status = entity.Status.ToDto(),
+                Status = entity.Status?.ToDto(),
                 Details = entity.Details?.Select(d => d.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList() ?? new()
             };
         }
