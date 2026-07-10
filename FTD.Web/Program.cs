@@ -77,6 +77,10 @@ var emailSettings = builder.Configuration.GetSection("EmailSettings").Get<EmailS
 builder.Services.AddSingleton(emailSettings);
 builder.Services.AddScoped<IEmailService, EmailService>();
 
+// ── HEALTH CHECKS ─────────────────────────────────────────────────────────────
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>(name: "database");
+
 var app = builder.Build();
 
 // ── MIDDLEWARE PIPELINE ───────────────────────────────────────────────────────
@@ -147,6 +151,8 @@ app.MapControllerRoute(
 
 // ── SEED: Admin role + user ───────────────────────────────────────────────────
 await SeedAsync(app);
+
+app.MapHealthChecks("/health");
 
 app.Run();
 

@@ -1,3 +1,4 @@
+using FTD.Api.Models.Requests;
 using FTD.Application.DTOs;
 using FTD.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -87,22 +88,6 @@ namespace FTD.Api.Controllers
             }
         }
 
-        public class ApiCheckoutRequest
-        {
-            public string CustomerName { get; set; } = "";
-            public string CustomerPhone { get; set; } = "";
-            public string? CustomerEmail { get; set; }
-            public string Address { get; set; } = "";
-            public string City { get; set; } = "";
-            public string Governorate { get; set; } = "";
-            public string? Notes { get; set; }
-            public List<ApiCartItem> Items { get; set; } = new();
-        }
-
-        public class ApiCartItem
-        {
-            public int ProductId { get; set; }
-            public int Quantity { get; set; }
-        }
+        // ApiCheckoutRequest and ApiCartItem moved to FTD.Api/Models/Requests/CheckoutRequest.cs
     }
 }

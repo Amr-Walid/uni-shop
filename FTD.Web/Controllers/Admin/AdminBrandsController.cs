@@ -55,7 +55,7 @@ namespace FTD.Web.Controllers.Admin
 
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, BrandDto model,
-            IFormFile? LogoFile, IFormFile? LogoWhiteFile, IFormFile? BannerFile)
+            IFormFile? LogoFile, IFormFile? BannerFile)
         {
             var brands = await _productService.GetAllBrandsAsync();
             var brand = brands.FirstOrDefault(b => b.Id == id);
@@ -74,9 +74,20 @@ namespace FTD.Web.Controllers.Admin
 
         private async Task<string> SaveAsync(IFormFile file, string folder)
         {
+            // Validate extension
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(ext))
+                throw new InvalidOperationException($"نوع الملف غير مدعوم. الأنواع المسموح بها: {string.Join(", ", allowedExtensions)}");
+
+            // Validate size (max 5 MB)
+            const long maxBytes = 5 * 1024 * 1024;
+            if (file.Length > maxBytes)
+                throw new InvalidOperationException("حجم الصورة يتجاوز الحد المسموح به (5 ميغابايت)");
+
             var dir = Path.Combine(_env.WebRootPath, "images", folder);
             Directory.CreateDirectory(dir);
-            var name = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+            var name = $"{Guid.NewGuid()}{ext}";
             using var s = new FileStream(Path.Combine(dir, name), FileMode.Create);
             await file.CopyToAsync(s);
             return $"/images/{folder}/{name}";

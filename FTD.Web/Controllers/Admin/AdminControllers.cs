@@ -191,9 +191,20 @@ namespace FTD.Web.Controllers.Admin
 
         private async Task<string> SaveImageAsync(IFormFile file, string folder)
         {
+            // Validate extension
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(ext))
+                throw new InvalidOperationException($"نوع الملف غير مدعوم. الأنواع المسموح بها: {string.Join(", ", allowedExtensions)}");
+
+            // Validate size (max 5 MB)
+            const long maxBytes = 5 * 1024 * 1024;
+            if (file.Length > maxBytes)
+                throw new InvalidOperationException("حجم الصورة يتجاوز الحد المسموح به (5 ميغابايت)");
+
             var path = Path.Combine(_env.WebRootPath, "images", folder);
             Directory.CreateDirectory(path);
-            var name = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+            var name = $"{Guid.NewGuid()}{ext}";
             using var s = new FileStream(Path.Combine(path, name), FileMode.Create);
             await file.CopyToAsync(s);
             return $"/images/{folder}/{name}";
