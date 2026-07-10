@@ -52,4 +52,55 @@
             menu.classList.toggle('open');
         }
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var navLinks = document.querySelectorAll('.nav-link');
+        var hero = document.querySelector('.hero');
+        
+        // Only run spy if hero exists (we are on home page)
+        if (hero) {
+            var sections = {
+                'home': hero,
+                'about': document.getElementById('about'),
+                'products': document.getElementById('featured'),
+                'contact': document.getElementById('contact')
+            };
+
+            function updateActiveLink() {
+                var scrollPos = window.scrollY || document.documentElement.scrollTop;
+                var triggerOffset = 220; 
+
+                var currentSection = 'home';
+                
+                if (sections.contact && scrollPos >= (sections.contact.offsetTop - triggerOffset)) {
+                    currentSection = 'contact';
+                } else if (sections.about && scrollPos >= (sections.about.offsetTop - triggerOffset)) {
+                    currentSection = 'about';
+                } else if (sections.products && scrollPos >= (sections.products.offsetTop - triggerOffset)) {
+                    currentSection = 'products';
+                } else {
+                    currentSection = 'home';
+                }
+
+                navLinks.forEach(function(link) {
+                    link.classList.remove('active');
+                    
+                    var href = link.getAttribute('href');
+                    if (currentSection === 'home' && href === '/') {
+                        link.classList.add('active');
+                    } else if (currentSection === 'about' && href.indexOf('#about') !== -1) {
+                        link.classList.add('active');
+                    } else if (currentSection === 'products' && href.indexOf('/Products') !== -1) {
+                        link.classList.add('active');
+                    } else if (currentSection === 'contact' && href.indexOf('#contact') !== -1) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', updateActiveLink);
+            window.addEventListener('hashchange', updateActiveLink);
+            updateActiveLink();
+        }
+    });
 </script>
