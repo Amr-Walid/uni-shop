@@ -1,4 +1,4 @@
-﻿/* ============================================
+/* ============================================
    AETHERIC COMMAND LIGHT â€” Design Tokens
    ============================================ */
 :root {
@@ -3408,3 +3408,162 @@ a { color: inherit; text-decoration: none; }
 .mobile-menu { display: none; position: absolute; top: 100%; left: 20px; right: 20px; margin-top: 8px; background: white; border: 1px solid var(--outline-variant); border-radius: var(--r-lg); padding: 12px; box-shadow: var(--shadow-elev); }
 .mobile-menu.open { display: flex; flex-direction: column; gap: 4px; }
 .mobile-menu-link { padding: 12px 16px; border-radius: var(--r-md); font-size: 14px; font-weight: 500; color: var(--navy); }
+
+/* ── SEARCH OVERLAY ── */
+.search-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      background: rgba(19, 27, 46, 0.65);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 100px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.search-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+}
+.search-box {
+      background: var(--surface);
+      border: 1px solid var(--outline-variant);
+      border-radius: var(--r-xl);
+      padding: 24px;
+      width: 90%;
+      max-width: 580px;
+      box-shadow: var(--shadow-elev);
+      transform: translateY(-24px);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.search-overlay.open .search-box {
+      transform: translateY(0);
+}
+.search-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border: 2px solid var(--outline-variant);
+      border-radius: var(--r-full);
+      padding: 12px 20px;
+      transition: border-color 0.2s;
+      background: var(--surface-container-lowest);
+}
+.search-input-wrap:focus-within {
+      border-color: var(--primary);
+}
+.search-input-wrap svg {
+      width: 18px;
+      height: 18px;
+      color: var(--outline);
+      flex-shrink: 0;
+}
+.search-input-wrap input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 15px;
+      font-family: inherit;
+      color: var(--on-surface);
+      direction: rtl;
+      background: transparent;
+}
+.search-input-wrap input::placeholder {
+      color: var(--outline);
+}
+.search-close {
+      background: var(--surface-container-high);
+      border: none;
+      border-radius: var(--r-md);
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--on-surface-variant);
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      transition: all 0.2s;
+}
+.search-close:hover {
+      background: var(--error-container);
+      color: var(--on-error-container);
+}
+.search-results {
+      margin-top: 16px;
+      max-height: 300px;
+      overflow-y: auto;
+}
+.search-result-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px;
+      border-radius: var(--r-lg);
+      cursor: pointer;
+      transition: background 0.2s;
+}
+.search-result-item:hover {
+      background: var(--surface-container-low);
+}
+.search-result-emoji {
+      font-size: 28px;
+      width: 46px;
+      height: 46px;
+      background: var(--surface-container-high);
+      border-radius: var(--r-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+}
+.search-result-brand {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+}
+.search-result-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--on-surface);
+}
+.search-result-price {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--on-surface-variant);
+      margin-top: 1px;
+}
+.search-tags {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+}
+.search-tag {
+      padding: 6px 16px;
+      border-radius: var(--r-full);
+      border: 1px solid var(--outline-variant);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--on-surface-variant);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      background: var(--surface-container-low);
+}
+.search-tag:hover {
+      border-color: var(--primary);
+      color: var(--on-primary-container);
+      background: var(--primary-container);
+}
+.search-no-results {
+      text-align: center;
+      padding: 32px;
+      color: var(--outline);
+      font-size: 14px;
+}
