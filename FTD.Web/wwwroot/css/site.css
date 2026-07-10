@@ -1,25 +1,25 @@
 :root {
-    --blue: #1A6BFF;
-    --blue-dark: #0E4FCC;
-    --blue-light: #EBF1FF;
-    --blue-mid: #4D8FFF;
-    --dark: #0A0D14;
-    --dark2: #13172A;
-    --text: #0A0D14;
-    --text2: #4A5260;
-    --text3: #8A909F;
-    --bg: #F4F6FA;
+    --blue: #6366F1;         /* Indigo primary */
+    --blue-dark: #4F46E5;    /* Deep Indigo */
+    --blue-light: #F5F3FF;   /* Lavender background light */
+    --blue-mid: #818CF8;     /* Indigo hover/mid */
+    --dark: #0F172A;         /* Slate dark */
+    --dark2: #1E293B;        /* Slate dark secondary */
+    --text: #0F172A;         /* Slate text */
+    --text2: #475569;        /* Medium text */
+    --text3: #94A3B8;        /* Muted text */
+    --bg: #F8FAFC;           /* Clean background Slate-50 */
     --white: #FFFFFF;
-    --border: #E4E8F0;
-    --green: #00C48C;
-    --orange: #FF6B35;
-    --font: 'Tajawal',sans-serif;
-    --nav-h: 70px;
-    --r: 14px;
-    --rl: 20px;
-    --shadow: 0 2px 12px rgba(10,13,20,.07);
-    --shadow-lg: 0 12px 40px rgba(10,13,20,.12);
-    --shadow-blue: 0 8px 32px rgba(26,107,255,.25);
+    --border: #E2E8F0;
+    --green: #10B981;        /* Modern green */
+    --orange: #EC4899;       /* Pink/Rose secondary accent */
+    --font: 'Outfit', 'Tajawal', sans-serif;
+    --nav-h: 80px;
+    --r: 16px;
+    --rl: 24px;
+    --shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 8px -1px rgba(15, 23, 42, 0.05);
+    --shadow-lg: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 10px 10px -5px rgba(15, 23, 42, 0.04);
+    --shadow-blue: 0 10px 30px -10px rgba(99, 102, 241, 0.3);
 }
 
 * {
@@ -65,15 +65,17 @@ nav {
     top: 0;
     width: 100%;
     z-index: 1000;
-    background: rgba(255,255,255,.96);
-    backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid rgba(241, 245, 249, 0.6);
     height: var(--nav-h);
     display: flex;
     align-items: center;
     padding: 0 5%;
     justify-content: space-between;
-    transition: box-shadow .3s
+    transition: all .4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
 }
 
     nav.scrolled {
@@ -1040,33 +1042,34 @@ body.en .arrow-next {
 
 .product-card {
     background: white;
-    border: 1px solid var(--border);
+    border: 1px solid rgba(226, 232, 240, 0.8);
     border-radius: var(--rl);
     overflow: hidden;
-    transition: all .3s;
-    cursor: pointer
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
 }
 
     .product-card:hover {
-        transform: translateY(-6px);
-        box-shadow: 0 20px 48px rgba(26,107,255,.13);
-        border-color: rgba(26,107,255,.3)
+        transform: translateY(-8px);
+        box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.1), 0 10px 10px -5px rgba(99, 102, 241, 0.04);
+        border-color: rgba(99, 102, 241, 0.25);
     }
 
 .card-img {
-    background: var(--bg);
+    background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
     padding: 2.5rem 2rem;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 54px;
     position: relative;
-    min-height: 155px;
-    transition: background .3s
+    min-height: 175px;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .product-card:hover .card-img {
-    background: #EBF1FF
+    background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
 }
 
 .card-badge {
