@@ -47,8 +47,8 @@
         else
         {
             <div class="page-content">
-                <span data-ar>@Html.Raw(p.BodyAr)</span>
-                <span data-en>@Html.Raw(p.BodyEn)</span>
+                <span data-ar>@Html.Raw(FTD.Application.Common.HtmlSanitizer.Sanitize(p.BodyAr))</span>
+                <span data-en>@Html.Raw(FTD.Application.Common.HtmlSanitizer.Sanitize(p.BodyEn))</span>
             </div>
         }
     </div>

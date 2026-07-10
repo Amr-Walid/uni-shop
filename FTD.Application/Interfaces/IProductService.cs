@@ -12,8 +12,8 @@ namespace FTD.Application.Interfaces
         Task<List<ProductDto>> GetAllActiveAsync();
         Task<List<ProductDto>> GetByCategoryAsync(int categoryId);
         Task<List<ProductDto>> GetByBrandAsync(string brandSlug);
-        Task<List<ProductDto>> GetFilteredAsync(string? brandSlug, string? categorySlug, List<int>? attributeValueIds, string? sortBy);
-        Task<List<ProductDto>> GetFilteredAsync(int? categoryId, int? brandId, string? query);
+        Task<List<ProductDto>> GetFilteredBySlugAsync(string? brandSlug, string? categorySlug, List<int>? attributeValueIds, string? sortBy);
+        Task<List<ProductDto>> GetFilteredByIdAsync(int? categoryId, int? brandId, string? query);
         Task<ProductDto?> GetBySlugAsync(string slug);
         Task<ProductDto?> GetByIdAsync(int id);
         Task<List<ProductDto>> GetRelatedAsync(int productId, int categoryId, int take = 4);

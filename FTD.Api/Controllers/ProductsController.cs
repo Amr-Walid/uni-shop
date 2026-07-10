@@ -13,7 +13,7 @@ namespace FTD.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetProducts([FromQuery] int? categoryId, [FromQuery] int? brandId, [FromQuery] string? query)
         {
-            var products = await _productService.GetFilteredAsync(categoryId, brandId, query);
+            var products = await _productService.GetFilteredByIdAsync(categoryId, brandId, query);
             return Ok(products);
         }
 

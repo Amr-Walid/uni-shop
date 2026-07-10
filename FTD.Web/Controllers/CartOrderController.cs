@@ -11,12 +11,17 @@ namespace FTD.Web.Controllers
     public class CartController : Controller
     {
         private readonly ICartService _cart;
+        private readonly ICartStorage _storage;
 
-        public CartController(ICartService cart) => _cart = cart;
+        public CartController(ICartService cart, ICartStorage storage)
+        {
+            _cart = cart;
+            _storage = storage;
+        }
 
         public async Task<IActionResult> Index()
         {
-            var cartDto = await _cart.GetCartAsync(HttpContext.Session);
+            var cartDto = await _cart.GetCartAsync(_storage);
             var vm = CartViewModelMapper.FromDto(cartDto);
             return View(vm);
         }
@@ -24,37 +29,37 @@ namespace FTD.Web.Controllers
         [HttpPost]
         public IActionResult Add(int productId, int qty = 1)
         {
-            _cart.AddItem(HttpContext.Session, productId, qty);
+            _cart.AddItem(_storage, productId, qty);
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-                return Json(new { success = true, count = _cart.GetCount(HttpContext.Session) });
+                return Json(new { success = true, count = _cart.GetCount(_storage) });
             return Redirect("/Cart");
         }
 
         [HttpPost]
         public IActionResult Update(int productId, int qty)
         {
-            _cart.UpdateQty(HttpContext.Session, productId, qty);
+            _cart.UpdateQty(_storage, productId, qty);
             return Redirect("/Cart");
         }
 
         [HttpPost]
         public IActionResult Remove(int productId)
         {
-            _cart.RemoveItem(HttpContext.Session, productId);
+            _cart.RemoveItem(_storage, productId);
             return Redirect("/Cart");
         }
 
         [HttpPost]
         public IActionResult Clear()
         {
-            _cart.ClearCart(HttpContext.Session);
+            _cart.ClearCart(_storage);
             return Redirect("/Cart");
         }
 
         // AJAX: get cart count for nav badge
         [HttpGet]
         public IActionResult Count()
-            => Json(new { count = _cart.GetCount(HttpContext.Session) });
+            => Json(new { count = _cart.GetCount(_storage) });
     }
 
     // ── ORDER ─────────────────────────────────────────────────────────────────
@@ -62,17 +67,19 @@ namespace FTD.Web.Controllers
     {
         private readonly ICartService _cart;
         private readonly IOrderService _orders;
+        private readonly ICartStorage _storage;
 
-        public OrderController(ICartService cart, IOrderService orders)
+        public OrderController(ICartService cart, IOrderService orders, ICartStorage storage)
         {
             _cart = cart;
             _orders = orders;
+            _storage = storage;
         }
 
         // GET /Order/Checkout
         public async Task<IActionResult> Checkout()
         {
-            var cartDto = await _cart.GetCartAsync(HttpContext.Session);
+            var cartDto = await _cart.GetCartAsync(_storage);
             if (!cartDto.Items.Any())
                 return Redirect("/Cart");
 
@@ -85,7 +92,7 @@ namespace FTD.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Checkout(CheckoutViewModel vm)
         {
-            var cartDto = await _cart.GetCartAsync(HttpContext.Session);
+            var cartDto = await _cart.GetCartAsync(_storage);
             vm.Cart = CartViewModelMapper.FromDto(cartDto);
 
             if (!cartDto.Items.Any())
@@ -108,7 +115,7 @@ namespace FTD.Web.Controllers
             try
             {
                 var order = await _orders.CreateOrderAsync(checkoutDto, cartDto);
-                _cart.ClearCart(HttpContext.Session);
+                _cart.ClearCart(_storage);
                 return Redirect("/Order/Confirmation?orderNumber=" + order.OrderNumber);
             }
             catch (System.InvalidOperationException ex)

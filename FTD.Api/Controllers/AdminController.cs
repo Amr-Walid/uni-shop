@@ -1,3 +1,4 @@
+using FTD.Api.Models.Requests;
 using FTD.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -55,9 +56,6 @@ namespace FTD.Api.Controllers
             return Ok(new { success = true, message = "تم تحديث حالة الطلب بنجاح" });
         }
 
-        public class UpdateStatusRequest
-        {
-            public int StatusId { get; set; }
-        }
+        // UpdateStatusRequest moved to FTD.Api/Models/Requests/UpdateStatusRequest.cs
     }
 }

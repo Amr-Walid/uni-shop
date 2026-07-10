@@ -1,3 +1,4 @@
+using FTD.Api.Models.Requests;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -27,6 +28,7 @@ namespace FTD.Api.Controllers
         }
 
         [HttpPost("login")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("login-policy")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             if (request == null || string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
@@ -87,10 +89,6 @@ namespace FTD.Api.Controllers
             return tokenHandler.WriteToken(token);
         }
 
-        public class LoginRequest
-        {
-            public string Email { get; set; } = "";
-            public string Password { get; set; } = "";
-        }
+        // LoginRequest moved to FTD.Api/Models/Requests/LoginRequest.cs
     }
 }

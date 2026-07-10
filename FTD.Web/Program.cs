@@ -67,6 +67,7 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<ICartStorage, FTD.Web.Infrastructure.SessionCartStorage>();
 builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 
@@ -75,6 +76,10 @@ var emailSettings = builder.Configuration.GetSection("EmailSettings").Get<EmailS
     ?? new EmailSettings();
 builder.Services.AddSingleton(emailSettings);
 builder.Services.AddScoped<IEmailService, EmailService>();
+
+// ── HEALTH CHECKS ─────────────────────────────────────────────────────────────
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>(name: "database");
 
 var app = builder.Build();
 
@@ -147,6 +152,8 @@ app.MapControllerRoute(
 // ── SEED: Admin role + user ───────────────────────────────────────────────────
 await SeedAsync(app);
 
+app.MapHealthChecks("/health");
+
 app.Run();
 
 static async Task SeedAsync(WebApplication app)
@@ -161,7 +168,10 @@ static async Task SeedAsync(WebApplication app)
     if (!await roleMgr.RoleExistsAsync("Admin"))
         await roleMgr.CreateAsync(new IdentityRole("Admin"));
 
-    const string adminEmail = "admin@ftdtechzone.com";
+    var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+    var adminEmail = config["SeedAdmin:Email"] ?? "admin@ftdtechzone.com";
+    var adminPassword = config["SeedAdmin:Password"] ?? "Admin@123456";
+
     if (await userMgr.FindByEmailAsync(adminEmail) == null)
     {
         var admin = new IdentityUser
@@ -170,7 +180,7 @@ static async Task SeedAsync(WebApplication app)
             Email = adminEmail,
             EmailConfirmed = true
         };
-        var result = await userMgr.CreateAsync(admin, "Admin@123456");
+        var result = await userMgr.CreateAsync(admin, adminPassword);
         if (result.Succeeded)
             await userMgr.AddToRoleAsync(admin, "Admin");
     }
