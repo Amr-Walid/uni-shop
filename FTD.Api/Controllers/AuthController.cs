@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -28,7 +29,7 @@ namespace FTD.Api.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
+            if (request == null || string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
                 return BadRequest("البريد الإلكتروني وكلمة المرور مطلوبة");
 
             var user = await _userManager.FindByEmailAsync(request.Email);
@@ -41,7 +42,7 @@ namespace FTD.Api.Controllers
 
             var roles = await _userManager.GetRolesAsync(user);
             if (!roles.Contains("Admin"))
-                return Forbid("غير مصرح بالدخول لغير المسؤولين");
+                return StatusCode(StatusCodes.Status403Forbidden, "غير مصرح بالدخول لغير المسؤولين");
 
             var token = GenerateJwtToken(user, roles);
             return Ok(new
