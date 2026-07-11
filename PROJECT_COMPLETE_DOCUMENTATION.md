@@ -205,7 +205,8 @@ graph TD
 | 33 | `9fed6d0` | `design(admin): force light theme by default, clean theme toggle, replace all emojis with Bootstrap Icons, fix login page dark layout overrides` |
 | 34 | `887a16d` | `design(layout): add logo icon as favicon on main site and admin pages` |
 | 35 | `dc15cb4` | `docs: update changelog table with favicon commit` |
-| 36 | (current) | `security: rotate JWT secret and set new 256-bit cryptographically secure key in user secrets` |
+| 36 | `4a3fb6f` | `security: rotate JWT secret and set new 256-bit cryptographically secure key in user secrets` |
+| 37 | (current) | `fix(storefront): complete lang-cookie sync, CSS legacy var aliases, cart i18n, and misc AJAX/CSS bugs` |
 
 > **✅ ملاحظة أمنية تم حلها:** تم تدوير السر القديم لـ JWT بنجاح محلياً وإعداد قيمة عشوائية جديدة 256-bit باستخدام أداة .NET User Secrets في المشروع FTD.Api.
 
