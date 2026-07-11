@@ -43,13 +43,23 @@ namespace FTD.Web.Controllers
             }
 
             List<ProductDto> products;
-            if (!string.IsNullOrEmpty(q))
-                products = await _products.SearchAsync(q);
-            else
-                products = await _products.GetFilteredBySlugAsync(brand, category, attrValues, sort);
+            List<AttributeFilterGroupDto> attrGroups;
+            List<int> selectedAttrs;
 
-            // Build attribute filter groups from visible products
-            var attrGroups = await _products.BuildAttributeGroupsAsync(products);
+            if (!string.IsNullOrEmpty(q))
+            {
+                products = await _products.SearchAsync(q);
+                attrGroups = await _products.BuildAttributeGroupsAsync(products);
+                selectedAttrs = new();
+            }
+            else
+            {
+                // Facets are built from the brand/category base set (NOT the
+                // attribute-filtered set) so sibling options stay visible,
+                // and stale attribute selections are pruned.
+                (products, attrGroups, selectedAttrs) =
+                    await GetFacetedProductsAsync(brand, category, attrValues, sort);
+            }
 
             var vm = new ProductsViewModel
             {
@@ -62,12 +72,43 @@ namespace FTD.Web.Controllers
                 CategoryFilter = category,
                 SearchQuery = q,
                 SortBy = sort,
-                SelectedAttrValues = attrValues ?? new(),
+                SelectedAttrValues = selectedAttrs,
                 AttributeGroups = attrGroups,
                 TotalCount = products.Count
             };
 
             return View(vm);
+        }
+
+        /// <summary>
+        /// Faceted-filter pipeline shared by Index (SSR) and Filter (AJAX):
+        /// 1. Base set   = products matching brand + category only.
+        /// 2. Facets     = attribute groups built from the base set, so
+        ///    selecting one option never hides its siblings.
+        /// 3. Pruning    = drop selected attribute values that no longer
+        ///    exist in the base set (e.g. after switching brand).
+        /// 4. Result set = base set narrowed by the pruned attribute values.
+        /// </summary>
+        private async Task<(List<ProductDto> Products, List<AttributeFilterGroupDto> Groups, List<int> SelectedAttrs)>
+            GetFacetedProductsAsync(string? brand, string? category, List<int>? attrValues, string? sort)
+        {
+            var baseProducts = await _products.GetFilteredBySlugAsync(brand, category, null, sort);
+            var attrGroups = await _products.BuildAttributeGroupsAsync(baseProducts);
+
+            var validValueIds = attrGroups
+                .SelectMany(g => g.Options.Select(o => o.ValueId))
+                .ToHashSet();
+
+            var selected = (attrValues ?? new())
+                .Where(v => validValueIds.Contains(v))
+                .Distinct()
+                .ToList();
+
+            var products = selected.Any()
+                ? await _products.GetFilteredBySlugAsync(brand, category, selected, sort)
+                : baseProducts;
+
+            return (products, attrGroups, selected);
         }
 
         // GET /Products/Filter (AJAX)
@@ -76,12 +117,13 @@ namespace FTD.Web.Controllers
             string? brand, string? category, string? sort,
             [FromQuery(Name = "av")] List<int>? attrValues)
         {
-            var products = await _products.GetFilteredBySlugAsync(brand, category, attrValues, sort);
-            var rawGroups = await _products.BuildAttributeGroupsAsync(products);
+            var (products, rawGroups, selectedAttrs) =
+                await GetFacetedProductsAsync(brand, category, attrValues, sort);
 
             var result = new
             {
                 count = products.Count,
+                selectedAttrValues = selectedAttrs,
                 products = products.Select(p => new
                 {
                     id = p.Id,
