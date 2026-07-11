@@ -200,7 +200,8 @@ graph TD
 | 28 | `8ebb250` | `feat: add rate limiting on login, add HTTPS guard, add AddRateLimiter middleware to API` |
 | 29 | `e9ff608` | `refactor: resolve remaining code review items (split DTOs, extract request models, add health checks, validate image uploads, remove dead parameter)` |
 | 30 | `677ce36` | `security: remove hardcoded JWT secret from appsettings.json — moved to .NET User Secrets` |
-| 31 | (current) | `security: add account lockout + rate limiting to Web Admin login (AdminAccountController), catch upload-validation exceptions with friendly form errors in AdminProductsController/AdminBrandsController` |
+| 31 | `ecf959e` | `docs+fix: verify code review status report against actual code, fix newly found gaps, and apply admin lockout and rate-limiting` |
+| 32 | (current) | `redesign(admin): overhaul admin panel UI with Luminous Commerce design system` |
 
 > **⚠️ ملاحظة لم تُنفَّذ بعد (Action Item مفتوح):** السر القديم لـ JWT لا يزال موجودًا بنص صريح في تاريخ Git (المستودع عام على GitHub) ولم يُدوَّر (Rotate) لقيمة جديدة. راجع `CODE_REVIEW_AR.md` القسم 11.3 لتفاصيل الأمر المطلوب تنفيذه فورًا (`dotnet user-secrets set "JwtSettings:Secret" "<قيمة جديدة عشوائية>"`).
 
