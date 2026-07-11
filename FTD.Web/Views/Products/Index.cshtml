@@ -123,7 +123,6 @@
                                     {
                                         var isChecked = categorySlugs.Contains(c.Slug.ToLower());
                                         <label class="filter-opt @(isChecked ? "checked" : "")" data-cat-opt="@c.Slug" onclick="toggleCatFilter('@c.Slug')">
-                                            <input type="checkbox" @(isChecked ? "checked" : "") style="display:none">
                                             <span class="check"></span>
                                             <span><span data-ar>@c.NameAr</span><span data-en>@c.NameEn</span></span>
                                         </label>
@@ -147,7 +146,6 @@
                                     {
                                         var isChecked = brandSlugs.Contains(b.Slug.ToLower());
                                         <label class="filter-opt @(isChecked ? "checked" : "")" data-brand-opt="@b.Slug" onclick="toggleBrandFilter('@b.Slug')">
-                                            <input type="checkbox" @(isChecked ? "checked" : "") style="display:none">
                                             <span class="check"></span>
                                             <span>@b.NameEn</span>
                                         </label>
@@ -257,18 +255,12 @@
         // Sidebar brand checkboxes
         document.querySelectorAll('[data-brand-opt]').forEach(function(l) {
             var optSlug = (l.getAttribute('data-brand-opt') || '').toLowerCase();
-            var checkbox = l.querySelector('input[type="checkbox"]');
-            var isChecked = _brands.includes(optSlug);
-            l.classList.toggle('checked', isChecked);
-            if (checkbox) checkbox.checked = isChecked;
+            l.classList.toggle('checked', _brands.includes(optSlug));
         });
         // Sidebar category checkboxes
         document.querySelectorAll('[data-cat-opt]').forEach(function(l) {
             var optSlug = (l.getAttribute('data-cat-opt') || '').toLowerCase();
-            var checkbox = l.querySelector('input[type="checkbox"]');
-            var isChecked = _categories.includes(optSlug);
-            l.classList.toggle('checked', isChecked);
-            if (checkbox) checkbox.checked = isChecked;
+            l.classList.toggle('checked', _categories.includes(optSlug));
         });
         // Attribute checkboxes (multi-select)
         document.querySelectorAll('[data-attr-val]').forEach(function(l) {
@@ -447,9 +439,7 @@
 
         container.innerHTML = categories.map(function(c) {
             var checked = selectedCategories.includes(c.slug.toLowerCase());
-            var checkAttr = checked ? 'checked' : '';
             return '<label class="filter-opt ' + (checked ? 'checked' : '') + '" data-cat-opt="' + c.slug.toLowerCase() + '" onclick="toggleCatFilter(\'' + c.slug + '\')">'
-                + '<input type="checkbox" ' + checkAttr + ' style="display:none">'
                 + '<span class="check"></span>'
                 + '<span><span data-ar>' + c.nameAr + '</span><span data-en>' + c.nameEn + '</span></span>'
                 + '</label>';
@@ -462,9 +452,7 @@
 
         container.innerHTML = brands.map(function(b) {
             var checked = selectedBrands.includes(b.slug.toLowerCase());
-            var checkAttr = checked ? 'checked' : '';
             return '<label class="filter-opt ' + (checked ? 'checked' : '') + '" data-brand-opt="' + b.slug.toLowerCase() + '" onclick="toggleBrandFilter(\'' + b.slug + '\')">'
-                + '<input type="checkbox" ' + checkAttr + ' style="display:none">'
                 + '<span class="check"></span>'
                 + '<span>' + b.nameEn + '</span>'
                 + '</label>';
