@@ -202,7 +202,8 @@ graph TD
 | 30 | `677ce36` | `security: remove hardcoded JWT secret from appsettings.json — moved to .NET User Secrets` |
 | 31 | `ecf959e` | `docs+fix: verify code review status report against actual code, fix newly found gaps, and apply admin lockout and rate-limiting` |
 | 32 | `02defd0` | `redesign(admin): overhaul admin panel UI with Luminous Commerce design system` |
-| 33 | (current) | `design(admin): force light theme by default, clean theme toggle, replace all emojis with Bootstrap Icons, fix login page dark layout overrides` |
+| 33 | `9fed6d0` | `design(admin): force light theme by default, clean theme toggle, replace all emojis with Bootstrap Icons, fix login page dark layout overrides` |
+| 34 | (current) | `design(layout): add logo icon as favicon on main site and admin pages` |
 
 > **⚠️ ملاحظة لم تُنفَّذ بعد (Action Item مفتوح):** السر القديم لـ JWT لا يزال موجودًا بنص صريح في تاريخ Git (المستودع عام على GitHub) ولم يُدوَّر (Rotate) لقيمة جديدة. راجع `CODE_REVIEW_AR.md` القسم 11.3 لتفاصيل الأمر المطلوب تنفيذه فورًا (`dotnet user-secrets set "JwtSettings:Secret" "<قيمة جديدة عشوائية>"`).
 
