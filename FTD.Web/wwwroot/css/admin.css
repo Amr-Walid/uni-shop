@@ -128,11 +128,46 @@ body.admin-body::before{
 }
 .admin-sidebar::-webkit-scrollbar{width:5px}
 .admin-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:10px}
-/* in light mode sidebar stays dark for contrast — deep purple-navy */
+/* in light mode sidebar is fully light — clean white */
 [data-theme="light"] .admin-sidebar{
-  background:#0c0a1a;
-  background-image:linear-gradient(180deg, rgba(var(--a-blue-rgb),.55), transparent 40%);
-  border-left-color:rgba(0,0,0,.15);
+  background:#ffffff;
+  background-image:none;
+  border-left-color:var(--a-border);
+}
+[data-theme="light"] .sidebar-logo{
+  border-bottom-color:var(--a-border);
+}
+[data-theme="light"] .sidebar-brand-name{
+  color:var(--a-text);
+}
+[data-theme="light"] .sidebar-brand-sub{
+  color:var(--a-text3);
+}
+[data-theme="light"] .nav-group-label{
+  color:var(--a-text3);
+}
+[data-theme="light"] .sidebar-link{
+  color:var(--a-text2);
+}
+[data-theme="light"] .sidebar-link:hover{
+  background:var(--a-hover);
+  color:var(--a-blue);
+}
+[data-theme="light"] .sidebar-link.active{
+  background:rgba(var(--a-blue-rgb),.07);
+  color:var(--a-blue);
+}
+[data-theme="light"] .sidebar-foot{
+  border-top-color:var(--a-border);
+}
+[data-theme="light"] .admin-sidebar::-webkit-scrollbar-thumb{
+  background:rgba(0,0,0,.1);
+}
+.si i{
+  font-size:15px;
+  display:inline-block;
+  line-height:1;
+  vertical-align:-1px;
 }
 
 .admin-main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
@@ -468,4 +503,52 @@ body.admin-body::before{
   .dash-grid{grid-template-columns:1fr}
   .admin-content{padding:1.1rem}
   .login-card{padding:2rem 1.5rem}
+}
+
+/* ── LIGHT THEME LOGIN OVERRIDES ── */
+[data-theme="light"] .login-page {
+  background: var(--a-bg);
+}
+[data-theme="light"] .login-page::before {
+  background:
+    radial-gradient(1000px 700px at 88% -8%, rgba(var(--a-accent-rgb),.05), transparent 55%),
+    radial-gradient(900px 700px at 8% 108%, rgba(var(--a-blue-rgb),.08), transparent 60%),
+    radial-gradient(600px 500px at 50% 50%, rgba(74,36,142,.04), transparent 60%);
+}
+[data-theme="light"] .login-card {
+  background: #ffffff;
+  border-color: var(--a-border);
+  box-shadow: 0 20px 60px -10px rgba(11,28,48,.08), 0 0 0 1px rgba(255,255,255,1) inset;
+}
+[data-theme="light"] .login-wordmark {
+  color: var(--a-text);
+}
+[data-theme="light"] .login-title {
+  color: var(--a-text);
+}
+[data-theme="light"] .login-sub {
+  color: var(--a-text3);
+}
+[data-theme="light"] .login-group label {
+  color: var(--a-text2);
+}
+[data-theme="light"] .login-group input {
+  background: var(--a-input-bg);
+  border-color: var(--a-border);
+  color: var(--a-text);
+}
+[data-theme="light"] .login-group input::placeholder {
+  color: var(--a-text3);
+}
+[data-theme="light"] .login-group input:focus {
+  border-color: var(--a-blue);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(var(--a-blue-rgb),.1);
+}
+[data-theme="light"] .login-error {
+  color: var(--a-danger);
+  border-color: rgba(220,38,38,.2);
+}
+[data-theme="light"] .login-foot {
+  color: var(--a-text3);
 }

@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" id="adminHtml">
+<html lang="ar" dir="rtl" id="adminHtml" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>@ViewData["Title"] — Uni-Shop Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true">
 @await RenderSectionAsync("Styles", required: false)
 </head>
@@ -32,55 +33,55 @@
 
       <div class="nav-group-label">الرئيسية</div>
       <a href="/Admin/Dashboard" class="sidebar-link @(ctrl == "Dashboard" ? "active" : "")">
-        <span class="si">📊</span> الرئيسية
+        <span class="si"><i class="bi bi-grid-1x2-fill"></i></span> الرئيسية
       </a>
 
       <div class="nav-group-label">المتجر</div>
       <a href="/Admin/AdminCategories" class="sidebar-link @(ctrl == "AdminCategories" ? "active" : "")">
-        <span class="si">🗂️</span> التصنيفات
+        <span class="si"><i class="bi bi-tags-fill"></i></span> التصنيفات
       </a>
       <a href="/Admin/AdminAttributes" class="sidebar-link @(ctrl == "AdminAttributes" ? "active" : "")">
-        <span class="si">🔧</span> المواصفات
+        <span class="si"><i class="bi bi-sliders"></i></span> المواصفات
       </a>
       <a href="/Admin/AdminBrands" class="sidebar-link @(ctrl == "AdminBrands" ? "active" : "")">
-        <span class="si">🏷️</span> البراندات
+        <span class="si"><i class="bi bi-bookmark-star-fill"></i></span> البراندات
       </a>
       <a href="/Admin/AdminProducts" class="sidebar-link @(ctrl == "AdminProducts" ? "active" : "")">
-        <span class="si">📦</span> المنتجات
+        <span class="si"><i class="bi bi-box-seam-fill"></i></span> المنتجات
       </a>
       <a href="/Admin/AdminOrders" class="sidebar-link @(ctrl == "AdminOrders" ? "active" : "")">
-        <span class="si">🛒</span> الطلبات
+        <span class="si"><i class="bi bi-cart-check-fill"></i></span> الطلبات
       </a>
       <a href="/Admin/AdminMessages" class="sidebar-link @(ctrl == "AdminMessages" ? "active" : "")">
-        <span class="si">📩</span> الرسائل
+        <span class="si"><i class="bi bi-envelope-fill"></i></span> الرسائل
         @await Component.InvokeAsync("AdminMessageCount")
       </a>
 
       <div class="nav-group-label">المحتوى</div>
       <a href="/Admin/AdminContent/Blocks" class="sidebar-link @(ctrl == "AdminContent" && action == "Blocks" ? "active" : "")">
-        <span class="si">✏️</span> محتوى الرئيسية
+        <span class="si"><i class="bi bi-house-gear-fill"></i></span> محتوى الرئيسية
       </a>
       <a href="/Admin/AdminContent/Pages" class="sidebar-link @(ctrl == "AdminContent" && action is "Pages" or "CreatePage" or "EditPage" ? "active" : "")">
-        <span class="si">📄</span> صفحات حرة
+        <span class="si"><i class="bi bi-file-earmark-text-fill"></i></span> صفحات حرة
       </a>
       <a href="/Admin/AdminNavigation" class="sidebar-link @(ctrl == "AdminNavigation" ? "active" : "")">
-        <span class="si">🗂️</span> قائمة التنقل
+        <span class="si"><i class="bi bi-list-ul"></i></span> قائمة التنقل
       </a>
 
       <div class="nav-group-label">الإعدادات</div>
       <a href="/Admin/AdminSettings" class="sidebar-link @(ctrl == "AdminSettings" ? "active" : "")">
-        <span class="si">⚙️</span> الإعدادات
+        <span class="si"><i class="bi bi-gear-fill"></i></span> الإعدادات
       </a>
 
       <div class="sidebar-foot">
         <a href="/" class="sidebar-link" target="_blank">
-          <span class="si">🌐</span> عرض الموقع
+          <span class="si"><i class="bi bi-globe"></i></span> عرض الموقع
         </a>
         <form action="/Admin/AdminAccount/Logout" method="post" style="margin:0">
           @Html.AntiForgeryToken()
           <button type="submit" class="sidebar-link"
-                  style="width:100%;text-align:right;background:none;border:none;cursor:pointer;font-family:'Tajawal',sans-serif;font-size:13.5px;color:rgba(255,255,255,.58)">
-            <span class="si">🚪</span> تسجيل الخروج
+                  style="width:100%;text-align:right;background:none;border:none;cursor:pointer;font-family:'Tajawal',sans-serif;font-size:13.5px;">
+            <span class="si"><i class="bi bi-box-arrow-right"></i></span> تسجيل الخروج
           </button>
         </form>
       </div>
@@ -93,10 +94,6 @@
       <button class="sidebar-toggle" onclick="document.getElementById('adminSidebar').classList.toggle('open')">☰</button>
       <div class="topbar-title">@ViewData["Title"]</div>
       <div class="topbar-user">
-        <button class="theme-toggle-btn" onclick="toggleAdminTheme()" id="themeBtn" title="تبديل المظهر">
-          <span id="themeIcon">☀️</span>
-          <span id="themeLabel">فاتح</span>
-        </button>
         <div class="user-avatar">A</div>
         <span style="font-size:13px;color:var(--a-text2);font-weight:600">Admin</span>
       </div>
@@ -104,11 +101,17 @@
 
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success">✓ @TempData["Success"]</div>
+        <div class="alert alert-success">
+          <i class="bi bi-check-circle-fill" style="margin-left:6px;"></i>
+          @TempData["Success"]
+        </div>
     }
     @if (TempData["Error"] != null)
     {
-        <div class="alert alert-error">✕ @TempData["Error"]</div>
+        <div class="alert alert-error">
+          <i class="bi bi-x-circle-fill" style="margin-left:6px;"></i>
+          @TempData["Error"]
+        </div>
     }
 
     <div class="admin-content">
@@ -120,25 +123,7 @@
 <script src="~/js/admin.js" asp-append-version="true"></script>
 <script>
 (function(){
-  var saved = localStorage.getItem('ftd_admin_theme') || 'dark';
-  document.getElementById('adminHtml').setAttribute('data-theme', saved);
-  updateThemeBtn(saved);
-  function updateThemeBtn(theme){
-    var btn = document.getElementById('themeBtn');
-    var icon = document.getElementById('themeIcon');
-    var lbl  = document.getElementById('themeLabel');
-    if(!btn) return;
-    if(theme === 'light'){ icon.textContent='🌙'; lbl.textContent='داكن'; }
-    else                 { icon.textContent='☀️'; lbl.textContent='فاتح'; }
-  }
-  window.toggleAdminTheme = function(){
-    var html  = document.getElementById('adminHtml');
-    var current = html.getAttribute('data-theme') || 'dark';
-    var next    = current === 'dark' ? 'light' : 'dark';
-    html.setAttribute('data-theme', next);
-    localStorage.setItem('ftd_admin_theme', next);
-    updateThemeBtn(next);
-  };
+  document.getElementById('adminHtml').setAttribute('data-theme', 'light');
 })();
 </script>
 @await RenderSectionAsync("Scripts", required: false)
