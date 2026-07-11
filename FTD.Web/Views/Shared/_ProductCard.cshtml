@@ -48,7 +48,7 @@
                     var disc = (int)Math.Round((1 - Model.Price / Model.OldPrice.Value) * 100);
                     <div style="display:flex;align-items:center;gap:5px;margin-top:2px">
                         <span style="font-size:11px;color:var(--on-surface-muted);text-decoration:line-through">EGP @Model.OldPrice.Value.ToString("N0")</span>
-                        <span style="background:#FF3B30;color:white;font-size:9px;font-weight:800;padding:1px 5px;border-radius:100px">-@disc%</span>
+                        <span style="background:var(--error);color:white;font-size:9px;font-weight:800;padding:1px 5px;border-radius:100px">-@disc%</span>
                     </div>
                 }
             </div>

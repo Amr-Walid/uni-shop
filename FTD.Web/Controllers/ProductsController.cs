@@ -88,6 +88,8 @@ namespace FTD.Web.Controllers
                     slug = p.Slug,
                     nameAr = p.NameAr,
                     nameEn = p.NameEn,
+                    shortDescAr = p.ShortDescAr,
+                    shortDescEn = p.ShortDescEn,
                     brandName = p.Brand?.NameEn ?? p.BrandName,
                     price = p.Price,
                     oldPrice = p.OldPrice,

@@ -4,6 +4,7 @@ namespace FTD.Application.DTOs
     {
         public int ProductId { get; set; }
         public string ProductName { get; set; } = "";
+        public string ProductNameEn { get; set; } = "";
         public string? Emoji { get; set; }
         public string? ImagePath { get; set; }
         public string? BrandName { get; set; }

@@ -19,6 +19,7 @@ namespace FTD.Web.ViewModels
                 {
                     ProductId = i.ProductId,
                     ProductName = i.ProductName,
+                    ProductNameEn = i.ProductNameEn,
                     Emoji = i.Emoji,
                     ImagePath = i.ImagePath,
                     BrandName = i.BrandName,

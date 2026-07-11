@@ -218,8 +218,10 @@
                                             <img src="@item.ImagePath" alt="@item.ProductName" style="width:36px; height:36px; object-fit:contain; background:var(--surface-container-low); border-radius:6px;">
                                         }
                                         <div>
-                                            <strong style="display:block; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">@item.ProductName</strong>
-                                            <span style="font-size:11px; color:var(--on-surface-muted)">Qty: @item.Quantity</span>
+                                            <strong style="display:block; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">
+                                                <span data-ar>@item.ProductName</span><span data-en>@(string.IsNullOrEmpty(item.ProductNameEn) ? item.ProductName : item.ProductNameEn)</span>
+                                            </strong>
+                                            <span style="font-size:11px; color:var(--on-surface-muted)"><span data-ar>الكمية</span><span data-en>Qty</span>: @item.Quantity</span>
                                         </div>
                                     </div>
                                     <strong style="font-variant-numeric: tabular-nums">EGP @item.SubTotal.ToString("N0")</strong>

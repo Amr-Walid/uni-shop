@@ -67,7 +67,7 @@
                                         </div>
                                         <div class="cart-item-info">
                                             <div class="brand">@item.BrandName?.ToUpper()</div>
-                                            <h4>@item.ProductName</h4>
+                                            <h4><span data-ar>@item.ProductName</span><span data-en>@(string.IsNullOrEmpty(item.ProductNameEn) ? item.ProductName : item.ProductNameEn)</span></h4>
                                             <span class="tag"><span class="dot"></span><span data-ar>متوفر · وحدة UNI-@item.ProductId</span><span data-en>In stock · SKU UNI-@item.ProductId</span></span>
                                         </div>
                                     </div>

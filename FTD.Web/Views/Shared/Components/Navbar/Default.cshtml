@@ -39,10 +39,10 @@
         </div>
     </nav>
     <div class="mobile-menu" id="mobile-menu">
-        <a href="/" class="mobile-menu-link"><span data-ar>الرئيسية</span><span data-en>Home</span></a>
-        <a href="/#about" class="mobile-menu-link"><span data-ar>عننا</span><span data-en>About</span></a>
-        <a href="/Products" class="mobile-menu-link"><span data-ar>المنتجات</span><span data-en>Products</span></a>
-        <a href="/#contact" class="mobile-menu-link"><span data-ar>تواصل معنا</span><span data-en>Contact</span></a>
+        <a href="/" class="mobile-menu-link" data-nav="home"><span data-ar>الرئيسية</span><span data-en>Home</span></a>
+        <a href="/#about" class="mobile-menu-link" data-nav="about"><span data-ar>عننا</span><span data-en>About</span></a>
+        <a href="/Products" class="mobile-menu-link" data-nav="products"><span data-ar>المنتجات</span><span data-en>Products</span></a>
+        <a href="/#contact" class="mobile-menu-link" data-nav="contact"><span data-ar>تواصل معنا</span><span data-en>Contact</span></a>
     </div>
 </div>
 <script>
@@ -52,86 +52,120 @@
     }
 
     (function () {
-        var path = window.location.pathname;
-        var hash = window.location.hash;
+        // Map of logical nav "keys" to their .nav-link element id.
+        var NAV_IDS = { home: 'nav-home', about: 'nav-about', products: 'nav-products', contact: 'nav-contact' };
 
-        function setActive(id) {
+        function setActive(key) {
             document.querySelectorAll('.nav-link').forEach(function (l) { l.classList.remove('active'); });
-            var el = document.getElementById(id);
+            document.querySelectorAll('.mobile-menu-link').forEach(function (l) { l.classList.remove('active'); });
+            var id = NAV_IDS[key];
+            var el = id ? document.getElementById(id) : null;
             if (el) el.classList.add('active');
+            var mobileEl = document.querySelector('.mobile-menu-link[data-nav="' + key + '"]');
+            if (mobileEl) mobileEl.classList.add('active');
         }
 
-        // ── Non-home pages: set by route ─────────────────────────────────────
-        if (path !== '/' && path !== '') {
-            if (path.indexOf('/Products') === 0) setActive('nav-products');
-            return;
+        // ── Deterministic initial state from the CURRENT URL ───────────────────
+        // Runs identically no matter how this page was reached (full navigation,
+        // back/forward, or a hard refresh) — this is what previously broke when
+        // clicking "About" from a non-home page: the click was never intercepted
+        // (by design — there's nothing to scroll to on /Products), so it always
+        // resulted in a real navigation to "/#about", but the active-state logic
+        // used to be skipped entirely for the initial paint on some browsers due
+        // to a fragile early-return. It's now unconditional for every page.
+        var path = window.location.pathname.replace(/\/+$/, '') || '/';
+        var isHome = (path === '/' || path === '');
+
+        function keyFromLocation() {
+            if (path.toLowerCase().indexOf('/products') === 0) return 'products';
+            if (isHome) {
+                var hash = window.location.hash;
+                if (hash === '#about')   return 'about';
+                if (hash === '#contact') return 'contact';
+                return 'home';
+            }
+            return null; // Cart / Order / Page / other routes: no top-level match
         }
 
-        // ── Home page ────────────────────────────────────────────────────────
+        var initialKey = keyFromLocation();
+        if (initialKey) setActive(initialKey);
 
-        // Set active immediately from URL hash — handles cross-page navigation
-        // (browser natively scrolls to hash, no JS scroll events involved)
-        if      (hash === '#about')   setActive('nav-about');
-        else if (hash === '#contact') setActive('nav-contact');
-        else                          setActive('nav-home');
+        if (!isHome) return; // scroll-spy & in-page hash smooth-scroll only apply on Home
 
-        // Scroll spy — only for manual scrolling AFTER the page loads
+        // ── Scroll-spy (Home page only) ─────────────────────────────────────────
+        // Uses IntersectionObserver instead of manual scrollY/offset math so it
+        // stays correct even when content above a section (hero images, etc.)
+        // finishes loading late and shifts the layout — the old manual-offset
+        // version could get "stuck" pointing at the wrong section (reported as
+        // "About" incorrectly showing "Home" as active) once that happened.
+        var SECTIONS = [
+            { id: 'about', key: 'about' },
+            { id: 'featured', key: 'products' },
+            { id: 'contact', key: 'contact' }
+        ];
+
+        var lockedKey = null;
+        var lockTimer = null;
+        function lockActive(key, ms) {
+            lockedKey = key;
+            setActive(key);
+            clearTimeout(lockTimer);
+            lockTimer = setTimeout(function () { lockedKey = null; }, ms);
+        }
+
         window.addEventListener('load', function () {
-            var aboutEl    = document.getElementById('about');
-            var featuredEl = document.getElementById('featured');
-            var contactEl  = document.getElementById('contact');
+            var observed = [];
+            SECTIONS.forEach(function (s) {
+                var el = document.getElementById(s.id);
+                if (el) observed.push({ el: el, key: s.key });
+            });
 
-            function getActiveId() {
-                var scrollY     = window.scrollY + 180;
-                var contactTop  = contactEl  ? contactEl.getBoundingClientRect().top  + window.scrollY : Infinity;
-                var aboutTop    = aboutEl    ? aboutEl.getBoundingClientRect().top    + window.scrollY : Infinity;
-                var featuredTop = featuredEl ? featuredEl.getBoundingClientRect().top + window.scrollY : Infinity;
-                if (contactEl  && scrollY >= contactTop)  return 'nav-contact';
-                if (aboutEl    && scrollY >= aboutTop)    return 'nav-about';
-                if (featuredEl && scrollY >= featuredTop) return 'nav-products';
-                return 'nav-home';
+            if (observed.length && 'IntersectionObserver' in window) {
+                var io = new IntersectionObserver(function (entries) {
+                    if (lockedKey) return; // a click just triggered a smooth scroll — don't fight it
+                    var best = null;
+                    entries.forEach(function (entry) {
+                        if (entry.isIntersecting && (!best || entry.intersectionRatio > best.intersectionRatio)) {
+                            best = entry;
+                        }
+                    });
+                    if (best) {
+                        var match = observed.filter(function (o) { return o.el === best.target; })[0];
+                        if (match) setActive(match.key);
+                    } else if (window.scrollY < 200) {
+                        setActive('home');
+                    }
+                }, { threshold: [0.15, 0.3, 0.5], rootMargin: '-96px 0px -40% 0px' });
+
+                observed.forEach(function (o) { io.observe(o.el); });
             }
 
-            var isNavigating = false;
-
+            // Always-correct fallback: near the very top of the page => Home.
             window.addEventListener('scroll', function () {
-                if (!isNavigating) setActive(getActiveId());
+                if (!lockedKey && window.scrollY < 120) setActive('home');
             }, { passive: true });
 
-            // Click on hash links: freeze spy, smooth scroll, unfreeze when done
-            document.querySelectorAll('a[href^="/#"], a[href="/"]').forEach(function (link) {
+            // In-page hash links: intercept for a smooth scroll + instant active state.
+            document.querySelectorAll('a[href^="/#"], a[href="/"], a[href="/#"]').forEach(function (link) {
                 link.addEventListener('click', function (e) {
                     var href = this.getAttribute('href');
-                    var targetId, targetSelector;
+                    var key, targetSelector;
 
-                    if      (href === '/' || href === '/#') { targetId = 'nav-home';    targetSelector = null; }
-                    else if (href === '/#about')            { targetId = 'nav-about';   targetSelector = '#about'; }
-                    else if (href === '/#contact')          { targetId = 'nav-contact'; targetSelector = '#contact'; }
+                    if      (href === '/' || href === '/#') { key = 'home';     targetSelector = null; }
+                    else if (href === '/#about')             { key = 'about';   targetSelector = '#about'; }
+                    else if (href === '/#contact')           { key = 'contact'; targetSelector = '#contact'; }
                     else return;
 
-                    setActive(targetId);
-
                     if (targetSelector) {
-                        e.preventDefault();
                         var el = document.querySelector(targetSelector);
                         if (el) {
-                            isNavigating = true;
+                            e.preventDefault();
+                            lockActive(key, 900);
                             el.scrollIntoView({ behavior: 'smooth' });
                             window.history.pushState(null, '', href);
-
-                            if ('onscrollend' in window) {
-                                window.addEventListener('scrollend', function () {
-                                    isNavigating = false;
-                                }, { once: true });
-                            } else {
-                                var lastY = window.scrollY, stable = 0;
-                                var t = setInterval(function () {
-                                    if (Math.abs(window.scrollY - lastY) < 2) {
-                                        if (++stable >= 3) { clearInterval(t); isNavigating = false; }
-                                    } else { stable = 0; lastY = window.scrollY; }
-                                }, 50);
-                            }
                         }
+                    } else {
+                        lockActive('home', 900);
                     }
                 });
             });

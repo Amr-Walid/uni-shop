@@ -58,6 +58,7 @@ namespace FTD.Application.Services
                             {
                                 ProductId = product.Id,
                                 ProductName = product.NameAr,
+                                ProductNameEn = product.NameEn,
                                 Emoji = product.Emoji,
                                 ImagePath = product.ImagePath,
                                 BrandName = product.BrandName,

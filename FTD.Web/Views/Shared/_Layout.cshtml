@@ -1,8 +1,12 @@
 @{
+    // The cookie is the SSR-known language preference; it's now actually wired
+    // up (site.js's toggleLang() writes it) so the <html>/<body> render in the
+    // right language/direction from the very first byte — avoiding the old
+    // flash-of-wrong-language that happened while waiting for JS to run.
     var en = Context.Request.Cookies["ftd_lang"] == "en";
 }
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" id="htmlRoot">
+<html lang="@(en ? "en" : "ar")" dir="@(en ? "ltr" : "rtl")" id="htmlRoot">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,14 +17,14 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true">
     @await RenderSectionAsync("Styles", required: false)
 </head>
-<body>
+<body class="@(en ? "en" : "")">
     <!-- SEARCH OVERLAY -->
     <div class="search-overlay" id="searchOverlay">
         <div class="search-box">
             <div class="search-input-wrap">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
-                <input type="text" id="searchInput" placeholder="ابحث عن منتج، براند، أو كاتيجوري...">
-                <button class="search-close" onclick="closeSearch()">✕</button>
+                <input type="text" id="searchInput" data-ph-ar="ابحث عن منتج، براند، أو كاتيجوري..." data-ph-en="Search for a product, brand, or category..." placeholder="ابحث عن منتج، براند، أو كاتيجوري...">
+                <button class="search-close" onclick="closeSearch()" aria-label="Close search">✕</button>
             </div>
             <div id="searchResults" class="search-results" style="display:none"></div>
             <div class="search-tags" id="searchTags">
@@ -29,7 +33,7 @@
                 <a href="/brand/dreame" class="search-tag">Dreame Webcams</a>
                 <span class="search-tag" onclick="doSearch('تابلت متين')">تابلت متين</span>
                 <span class="search-tag" onclick="doSearch('مروحة محمولة')">مروحة محمولة</span>
-                <span class="search-tag" onclick="doSearch('كاميرا 4K')">كاميرا 4K</span>
+                <span class="search-tag" onclick="doSearch('كاميرا 4K')"><bdi>كاميرا 4K</bdi></span>
             </div>
         </div>
     </div>

@@ -78,6 +78,32 @@
   --gutter: 24px;
   --page-margin: 64px;
   --page-margin-mobile: 16px;
+
+  /* ---------------------------------------------------------------
+     Legacy aliases — several CMS page-builder partials
+     (_Section_Hero/Cards/FAQ/RichText.cshtml, Page/Show.cshtml,
+     Order/Confirmation.cshtml, Products/_ProductsGrid.cshtml) were
+     authored against an older, differently-named token set and were
+     never migrated to the Luminous Commerce names above. Rather than
+     rewrite every partial, alias the old names onto the current
+     tokens so those pages render correctly instead of silently
+     falling back to browser defaults (no border color / no bg / etc).
+     --------------------------------------------------------------- */
+  --dark: var(--navy);
+  --blue: var(--primary);
+  --blue-light: var(--surface-container-low);
+  --green: var(--success);
+  --border: var(--outline-variant);
+  --bg: var(--surface);
+  --text: var(--on-surface);
+  --text2: var(--on-surface-muted);
+  --text3: var(--on-surface-muted);
+  --font: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --r: var(--r-lg);
+  --rl: var(--r-lg);
+  /* .nav-wrap is position:sticky (in-flow), so it already reserves its own
+     space above page content — no extra compensating offset is needed. */
+  --nav-h: 0px;
 }
 
 /* ============================================
@@ -90,6 +116,21 @@ html {
   scroll-behavior: smooth;
   scrollbar-gutter: stable;
 }
+
+/* ============================================
+   BILINGUAL VISIBILITY (data-ar / data-en)
+   ============================================
+   CSS-first default so any element — including ones injected later via AJAX
+   (product filter results, live search results) — is correctly shown/hidden
+   WITHOUT waiting for JS to re-run. site.js's applyLangVisibility() still
+   sets an inline style on toggle for instant switching, but that inline
+   style is no longer required for correctness on first paint or on
+   dynamically-injected markup, which fixes the "Arabic + English text
+   rendered concatenated" bug seen after filtering products. */
+[data-en] { display: none; }
+[data-ar] { display: inline; }
+body.en [data-en] { display: inline; }
+body.en [data-ar] { display: none; }
 
 body {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
@@ -1138,7 +1179,6 @@ a { color: inherit; text-decoration: none; }
     margin-top: 40px;
   }
 }
-}
 
 /* ============================================
    MARQUEE â€” Brand strip
@@ -1378,21 +1418,27 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
 }
+.product-card .price-row > div:first-child { min-width: 0; overflow: hidden; }
+.product-card .price-row .price { white-space: nowrap; }
 .product-card .price {
   font-size: 18px;
   font-weight: 700;
   color: var(--navy);
   letter-spacing: -0.01em;
 }
-.product-card .actions { display: flex; gap: 6px; }
+.product-card .actions { display: flex; gap: 6px; flex-shrink: 0; }
 .product-card .actions .btn-sm {
   padding: 8px 14px;
   font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .product-card .actions .icon-only {
   width: 34px;
   height: 34px;
+  min-width: 34px;
   padding: 0;
   border-radius: var(--r-full);
   background: var(--accent);
@@ -1402,6 +1448,7 @@ a { color: inherit; text-decoration: none; }
   transition: all 0.2s;
   border: 1px solid transparent;
   box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.2);
+  flex-shrink: 0;
 }
 .product-card .actions .icon-only:hover {
   background: #e06b00;
@@ -1417,10 +1464,14 @@ a { color: inherit; text-decoration: none; }
   display: grid;
   grid-template-columns: 1fr 1.1fr;
   gap: 80px;
-  align-items: start;
+  align-items: stretch;
 }
 @media (max-width: 968px) {
   .about { grid-template-columns: 1fr; gap: 40px; }
+}
+.about-copy {
+  display: flex;
+  flex-direction: column;
 }
 .about-copy h2 { margin-bottom: 20px; }
 .about-copy p {
@@ -1433,6 +1484,7 @@ a { color: inherit; text-decoration: none; }
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
+  margin-top: auto;
 }
 .stat-card {
   padding: 24px 20px;
@@ -1478,7 +1530,11 @@ a { color: inherit; text-decoration: none; }
   color: white;
   position: relative;
   overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
+.about-features { flex: 1; justify-content: center; }
 .about-panel::before {
   content: '';
   position: absolute;
@@ -1848,6 +1904,7 @@ a { color: inherit; text-decoration: none; }
   color: var(--navy);
 }
 .mobile-menu-link:hover { background: var(--surface-container-low); color: var(--primary); }
+.mobile-menu-link.active { background: rgba(var(--primary-rgb), 0.08); color: var(--primary); font-weight: 600; }
 
 /* --- Styles from products.html --- */
 /* Products page specific */
@@ -2044,6 +2101,7 @@ a { color: inherit; text-decoration: none; }
   color: var(--navy-3);
 }
 .filter-opt:hover { background: var(--surface-container-low); color: var(--navy); }
+.filter-opt.checked { color: var(--navy); font-weight: 600; }
 .filter-opt input { display: none; }
 .filter-opt .check {
   width: 16px;
@@ -2055,10 +2113,15 @@ a { color: inherit; text-decoration: none; }
   transition: all 0.15s;
   flex-shrink: 0;
 }
+/* Server/JS toggle the parent label's .checked class (no real <input> exists
+   in the markup) — style directly off that, and also support a genuine
+   input:checked sibling in case one is added later. */
+.filter-opt.checked .check,
 .filter-opt input:checked ~ .check {
   background: var(--primary);
   border-color: var(--primary);
 }
+.filter-opt.checked .check::after,
 .filter-opt input:checked ~ .check::after {
   content: '';
   width: 8px; height: 5px;
@@ -2224,16 +2287,18 @@ a { color: inherit; text-decoration: none; }
 .product-card .sku { font-size: 9px; color: var(--on-surface-muted); letter-spacing: 0.1em; }
 .product-card h3 { font-size: 16px; font-weight: 600; color: var(--navy); margin-bottom: 4px; letter-spacing: -0.01em; }
 .product-card .desc { font-size: 12px; line-height: 18px; color: var(--on-surface-muted); margin-bottom: 16px; min-height: 36px; }
-.product-card .price-row { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--outline-variant); display: flex; align-items: center; justify-content: space-between; }
-.product-card .price { font-size: 18px; font-weight: 700; color: var(--navy); letter-spacing: -0.01em; }
-.product-card .actions { display: flex; gap: 6px; }
-.product-card .actions .btn-sm { padding: 8px 14px; font-size: 12px; }
+.product-card .price-row { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--outline-variant); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.product-card .price-row > div:first-child { min-width: 0; overflow: hidden; }
+.product-card .price { font-size: 18px; font-weight: 700; color: var(--navy); letter-spacing: -0.01em; white-space: nowrap; }
+.product-card .actions { display: flex; gap: 6px; flex-shrink: 0; }
+.product-card .actions .btn-sm { padding: 8px 14px; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
 .product-card .actions .icon-only {
-  width: 34px; height: 34px; padding: 0; border-radius: var(--r-full);
+  width: 34px; height: 34px; min-width: 34px; padding: 0; border-radius: var(--r-full);
   background: var(--accent); color: white;
   display: grid; place-items: center; transition: all 0.2s;
   border: 1px solid transparent;
   box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.2);
+  flex-shrink: 0;
 }
 .product-card .actions .icon-only:hover { background: #e06b00; color: white; transform: scale(1.08); box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.4); }
 
@@ -2719,8 +2784,9 @@ a { color: inherit; text-decoration: none; }
 .product-card .info { padding: 20px; }
 .product-card .brand { font-size: 10px; font-weight: 700; letter-spacing: 0.2em; color: var(--primary); margin-bottom: 6px; }
 .product-card h3 { font-size: 15px; font-weight: 600; color: var(--navy); margin-bottom: 12px; }
-.product-card .price-row { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--outline-variant); }
-.product-card .price { font-size: 16px; font-weight: 700; color: var(--navy); }
+.product-card .price-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--outline-variant); }
+.product-card .price-row > div:first-child { min-width: 0; overflow: hidden; }
+.product-card .price { font-size: 16px; font-weight: 700; color: var(--navy); white-space: nowrap; }
 
 /* Mobile menu */
 .mobile-menu {
@@ -3693,8 +3759,13 @@ a { color: inherit; text-decoration: none; }
   box-shadow: 0 8px 30px -4px rgba(var(--accent-rgb), 0.5), 0 0 0 4px rgba(var(--accent-rgb), 0.15) !important;
 }
 
-/* Ensure outline input fields transition to primary purple on focus */
-input:focus, textarea:focus, select:focus {
+/* Ensure outline input fields transition to primary purple on focus.
+   Scoped to exclude borderless inputs (search box, filter checkboxes) that
+   already manage their own focus state on a parent wrapper — otherwise this
+   rule punches a second nested border/ring onto those inputs. */
+input:focus:not(.search-input-wrap input):not(.filter-opt input),
+textarea:focus,
+select:focus {
   border-color: var(--primary) !important;
   box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15) !important;
 }

@@ -1,3 +1,17 @@
+// ── CART BADGE ────────────────────────────────────────────────────────────────
+// Single source of truth for showing/updating the navbar cart badge. Both the
+// quick add-to-cart flow and the periodic count refresh route through this so
+// the badge's visibility can never drift out of sync with its text again —
+// previously the badge had a hardcoded inline `display:none` that neither
+// caller ever removed, so it stayed invisible even once items were added.
+function setCartBadge(count) {
+    var badge = document.getElementById('cartCount');
+    if (!badge) return;
+    var n = Number(count) || 0;
+    badge.textContent = n;
+    badge.style.display = n > 0 ? 'grid' : 'none';
+}
+
 // ── ADD TO CART (quick, no redirect) ─────────────────────────────────────────
 function addToCartQuick(productId, btn) {
     var token = document.querySelector('input[name=__RequestVerificationToken]');
@@ -13,45 +27,23 @@ function addToCartQuick(productId, btn) {
     })
         .then(function (r) { return r.json(); })
         .then(function (data) {
-            // Update cart count
-            var badge = document.getElementById('cartCount');
-            if (badge && data.count !== undefined) badge.textContent = data.count;
-            // Flash button green briefly
+            if (data && data.count !== undefined) setCartBadge(data.count);
+            // Flash button success state briefly (uses design-token color,
+            // not a hardcoded legacy hex).
             if (btn) {
-                btn.textContent = '✓';
-                btn.style.background = '#00C48C';
-                btn.style.color = 'white';
-                btn.style.borderColor = '#00C48C';
+                var prevHtml = btn.innerHTML;
+                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                btn.style.background = 'var(--success)';
+                btn.style.borderColor = 'var(--success)';
                 setTimeout(function () {
-                    btn.textContent = '🛒';
+                    btn.innerHTML = prevHtml;
                     btn.style.background = '';
-                    btn.style.color = '';
                     btn.style.borderColor = '';
                 }, 1200);
             }
         })
         .catch(function () { });
 }
-
-// ── MOBILE NAV ───────────────────────────────────────────────────────────────
-function toggleMobileNav() {
-    var nav = document.getElementById('mobileNav');
-    var btn = document.getElementById('hamburger');
-    if (!nav || !btn) return;
-    nav.classList.toggle('open');
-    btn.classList.toggle('open');
-}
-
-// Close mobile nav on outside click
-document.addEventListener('click', function (e) {
-    var nav = document.getElementById('mobileNav');
-    var btn = document.getElementById('hamburger');
-    if (!nav || !btn) return;
-    if (nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) {
-        nav.classList.remove('open');
-        btn.classList.remove('open');
-    }
-});
 
 // ── LANG ─────────────────────────────────────────────────────────────────────
 function applyLangVisibility() {
@@ -62,14 +54,38 @@ function applyLangVisibility() {
     document.querySelectorAll('[data-en]').forEach(function (el) {
         el.style.display = en ? (el.tagName === 'SPAN' ? 'inline' : 'block') : 'none';
     });
+    // Swap placeholder text on inputs that declare bilingual placeholders
+    // (e.g. the search box) — this was previously hardcoded to Arabic only
+    // and never updated when the language was toggled.
+    document.querySelectorAll('[data-ph-ar][data-ph-en]').forEach(function (el) {
+        el.setAttribute('placeholder', en ? el.getAttribute('data-ph-en') : el.getAttribute('data-ph-ar'));
+    });
+}
+
+function getCookie(name) {
+    var match = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
+    return match ? decodeURIComponent(match[1]) : null;
+}
+
+function setCookie(name, value) {
+    document.cookie = name + '=' + encodeURIComponent(value) + '; path=/; max-age=31536000; SameSite=Lax';
 }
 
 function initLang() {
-    var saved = localStorage.getItem('ftd_lang');
+    // Cookie is the SSR-known preference (already applied server-side by _Layout.cshtml
+    // on first byte); localStorage is kept as a fallback/legacy source. Reconcile both
+    // so a stale localStorage value never fights the server-rendered state, and so a
+    // value from either source is persisted to the other for next time.
+    var cookieLang = getCookie('ftd_lang');
+    var saved = cookieLang || localStorage.getItem('ftd_lang');
     if (saved === 'en') {
         document.body.classList.add('en');
         document.getElementById('htmlRoot')?.setAttribute('lang', 'en');
         document.getElementById('htmlRoot')?.setAttribute('dir', 'ltr');
+    }
+    if (saved) {
+        localStorage.setItem('ftd_lang', saved);
+        setCookie('ftd_lang', saved);
     }
     applyLangVisibility();
 }
@@ -82,7 +98,9 @@ function toggleLang() {
         root.setAttribute('lang', en ? 'en' : 'ar');
         root.setAttribute('dir', en ? 'ltr' : 'rtl');
     }
-    localStorage.setItem('ftd_lang', en ? 'en' : 'ar');
+    var lang = en ? 'en' : 'ar';
+    localStorage.setItem('ftd_lang', lang);
+    setCookie('ftd_lang', lang);
     applyLangVisibility();
 }
 
@@ -128,7 +146,12 @@ function triggerSearch(q) {
             var en = document.body.classList.contains('en');
 
             if (!data.results || data.results.length === 0) {
-                resultsDiv.innerHTML = '<div class="search-no-results">لا توجد نتائج / No results for "' + q + '"</div>';
+                var escapedQ = q.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                resultsDiv.innerHTML = '<div class="search-no-results">'
+                    + '<span data-ar>لا توجد نتائج لـ "' + escapedQ + '"</span>'
+                    + '<span data-en>No results for "' + escapedQ + '"</span>'
+                    + '</div>';
+                if (typeof applyLangVisibility === 'function') applyLangVisibility();
             } else {
                 resultsDiv.innerHTML = data.results.map(function (p) {
                     return '<a href="' + p.url + '" class="search-result-item" onclick="closeSearch()">'
@@ -151,65 +174,21 @@ function triggerSearch(q) {
 function updateCartCount() {
     fetch('/Cart/Count')
         .then(function (r) { return r.json(); })
-        .then(function (d) {
-            var el = document.getElementById('cartCount');
-            if (el) el.textContent = d.count || 0;
-        })
+        .then(function (d) { setCartBadge(d.count); })
         .catch(function () { });
-}
-
-// ── MEGA PANEL (click-based, no hover) ───────────────────────────────────────
-function initDropdowns() {
-    var btn = document.getElementById('productsMegaBtn');
-    var trigger = document.getElementById('productsMegaTrigger');
-    var panel = document.getElementById('productsMegaPanel');
-    if (!btn || !trigger || !panel) return;
-
-    // Click trigger → toggle panel
-    trigger.addEventListener('click', function (e) {
-        e.preventDefault();
-        btn.classList.toggle('open');
-    });
-
-    // Click inside panel link → navigate + close
-    panel.querySelectorAll('a').forEach(function (link) {
-        link.addEventListener('click', function () {
-            btn.classList.remove('open');
-        });
-    });
-
-    // Click anywhere outside → close
-    document.addEventListener('click', function (e) {
-        if (!btn.contains(e.target)) {
-            btn.classList.remove('open');
-        }
-    });
 }
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
 
-    // Dropdowns
-    initDropdowns();
-
-    // Hamburger button
-    var hamburgerBtn = document.getElementById('hamburger');
-    if (hamburgerBtn) {
-        hamburgerBtn.addEventListener('click', function () {
-            toggleMobileNav();
-        });
-    }
-
     initLang();
     updateCartCount();
 
-    // Close mobile nav on link click
-    document.querySelectorAll('.mobile-nav a').forEach(function (a) {
+    // Close mobile menu when any of its links are clicked
+    document.querySelectorAll('.mobile-menu-link').forEach(function (a) {
         a.addEventListener('click', function () {
-            var nav = document.getElementById('mobileNav');
-            var btn = document.getElementById('hamburger');
-            if (nav) nav.classList.remove('open');
-            if (btn) btn.classList.remove('open');
+            var menu = document.getElementById('mobile-menu');
+            if (menu) menu.classList.remove('open');
         });
     });
 
