@@ -116,10 +116,14 @@
                                     <svg class="arrow" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                 </div>
                                 <div class="filter-options">
+                                    @{
+                                        var categorySlugs = string.IsNullOrEmpty(Model.CategoryFilter) ? new List<string>() : Model.CategoryFilter.Split(',').Select(s => s.Trim().ToLower()).ToList();
+                                    }
                                     @foreach (var c in Model.Categories)
                                     {
-                                        var isChecked = Model.CategoryFilter == c.Slug;
+                                        var isChecked = categorySlugs.Contains(c.Slug.ToLower());
                                         <label class="filter-opt @(isChecked ? "checked" : "")" data-cat-opt="@c.Slug" onclick="toggleCatFilter('@c.Slug')">
+                                            <input type="checkbox" @(isChecked ? "checked" : "") style="display:none">
                                             <span class="check"></span>
                                             <span><span data-ar>@c.NameAr</span><span data-en>@c.NameEn</span></span>
                                         </label>
@@ -136,10 +140,14 @@
                                     <svg class="arrow" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                 </div>
                                 <div class="filter-options">
+                                    @{
+                                        var brandSlugs = string.IsNullOrEmpty(Model.BrandFilter) ? new List<string>() : Model.BrandFilter.Split(',').Select(s => s.Trim().ToLower()).ToList();
+                                    }
                                     @foreach (var b in Model.Brands)
                                     {
-                                        var isChecked = Model.BrandFilter == b.Slug;
+                                        var isChecked = brandSlugs.Contains(b.Slug.ToLower());
                                         <label class="filter-opt @(isChecked ? "checked" : "")" data-brand-opt="@b.Slug" onclick="toggleBrandFilter('@b.Slug')">
+                                            <input type="checkbox" @(isChecked ? "checked" : "") style="display:none">
                                             <span class="check"></span>
                                             <span>@b.NameEn</span>
                                         </label>
@@ -227,31 +235,40 @@
 
 @section Scripts {
 <script>
-    var _brand    = '@(Model.BrandFilter ?? "")';
-    var _category = '@(Model.CategoryFilter ?? "")';
-    var _sort     = '@(Model.SortBy ?? "featured")';
-    var _attrVals = [@string.Join(",", Model.SelectedAttrValues)];
+    var _brands     = [@Html.Raw(string.IsNullOrEmpty(Model.BrandFilter) ? "" : string.Join(",", Model.BrandFilter.Split(',').Select(s => "'" + s.Trim().ToLower() + "'")))];
+    var _categories = [@Html.Raw(string.IsNullOrEmpty(Model.CategoryFilter) ? "" : string.Join(",", Model.CategoryFilter.Split(',').Select(s => "'" + s.Trim().ToLower() + "'")))];
+    var _sort       = '@(Model.SortBy ?? "featured")';
+    var _attrVals   = [@string.Join(",", Model.SelectedAttrValues)];
 
     function toggleFltGroup(id) {
         var el = document.getElementById(id);
         if (el) el.classList.toggle('collapsed');
     }
 
-    // Single source of truth: state vars (_brand, _category, _attrVals).
+    // Single source of truth: state vars (_brands, _categories, _attrVals).
     // syncFilterUI() re-paints EVERY filter control (hero pills + sidebar
     // checkboxes) from that state, so all controls always stay in sync.
     function syncFilterUI() {
         // Hero brand pills
         document.querySelectorAll('[data-brand-pill]').forEach(function(b) {
-            b.classList.toggle('active', b.getAttribute('data-brand-pill') === _brand);
+            var pillSlug = (b.getAttribute('data-brand-pill') || '').toLowerCase();
+            b.classList.toggle('active', pillSlug === '' ? _brands.length === 0 : _brands.includes(pillSlug));
         });
         // Sidebar brand checkboxes
         document.querySelectorAll('[data-brand-opt]').forEach(function(l) {
-            l.classList.toggle('checked', l.getAttribute('data-brand-opt') === _brand);
+            var optSlug = (l.getAttribute('data-brand-opt') || '').toLowerCase();
+            var checkbox = l.querySelector('input[type="checkbox"]');
+            var isChecked = _brands.includes(optSlug);
+            l.classList.toggle('checked', isChecked);
+            if (checkbox) checkbox.checked = isChecked;
         });
-        // Sidebar category checkboxes (single-select)
+        // Sidebar category checkboxes
         document.querySelectorAll('[data-cat-opt]').forEach(function(l) {
-            l.classList.toggle('checked', l.getAttribute('data-cat-opt') === _category);
+            var optSlug = (l.getAttribute('data-cat-opt') || '').toLowerCase();
+            var checkbox = l.querySelector('input[type="checkbox"]');
+            var isChecked = _categories.includes(optSlug);
+            l.classList.toggle('checked', isChecked);
+            if (checkbox) checkbox.checked = isChecked;
         });
         // Attribute checkboxes (multi-select)
         document.querySelectorAll('[data-attr-val]').forEach(function(l) {
@@ -260,13 +277,23 @@
     }
 
     function toggleBrandFilter(slug) {
-        _brand = (_brand === slug) ? '' : slug;
+        slug = (slug || '').toLowerCase();
+        if (slug === '') {
+            _brands = [];
+        } else {
+            var idx = _brands.indexOf(slug);
+            if (idx === -1) _brands.push(slug);
+            else _brands.splice(idx, 1);
+        }
         syncFilterUI();
         _doFetch();
     }
 
     function toggleCatFilter(slug) {
-        _category = (_category === slug) ? '' : slug;
+        slug = (slug || '').toLowerCase();
+        var idx = _categories.indexOf(slug);
+        if (idx === -1) _categories.push(slug);
+        else _categories.splice(idx, 1);
         syncFilterUI();
         _doFetch();
     }
@@ -285,8 +312,8 @@
     }
 
     function clearAllFilters() {
-        _brand = '';
-        _category = '';
+        _brands = [];
+        _categories = [];
         _attrVals = [];
         syncFilterUI();
         _doFetch();
@@ -300,8 +327,8 @@
         grid.style.pointerEvents = 'none';
 
         var params = new URLSearchParams();
-        if (_brand)    params.append('brand',    _brand);
-        if (_category) params.append('category', _category);
+        if (_brands.length > 0) params.append('brand', _brands.join(','));
+        if (_categories.length > 0) params.append('category', _categories.join(','));
         if (_sort)     params.append('sort',     _sort);
         _attrVals.forEach(function(v) { params.append('av', v); });
 
@@ -331,15 +358,15 @@
                 grid.innerHTML = data.products.map(function(p) {
                     var disc = p.oldPrice && p.oldPrice > p.price
                         ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
-                    
+
                     var badgeKind = (p.badge || '').toLowerCase();
                     if (['new', 'hot', '4k', 'rugged'].indexOf(badgeKind) === -1) badgeKind = 'new';
                     var badgeHtml = p.badge ? '<div class="badge-wrap"><span class="badge badge-' + badgeKind + '">' + p.badge + '</span></div>' : '';
                     var mediaContent = p.imagePath
                         ? '<img src="' + p.imagePath + '" alt="' + p.nameEn + '" style="max-height:120px;object-fit:contain;z-index:1;">'
                         : '<span style="font-size:54px;z-index:1;">' + (p.emoji || '📦') + '</span>';
-                    
-                    var discHtml = disc > 0 
+
+                    var discHtml = disc > 0
                         ? '<div style="display:flex;align-items:center;gap:5px;margin-top:2px">'
                           + '<span style="font-size:11px;color:var(--on-surface-muted);text-decoration:line-through">EGP ' + Number(p.oldPrice).toLocaleString() + '</span>'
                           + '<span style="background:var(--error);color:white;font-size:9px;font-weight:800;padding:1px 5px;border-radius:100px">-' + disc + '%</span>'
@@ -386,19 +413,19 @@
                 }).join('');
             }
 
-            // Update attributes, then re-paint every filter control from state
+            // Update attributes, dynamic facets, then re-paint every filter control from state
             updateAttrFilters(data.attrGroups);
+            if (data.categories) updateCategoryFilters(data.categories, _categories);
+            if (data.brands) updateBrandFilters(data.brands, _brands);
             syncFilterUI();
 
             // Re-apply bilingual visibility to the freshly-injected cards
-            // (guards against any FOUC even though CSS now defaults data-en
-            // to hidden — keeps behavior correct if JS toggled language).
             if (typeof applyLangVisibility === 'function') applyLangVisibility();
 
             // Update URL without reload
             var url = new URL(window.location);
-            _brand    ? url.searchParams.set('brand',    _brand)    : url.searchParams.delete('brand');
-            _category ? url.searchParams.set('category', _category) : url.searchParams.delete('category');
+            _brands.length > 0 ? url.searchParams.set('brand', _brands.join(',')) : url.searchParams.delete('brand');
+            _categories.length > 0 ? url.searchParams.set('category', _categories.join(',')) : url.searchParams.delete('category');
             _sort !== 'featured' ? url.searchParams.set('sort', _sort) : url.searchParams.delete('sort');
             url.searchParams.delete('av');
             _attrVals.forEach(function(v) { url.searchParams.append('av', v); });
@@ -412,6 +439,36 @@
                 grid.style.pointerEvents = 'auto';
             }
         }
+    }
+
+    function updateCategoryFilters(categories, selectedCategories) {
+        var container = document.querySelector('#flt-cat .filter-options');
+        if (!container) return;
+
+        container.innerHTML = categories.map(function(c) {
+            var checked = selectedCategories.includes(c.slug.toLowerCase());
+            var checkAttr = checked ? 'checked' : '';
+            return '<label class="filter-opt ' + (checked ? 'checked' : '') + '" data-cat-opt="' + c.slug.toLowerCase() + '" onclick="toggleCatFilter(\'' + c.slug + '\')">'
+                + '<input type="checkbox" ' + checkAttr + ' style="display:none">'
+                + '<span class="check"></span>'
+                + '<span><span data-ar>' + c.nameAr + '</span><span data-en>' + c.nameEn + '</span></span>'
+                + '</label>';
+        }).join('');
+    }
+
+    function updateBrandFilters(brands, selectedBrands) {
+        var container = document.querySelector('#flt-brand .filter-options');
+        if (!container) return;
+
+        container.innerHTML = brands.map(function(b) {
+            var checked = selectedBrands.includes(b.slug.toLowerCase());
+            var checkAttr = checked ? 'checked' : '';
+            return '<label class="filter-opt ' + (checked ? 'checked' : '') + '" data-brand-opt="' + b.slug.toLowerCase() + '" onclick="toggleBrandFilter(\'' + b.slug + '\')">'
+                + '<input type="checkbox" ' + checkAttr + ' style="display:none">'
+                + '<span class="check"></span>'
+                + '<span>' + b.nameEn + '</span>'
+                + '</label>';
+        }).join('');
     }
 
     function updateAttrFilters(groups) {

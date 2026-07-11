@@ -76,7 +76,7 @@ namespace FTD.Application.Services
 
         // Filtered query for products page with AJAX filters
         public async Task<List<ProductDto>> GetFilteredBySlugAsync(
-            string? brandSlug, string? categorySlug,
+            List<string>? brandSlugs, List<string>? categorySlugs,
             List<int>? attributeValueIds, string? sortBy)
         {
             // Step 1: simple query WITHOUT Include(AttributeValues) to avoid CTE
@@ -86,13 +86,25 @@ namespace FTD.Application.Services
                 .Where(p => p.IsActive)
                 .AsQueryable();
 
-            if (!string.IsNullOrEmpty(brandSlug))
-                query = query.Where(p =>
-                    (p.Brand != null && p.Brand.Slug.ToLower() == brandSlug.ToLower()) ||
-                    (p.BrandName != null && p.BrandName.ToLower() == brandSlug.ToLower()));
+            if (brandSlugs != null && brandSlugs.Any(s => !string.IsNullOrEmpty(s)))
+            {
+                var nonNullSlugs = brandSlugs.Where(s => !string.IsNullOrEmpty(s)).Select(s => s.ToLower()).ToList();
+                if (nonNullSlugs.Any())
+                {
+                    query = query.Where(p =>
+                        (p.Brand != null && nonNullSlugs.Contains(p.Brand.Slug.ToLower())) ||
+                        (p.BrandName != null && nonNullSlugs.Contains(p.BrandName.ToLower())));
+                }
+            }
 
-            if (!string.IsNullOrEmpty(categorySlug))
-                query = query.Where(p => p.Category.Slug == categorySlug);
+            if (categorySlugs != null && categorySlugs.Any(s => !string.IsNullOrEmpty(s)))
+            {
+                var nonNullSlugs = categorySlugs.Where(s => !string.IsNullOrEmpty(s)).Select(s => s.ToLower()).ToList();
+                if (nonNullSlugs.Any())
+                {
+                    query = query.Where(p => nonNullSlugs.Contains(p.Category.Slug.ToLower()));
+                }
+            }
 
             query = sortBy switch
             {
@@ -118,6 +130,57 @@ namespace FTD.Application.Services
             }
 
             return products.Select(p => p.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList();
+        }
+
+        public async Task<(List<CategoryDto> AvailableCategories, List<BrandDto> AvailableBrands)> GetAvailableFacetsAsync(
+            List<string>? brandSlugs, List<string>? categorySlugs)
+        {
+            // For available categories: filter products by brandSlugs only
+            var catQuery = _db.Products.Where(p => p.IsActive);
+            if (brandSlugs != null && brandSlugs.Any(s => !string.IsNullOrEmpty(s)))
+            {
+                var nonNullSlugs = brandSlugs.Where(s => !string.IsNullOrEmpty(s)).Select(s => s.ToLower()).ToList();
+                if (nonNullSlugs.Any())
+                {
+                    catQuery = catQuery.Where(p =>
+                        (p.Brand != null && nonNullSlugs.Contains(p.Brand.Slug.ToLower())) ||
+                        (p.BrandName != null && nonNullSlugs.Contains(p.BrandName.ToLower())));
+                }
+            }
+            var activeCategoryIds = await catQuery.Select(p => p.CategoryId).Distinct().ToListAsync();
+            var categories = await _db.Categories
+                .Where(c => c.IsActive && activeCategoryIds.Contains(c.Id))
+                .OrderBy(c => c.SortOrder)
+                .ToListAsync();
+
+            // For available brands: filter products by categorySlugs only
+            var brandQuery = _db.Products.Where(p => p.IsActive);
+            if (categorySlugs != null && categorySlugs.Any(s => !string.IsNullOrEmpty(s)))
+            {
+                var nonNullSlugs = categorySlugs.Where(s => !string.IsNullOrEmpty(s)).Select(s => s.ToLower()).ToList();
+                if (nonNullSlugs.Any())
+                {
+                    brandQuery = brandQuery.Where(p => nonNullSlugs.Contains(p.Category.Slug.ToLower()));
+                }
+            }
+            var activeBrandIds = await brandQuery.Where(p => p.BrandId.HasValue).Select(p => p.BrandId!.Value).Distinct().ToListAsync();
+            var activeBrandNames = await brandQuery.Where(p => p.BrandId == null && p.BrandName != null).Select(p => p.BrandName!).Distinct().ToListAsync();
+            
+            var brands = await _db.Brands
+                .Where(b => b.IsActive)
+                .OrderBy(b => b.SortOrder)
+                .ToListAsync();
+
+            // Filter active brands based on database IDs or names matching
+            var availableBrands = brands.Where(b =>
+                activeBrandIds.Contains(b.Id) ||
+                activeBrandNames.Any(name => name.ToLower() == b.Slug.ToLower())
+            ).ToList();
+
+            return (
+                categories.Select(c => c.ToDto()!).ToList(),
+                availableBrands.Select(b => b.ToDto()!).ToList()
+            );
         }
 
         public async Task<List<ProductDto>> GetFilteredByIdAsync(int? categoryId, int? brandId, string? query)

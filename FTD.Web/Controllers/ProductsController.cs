@@ -29,17 +29,20 @@ namespace FTD.Web.Controllers
             var brands = brandsList.Where(b => b.IsActive).ToList();
             var categories = categoriesList;
 
+            var brandSlugs = string.IsNullOrEmpty(brand) ? new List<string>() : brand.Split(',').Select(s => s.Trim().ToLower()).ToList();
+            var categorySlugs = string.IsNullOrEmpty(category) ? new List<string>() : category.Split(',').Select(s => s.Trim().ToLower()).ToList();
+
             BrandDto? currentBrand = null;
             CategoryDto? currentCategory = null;
 
-            if (!string.IsNullOrEmpty(brand))
+            if (brandSlugs.Any())
             {
-                currentBrand = brands.FirstOrDefault(b => b.Slug == brand.ToLower());
+                currentBrand = brands.FirstOrDefault(b => b.Slug == brandSlugs.First());
             }
 
-            if (!string.IsNullOrEmpty(category))
+            if (categorySlugs.Any())
             {
-                currentCategory = categories.FirstOrDefault(c => c.Slug == category);
+                currentCategory = categories.FirstOrDefault(c => c.Slug == categorySlugs.First());
             }
 
             List<ProductDto> products;
@@ -54,18 +57,39 @@ namespace FTD.Web.Controllers
             }
             else
             {
-                // Facets are built from the brand/category base set (NOT the
-                // attribute-filtered set) so sibling options stay visible,
-                // and stale attribute selections are pruned.
                 (products, attrGroups, selectedAttrs) =
-                    await GetFacetedProductsAsync(brand, category, attrValues, sort);
+                    await GetFacetedProductsAsync(brandSlugs, categorySlugs, attrValues, sort);
+            }
+
+            // Calculate dynamic facets (available categories and brands based on other active filters)
+            var facets = await _products.GetAvailableFacetsAsync(brandSlugs, categorySlugs);
+
+            // Ensure checked filters are kept in the lists so they don't disappear from the UI
+            var displayCategories = facets.AvailableCategories;
+            foreach (var checkedSlug in categorySlugs)
+            {
+                if (!displayCategories.Any(c => c.Slug == checkedSlug))
+                {
+                    var original = categories.FirstOrDefault(c => c.Slug == checkedSlug);
+                    if (original != null) displayCategories.Add(original);
+                }
+            }
+
+            var displayBrands = facets.AvailableBrands;
+            foreach (var checkedSlug in brandSlugs)
+            {
+                if (!displayBrands.Any(b => b.Slug == checkedSlug))
+                {
+                    var original = brands.FirstOrDefault(b => b.Slug == checkedSlug);
+                    if (original != null) displayBrands.Add(original);
+                }
             }
 
             var vm = new ProductsViewModel
             {
                 Products = products,
-                Brands = brands,
-                Categories = categories,
+                Brands = displayBrands,
+                Categories = displayCategories,
                 CurrentBrand = currentBrand,
                 CurrentCategory = currentCategory,
                 BrandFilter = brand,
@@ -90,9 +114,9 @@ namespace FTD.Web.Controllers
         /// 4. Result set = base set narrowed by the pruned attribute values.
         /// </summary>
         private async Task<(List<ProductDto> Products, List<AttributeFilterGroupDto> Groups, List<int> SelectedAttrs)>
-            GetFacetedProductsAsync(string? brand, string? category, List<int>? attrValues, string? sort)
+            GetFacetedProductsAsync(List<string>? brandSlugs, List<string>? categorySlugs, List<int>? attrValues, string? sort)
         {
-            var baseProducts = await _products.GetFilteredBySlugAsync(brand, category, null, sort);
+            var baseProducts = await _products.GetFilteredBySlugAsync(brandSlugs, categorySlugs, null, sort);
             var attrGroups = await _products.BuildAttributeGroupsAsync(baseProducts);
 
             var validValueIds = attrGroups
@@ -105,7 +129,7 @@ namespace FTD.Web.Controllers
                 .ToList();
 
             var products = selected.Any()
-                ? await _products.GetFilteredBySlugAsync(brand, category, selected, sort)
+                ? await _products.GetFilteredBySlugAsync(brandSlugs, categorySlugs, selected, sort)
                 : baseProducts;
 
             return (products, attrGroups, selected);
@@ -117,8 +141,37 @@ namespace FTD.Web.Controllers
             string? brand, string? category, string? sort,
             [FromQuery(Name = "av")] List<int>? attrValues)
         {
+            var brandSlugs = string.IsNullOrEmpty(brand) ? new List<string>() : brand.Split(',').Select(s => s.Trim().ToLower()).ToList();
+            var categorySlugs = string.IsNullOrEmpty(category) ? new List<string>() : category.Split(',').Select(s => s.Trim().ToLower()).ToList();
+
             var (products, rawGroups, selectedAttrs) =
-                await GetFacetedProductsAsync(brand, category, attrValues, sort);
+                await GetFacetedProductsAsync(brandSlugs, categorySlugs, attrValues, sort);
+
+            var facets = await _products.GetAvailableFacetsAsync(brandSlugs, categorySlugs);
+
+            var brandsList = await _products.GetAllBrandsAsync();
+            var categoriesList = await _products.GetActiveCategoriesAsync();
+
+            // Ensure checked filters are kept in the lists so they don't disappear from the UI
+            var displayCategories = facets.AvailableCategories;
+            foreach (var checkedSlug in categorySlugs)
+            {
+                if (!displayCategories.Any(c => c.Slug == checkedSlug))
+                {
+                    var original = categoriesList.FirstOrDefault(c => c.Slug == checkedSlug);
+                    if (original != null) displayCategories.Add(original);
+                }
+            }
+
+            var displayBrands = facets.AvailableBrands;
+            foreach (var checkedSlug in brandSlugs)
+            {
+                if (!displayBrands.Any(b => b.Slug == checkedSlug))
+                {
+                    var original = brandsList.FirstOrDefault(b => b.Slug == checkedSlug);
+                    if (original != null) displayBrands.Add(original);
+                }
+            }
 
             var result = new
             {
@@ -139,6 +192,18 @@ namespace FTD.Web.Controllers
                     imagePath = p.ImagePath,
                     emoji = p.Emoji,
                     url = "/products/" + p.Slug
+                }),
+                categories = displayCategories.Select(c => new
+                {
+                    slug = c.Slug,
+                    nameAr = c.NameAr,
+                    nameEn = c.NameEn
+                }),
+                brands = displayBrands.Select(b => new
+                {
+                    slug = b.Slug,
+                    nameAr = b.NameAr,
+                    nameEn = b.NameEn
                 }),
                 attrGroups = rawGroups.Select(g => new
                 {
@@ -168,14 +233,16 @@ namespace FTD.Web.Controllers
 
             var categories = await _products.GetActiveCategoriesAsync();
 
-            var products = await _products.GetFilteredBySlugAsync(brand.Slug, null, null, "featured");
+            var products = await _products.GetFilteredBySlugAsync(new List<string> { brand.Slug }, null, null, "featured");
             var attrGroups = await _products.BuildAttributeGroupsAsync(products);
+
+            var facets = await _products.GetAvailableFacetsAsync(new List<string> { brand.Slug }, null);
 
             var vm = new ProductsViewModel
             {
                 Products = products,
                 Brands = brandsList.Where(b => b.IsActive).ToList(),
-                Categories = categories,
+                Categories = facets.AvailableCategories,
                 CurrentBrand = brand,
                 BrandFilter = brand.Slug,
                 AttributeGroups = attrGroups,

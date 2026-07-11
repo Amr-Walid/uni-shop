@@ -205,9 +205,13 @@ graph TD
 | 33 | `9fed6d0` | `design(admin): force light theme by default, clean theme toggle, replace all emojis with Bootstrap Icons, fix login page dark layout overrides` |
 | 34 | `887a16d` | `design(layout): add logo icon as favicon on main site and admin pages` |
 | 35 | `dc15cb4` | `docs: update changelog table with favicon commit` |
-| 36 | `4a3fb6f` | `security: rotate JWT secret and set new 256-bit cryptographically secure key in user secrets` |
-| 37 | `77aaad8` | `docs: update changelog table with storefront fixes commit` |
-| 38 | (current) | `design(storefront): change product card price layout to stack vertically above action buttons` |
+| 36 | `4a3fb6f` | `docs: resolve JWT secret warning note and update changelog` |
+| 37 | `0d6c22f` | `fix(storefront): complete lang-cookie sync, CSS legacy var aliases, cart i18n, and misc AJAX/CSS bugs` |
+| 38 | `77aaad8` | `docs: update changelog table with storefront fixes commit` |
+| 39 | `73ae363` | `design(storefront): change product card price layout to stack vertically above action buttons` |
+| 40 | `3acb49c` | `docs: update changelog table with price layout commit` |
+| 41 | `6fc2978` | `fix(storefront): sync all filter controls and build faceted attribute filters correctly` |
+| 42 | (current) | `feat(storefront): implement dynamic multi-select filters and case-insensitive sidebar facets` |
 
 > **✅ ملاحظة أمنية تم حلها:** تم تدوير السر القديم لـ JWT بنجاح محلياً وإعداد قيمة عشوائية جديدة 256-bit باستخدام أداة .NET User Secrets في المشروع FTD.Api.
 

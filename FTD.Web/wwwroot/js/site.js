@@ -9,7 +9,7 @@ function setCartBadge(count) {
     if (!badge) return;
     var n = Number(count) || 0;
     badge.textContent = n;
-    badge.style.display = n > 0 ? 'grid' : 'none';
+    badge.style.display = n > 0 ? 'flex' : 'none';
 }
 
 // ── ADD TO CART (quick, no redirect) ─────────────────────────────────────────
