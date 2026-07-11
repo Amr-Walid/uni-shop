@@ -70,7 +70,7 @@
                         <form action="/Admin/AdminPageSections/ToggleSectionVisible" method="post" style="display:inline">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="id" value="@sec.Id">
-                            <button type="submit" class="a-btn-sm" style="background:@(sec.IsVisible ? "rgba(0,196,140,.12)" : "rgba(255,59,48,.12)");color:@(sec.IsVisible ? "#00C48C" : "#FF3B30")">
+                            <button type="submit" class="a-btn-sm @(sec.IsVisible ? "a-btn-success" : "a-btn-danger")">
                                 @(sec.IsVisible ? "👁 ظاهر" : "🚫 مخفي")
                             </button>
                         </form>

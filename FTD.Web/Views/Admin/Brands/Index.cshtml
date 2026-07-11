@@ -45,7 +45,7 @@
                         <td>@b.ProductsCount منتج</td>
                         <td>@b.SortOrder</td>
                         <td>
-                            <span class="status-badge" style="background:@(b.IsActive ? "rgba(0,196,140,.1)" : "rgba(255,59,48,.1)");color:@(b.IsActive ? "#00C48C" : "#FF3B30")">
+                            <span class="status-badge @(b.IsActive ? "badge-active" : "badge-inactive")">
                                 @(b.IsActive ? "نشط" : "مخفي")
                             </span>
                         </td>

@@ -15,10 +15,12 @@
   <!-- SIDEBAR -->
   <aside class="admin-sidebar" id="adminSidebar">
     <div class="sidebar-logo">
-      <div class="logo-icon-sm">UNI</div>
+      <div class="logo-icon-sm">
+        <img src="~/images/logo-unishop-icon.png" alt="Uni Shop" style="object-fit:contain" />
+      </div>
       <div>
-        <div style="font-size:14px;font-weight:800;color:white">Uni-Shop</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.4)">لوحة التحكم</div>
+        <div class="sidebar-brand-name">Uni Shop</div>
+        <div class="sidebar-brand-sub">لوحة التحكم</div>
       </div>
     </div>
 
@@ -30,7 +32,7 @@
 
       <div class="nav-group-label">الرئيسية</div>
       <a href="/Admin/Dashboard" class="sidebar-link @(ctrl == "Dashboard" ? "active" : "")">
-        <span class="si">📊</span> Dashboard
+        <span class="si">📊</span> الرئيسية
       </a>
 
       <div class="nav-group-label">المتجر</div>
@@ -38,7 +40,7 @@
         <span class="si">🗂️</span> التصنيفات
       </a>
       <a href="/Admin/AdminAttributes" class="sidebar-link @(ctrl == "AdminAttributes" ? "active" : "")">
-        <span class="si">🔧</span> الـ Attributes
+        <span class="si">🔧</span> المواصفات
       </a>
       <a href="/Admin/AdminBrands" class="sidebar-link @(ctrl == "AdminBrands" ? "active" : "")">
         <span class="si">🏷️</span> البراندات
@@ -70,14 +72,14 @@
         <span class="si">⚙️</span> الإعدادات
       </a>
 
-      <div style="padding-top:2rem;border-top:1px solid rgba(255,255,255,.08);margin-top:2rem">
+      <div class="sidebar-foot">
         <a href="/" class="sidebar-link" target="_blank">
           <span class="si">🌐</span> عرض الموقع
         </a>
         <form action="/Admin/AdminAccount/Logout" method="post" style="margin:0">
           @Html.AntiForgeryToken()
           <button type="submit" class="sidebar-link"
-                  style="width:100%;text-align:right;background:none;border:none;cursor:pointer;font-family:'Tajawal',sans-serif;font-size:13px;color:rgba(255,255,255,.5)">
+                  style="width:100%;text-align:right;background:none;border:none;cursor:pointer;font-family:'Tajawal',sans-serif;font-size:13.5px;color:rgba(255,255,255,.58)">
             <span class="si">🚪</span> تسجيل الخروج
           </button>
         </form>
@@ -93,10 +95,10 @@
       <div class="topbar-user">
         <button class="theme-toggle-btn" onclick="toggleAdminTheme()" id="themeBtn" title="تبديل المظهر">
           <span id="themeIcon">☀️</span>
-          <span id="themeLabel">Light</span>
+          <span id="themeLabel">فاتح</span>
         </button>
         <div class="user-avatar">A</div>
-        <span style="font-size:13px;color:var(--a-text2)">Admin</span>
+        <span style="font-size:13px;color:var(--a-text2);font-weight:600">Admin</span>
       </div>
     </header>
 
@@ -126,8 +128,8 @@
     var icon = document.getElementById('themeIcon');
     var lbl  = document.getElementById('themeLabel');
     if(!btn) return;
-    if(theme === 'light'){ icon.textContent='🌙'; lbl.textContent='Dark'; }
-    else                 { icon.textContent='☀️'; lbl.textContent='Light'; }
+    if(theme === 'light'){ icon.textContent='🌙'; lbl.textContent='داكن'; }
+    else                 { icon.textContent='☀️'; lbl.textContent='فاتح'; }
   }
   window.toggleAdminTheme = function(){
     var html  = document.getElementById('adminHtml');

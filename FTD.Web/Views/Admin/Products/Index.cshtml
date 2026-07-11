@@ -39,11 +39,11 @@
                 </div>
               </td>
               <td style="font-size:13px">@p.Category?.NameAr</td>
-              <td><span class="status-badge" style="background:rgba(26,107,255,.1);color:#1A6BFF">@p.BrandName</span></td>
+              <td><span class="status-badge badge-brand">@p.BrandName</span></td>
               <td style="font-weight:700">EGP @p.Price.ToString("N0")</td>
               <td>@p.Stock</td>
               <td>
-                <span class="status-badge" style="background:@(p.IsActive ? "rgba(0,196,140,.1)" : "rgba(255,59,48,.1)");color:@(p.IsActive ? "#00C48C" : "#FF3B30")">
+                <span class="status-badge @(p.IsActive ? "badge-active" : "badge-inactive")">
                   @(p.IsActive ? "نشط" : "مخفي")
                 </span>
               </td>

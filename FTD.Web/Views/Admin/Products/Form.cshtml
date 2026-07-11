@@ -139,7 +139,7 @@
                           style="position:absolute;top:4px;left:4px">
                       @Html.AntiForgeryToken()
                       <button type="submit"
-                              style="background:rgba(255,59,48,.9);border:none;color:white;border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:12px"
+                              style="background:var(--a-danger);border:none;color:white;border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:12px"
                               onclick="return confirm('حذف الصورة؟')">✕</button>
                     </form>
                   </div>
@@ -277,7 +277,7 @@ function loadAttrs(catId) {
             container.innerHTML = html;
         })
         .catch(function() {
-            container.innerHTML = '<div style="color:#FF3B30;font-size:12px">خطأ في التحميل</div>';
+            container.innerHTML = '<div style="color:var(--a-danger);font-size:12px">خطأ في التحميل</div>';
         });
 }
 </script>

@@ -7,53 +7,53 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FTD Admin — Login</title>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="~/css/admin.css">
-<style>
-.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--a-bg);padding:2rem}
-.login-card{background:var(--a-card);border:1px solid var(--a-border);border-radius:20px;padding:2.5rem;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.15)}
-.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:2rem;justify-content:center;direction:ltr}
-.login-icon{width:48px;height:48px;background:var(--a-blue);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:white}
-.login-title{font-size:1.6rem;font-weight:900;margin-bottom:.3rem;text-align:center;color:var(--a-text)}
-.login-sub{font-size:13px;color:var(--a-text2);text-align:center;margin-bottom:2rem}
-.login-group{margin-bottom:1.2rem}
-.login-group label{display:block;font-size:12px;font-weight:700;color:var(--a-text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
-.login-group input{width:100%;padding:12px 16px;border:1.5px solid var(--a-border);border-radius:10px;font-size:14px;font-family:'Tajawal',sans-serif;color:var(--a-text);background:var(--a-bg);outline:none;transition:border-color .2s;direction:ltr}
-.login-group input:focus{border-color:var(--a-blue);background:var(--a-card)}
-.login-btn{width:100%;padding:13px;background:var(--a-blue);color:white;border:none;border-radius:10px;font-size:15px;font-weight:700;font-family:'Tajawal',sans-serif;cursor:pointer;margin-top:.5rem;transition:all .2s}
-.login-btn:hover{background:#0E4FCC;transform:translateY(-1px)}
-.error-msg{background:#FEE;border:1px solid #FCC;border-radius:8px;padding:10px 14px;font-size:13px;color:#C33;margin-bottom:1rem}
-</style>
+<title>@ViewData["Title"] — Uni-Shop Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="~/css/admin.css" asp-append-version="true">
 </head>
-<body>
+<body class="admin-body">
 <div class="login-page">
   <div class="login-card">
-    <div class="login-logo" style="color: var(--primary); display: flex; align-items: center; justify-content: center; gap: 8px;">
-        <img src="/images/logo-unishop-icon.png" alt="Uni Shop Logo" style="height: 44px; width: auto; display: block;" />
-        <span style="font-family: 'Plus Jakarta Sans', 'Tajawal', sans-serif; font-weight: 800; font-style: italic; font-size: 24px; color: var(--primary);">Uni Shop</span>
+    <div class="login-logo">
+      <div class="login-logo-badge">
+        <img src="~/images/logo-unishop-icon.png" alt="Uni Shop" style="object-fit:contain" />
+      </div>
+      <span class="login-wordmark">Uni Shop</span>
     </div>
+
     <div class="login-title">لوحة التحكم</div>
-    <div class="login-sub">Uni-Shop — Admin Panel</div>
+    <div class="login-sub">Uni-Shop &mdash; Admin Panel</div>
 
     @if (!ViewData.ModelState.IsValid)
     {
-        <div class="error-msg">بيانات الدخول غير صحيحة</div>
+        <div class="login-error">
+            <span>⚠️</span>
+            <span>بيانات الدخول غير صحيحة، حاول مرة أخرى</span>
+        </div>
     }
 
     <form method="post" action="/Admin/AdminAccount/Login">
       @Html.AntiForgeryToken()
       <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl">
+
       <div class="login-group">
         <label>البريد الإلكتروني</label>
-        <input type="email" name="email" placeholder="admin@ftdtechzone.com" required>
+        <input type="email" name="email" placeholder="admin@example.com" autocomplete="username" required>
       </div>
       <div class="login-group">
         <label>كلمة المرور</label>
-        <input type="password" name="password" placeholder="••••••••" required>
+        <input type="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
       </div>
-      <button type="submit" class="login-btn">دخول ←</button>
+
+      <button type="submit" class="login-btn">
+        <span>دخول</span>
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
     </form>
+
+    <div class="login-foot">Uni-Shop &copy; @DateTime.Now.Year — لوحة تحكم إدارية محمية</div>
   </div>
 </div>
 </body>
