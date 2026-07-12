@@ -20,12 +20,16 @@ namespace FTD.Web.ViewComponents
             var navItems = await _contentService.GetNavigationItemsAsync();
             var contactInfo = await _contentService.GetContactInfoAsync();
             var brands = await _contentService.GetActiveBrandsAsync();
+            var blocks = await _contentService.GetBlocksAsync();
+            var settings = await _contentService.GetSettingsAsync();
 
             var vm = new FooterViewModel
             {
                 FootItems = navItems.Where(n => n.Location == "Footer" || n.Location == "Both").ToList(),
                 ContactInfo = contactInfo,
-                NavBrands = brands
+                NavBrands = brands,
+                Blocks = blocks,
+                Settings = settings
             };
 
             return View(vm);

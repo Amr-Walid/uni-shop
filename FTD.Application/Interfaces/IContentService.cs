@@ -33,6 +33,8 @@ namespace FTD.Application.Interfaces
         Task SetNavigationItemLocationAsync(int id, string location);
         Task DeleteNavigationItemAsync(int id);
         Task SaveSiteSettingsAsync(Dictionary<int, string> values);
+        Task SaveSettingByKeyAsync(string key, string? value, string? description = null, string type = "text");
+        Task SaveBlockByKeyAsync(string key, string? bodyAr, string? bodyEn, string? titleAr = null);
         Task SaveContactInfoAsync(ContactInfoDto dto);
     }
 }

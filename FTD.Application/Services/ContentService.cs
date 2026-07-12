@@ -312,6 +312,54 @@ namespace FTD.Application.Services
             await _db.SaveChangesAsync();
         }
 
+        public async Task SaveSettingByKeyAsync(string key, string? value, string? description = null, string type = "text")
+        {
+            var s = await _db.SiteSettings.FirstOrDefaultAsync(x => x.Key == key);
+            if (s == null)
+            {
+                _db.SiteSettings.Add(new SiteSetting
+                {
+                    Key = key,
+                    Value = value,
+                    Description = description,
+                    Type = type,
+                    UpdatedAt = DateTime.UtcNow
+                });
+            }
+            else
+            {
+                s.Value = value;
+                if (description != null) s.Description = description;
+                s.UpdatedAt = DateTime.UtcNow;
+            }
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task SaveBlockByKeyAsync(string key, string? bodyAr, string? bodyEn, string? titleAr = null)
+        {
+            var block = await _db.ContentBlocks.FirstOrDefaultAsync(b => b.Key == key);
+            if (block == null)
+            {
+                _db.ContentBlocks.Add(new ContentBlock
+                {
+                    Key = key,
+                    BodyAr = bodyAr,
+                    BodyEn = bodyEn,
+                    TitleAr = titleAr,
+                    Type = "text",
+                    UpdatedAt = DateTime.UtcNow
+                });
+            }
+            else
+            {
+                block.BodyAr = bodyAr;
+                block.BodyEn = bodyEn;
+                if (titleAr != null) block.TitleAr = titleAr;
+                block.UpdatedAt = DateTime.UtcNow;
+            }
+            await _db.SaveChangesAsync();
+        }
+
         public async Task SaveContactInfoAsync(ContactInfoDto dto)
         {
             var contact = await _db.ContactInfos.FirstOrDefaultAsync();

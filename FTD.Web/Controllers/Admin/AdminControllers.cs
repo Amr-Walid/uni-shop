@@ -245,7 +245,9 @@ namespace FTD.Web.Controllers.Admin
     public class AdminCategoriesController : Controller
     {
         private readonly IProductService _productService;
-        public AdminCategoriesController(IProductService productService) => _productService = productService;
+        private readonly IWebHostEnvironment _env;
+        public AdminCategoriesController(IProductService productService, IWebHostEnvironment env)
+        { _productService = productService; _env = env; }
 
         public async Task<IActionResult> Index()
         {
@@ -257,11 +259,22 @@ namespace FTD.Web.Controllers.Admin
             => View("~/Views/Admin/Categories/Form.cshtml", new CategoryDto());
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CategoryDto model)
+        public async Task<IActionResult> Create(CategoryDto model, IFormFile? ImageFile)
         {
             if (string.IsNullOrEmpty(model.Slug))
                 model.Slug = model.NameEn.ToLower().Replace(" ", "-");
-            
+
+            try
+            {
+                if (ImageFile != null && ImageFile.Length > 0)
+                    model.ImagePath = await SaveCategoryImageAsync(ImageFile);
+            }
+            catch (InvalidOperationException ex)
+            {
+                ModelState.AddModelError("", ex.Message);
+                return View("~/Views/Admin/Categories/Form.cshtml", model);
+            }
+
             await _productService.CreateCategoryAsync(model);
             TempData["Success"] = "تم إضافة التصنيف";
             return RedirectToAction(nameof(Index));
@@ -276,13 +289,47 @@ namespace FTD.Web.Controllers.Admin
         }
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, CategoryDto model)
+        public async Task<IActionResult> Edit(int id, CategoryDto model, IFormFile? ImageFile)
         {
             if (string.IsNullOrEmpty(model.Slug))
                 model.Slug = model.NameEn.ToLower().Replace(" ", "-");
+
+            try
+            {
+                if (ImageFile != null && ImageFile.Length > 0)
+                    model.ImagePath = await SaveCategoryImageAsync(ImageFile);
+                else
+                    model.ImagePath = null; // null ⇒ الخدمة تحتفظ بالصورة الحالية
+            }
+            catch (InvalidOperationException ex)
+            {
+                ModelState.AddModelError("", ex.Message);
+                model.Id = id;
+                return View("~/Views/Admin/Categories/Form.cshtml", model);
+            }
+
             await _productService.UpdateCategoryAsync(id, model);
             TempData["Success"] = "تم تحديث التصنيف";
             return RedirectToAction(nameof(Index));
+        }
+
+        private async Task<string> SaveCategoryImageAsync(IFormFile file)
+        {
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(ext))
+                throw new InvalidOperationException($"نوع الملف غير مدعوم. الأنواع المسموح بها: {string.Join(", ", allowedExtensions)}");
+
+            const long maxBytes = 5 * 1024 * 1024;
+            if (file.Length > maxBytes)
+                throw new InvalidOperationException("حجم الصورة يتجاوز الحد المسموح به (5 ميغابايت)");
+
+            var dir = Path.Combine(_env.WebRootPath, "images", "categories");
+            Directory.CreateDirectory(dir);
+            var name = $"{Guid.NewGuid()}{ext}";
+            using var s = new FileStream(Path.Combine(dir, name), FileMode.Create);
+            await file.CopyToAsync(s);
+            return $"/images/categories/{name}";
         }
     }
 
@@ -332,20 +379,99 @@ namespace FTD.Web.Controllers.Admin
     public class AdminContentController : Controller
     {
         private readonly IContentService _content;
-        public AdminContentController(IContentService content) => _content = content;
+        private readonly IProductService _products;
+        public AdminContentController(IContentService content, IProductService products)
+        { _content = content; _products = products; }
 
-        public async Task<IActionResult> Blocks()
+        public async Task<IActionResult> Blocks(string? tab)
         {
             var dtos = await _content.GetBlocksListAsync();
+            ViewBag.Products = await _products.GetAllActiveAsync();
+            ViewBag.Categories = await _products.GetAllCategoriesAsync();
+            ViewBag.Settings = await _content.GetSettingsAsync();
+            ViewBag.ContactInfo = await _content.GetContactInfoAsync();
+            ViewBag.ActiveTab = tab ?? "hero";
             return View("~/Views/Admin/Content/Blocks.cshtml", dtos);
         }
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> SaveBlock(int id, string? bodyAr, string? bodyEn, string? titleAr)
+        public async Task<IActionResult> SaveBlock(int id, string? bodyAr, string? bodyEn, string? titleAr, string? tab)
         {
             await _content.SaveBlockAsync(id, bodyAr, bodyEn, titleAr);
             TempData["Success"] = "تم الحفظ";
-            return RedirectToAction(nameof(Blocks));
+            return RedirectToAction(nameof(Blocks), new { tab });
+        }
+
+        // حفظ مجموعة بلوكات دفعة واحدة بالـ Key (ينشئ المفقود تلقائياً)
+        // أسماء الحقول: blocks[<key>].ar / blocks[<key>].en / blocks[<key>].icon
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveBlocksBulk(Dictionary<string, BlockInput> blocks, string? tab)
+        {
+            if (blocks != null)
+            {
+                foreach (var kv in blocks)
+                {
+                    var key = kv.Key?.Trim();
+                    if (string.IsNullOrEmpty(key)) continue;
+                    await _content.SaveBlockByKeyAsync(key, kv.Value?.Ar, kv.Value?.En, kv.Value?.Icon);
+                }
+            }
+            TempData["Success"] = "تم حفظ المحتوى";
+            return RedirectToAction(nameof(Blocks), new { tab });
+        }
+
+        // حفظ اختيارات منتجات السلايدر والكتالوج (الترتيب يتبع ترتيب الاختيار)
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveProductSelections(List<int>? heroProductIds, List<int>? featuredProductIds, string? tab)
+        {
+            var hero = heroProductIds != null ? string.Join(",", heroProductIds.Distinct()) : "";
+            var featured = featuredProductIds != null ? string.Join(",", featuredProductIds.Distinct()) : "";
+
+            await _content.SaveSettingByKeyAsync("homepage.hero.products", hero, "منتجات سلايدر الهيرو (IDs مرتبة)");
+            await _content.SaveSettingByKeyAsync("homepage.featured.products", featured, "منتجات الكتالوج المميز (IDs مرتبة)");
+
+            TempData["Success"] = "تم حفظ اختيارات المنتجات";
+            return RedirectToAction(nameof(Blocks), new { tab });
+        }
+
+        // حفظ مفاتيح إظهار/إخفاء الأقسام + ترتيب الأقسام + عدد بلاطات الفئات
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveHomepageSettings(List<string>? visibleSections, string? sectionsOrder, string? categoriesCount, string? tab)
+        {
+            var all = new[] { "hero", "values", "marquee", "categories", "featured", "about", "mission", "cta", "contact", "newsletter", "payments" };
+            var visible = visibleSections ?? new List<string>();
+            foreach (var section in all)
+            {
+                await _content.SaveSettingByKeyAsync(
+                    $"homepage.show.{section}",
+                    visible.Contains(section) ? "1" : "0",
+                    null, "bool");
+            }
+
+            if (!string.IsNullOrWhiteSpace(sectionsOrder))
+                await _content.SaveSettingByKeyAsync("homepage.sections.order", sectionsOrder.Trim(), "ترتيب أقسام الرئيسية");
+
+            if (!string.IsNullOrWhiteSpace(categoriesCount) && int.TryParse(categoriesCount, out var cc) && cc > 0)
+                await _content.SaveSettingByKeyAsync("homepage.categories.count", cc.ToString(), "عدد بلاطات الفئات بالرئيسية");
+
+            TempData["Success"] = "تم حفظ إعدادات الأقسام";
+            return RedirectToAction(nameof(Blocks), new { tab });
+        }
+
+        // تبديل ظهور فئة بالرئيسية بنقرة واحدة من تبويب الفئات
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleCategoryHomepage(int id, string? tab)
+        {
+            var cats = await _products.GetAllCategoriesAsync();
+            var cat = cats.FirstOrDefault(c => c.Id == id);
+            if (cat != null)
+            {
+                cat.ShowOnHomepage = !cat.ShowOnHomepage;
+                cat.ImagePath = null; // لا تغير الصورة
+                await _products.UpdateCategoryAsync(id, cat);
+                TempData["Success"] = cat.ShowOnHomepage ? "ستظهر الفئة بالرئيسية" : "تم إخفاء الفئة من الرئيسية";
+            }
+            return RedirectToAction(nameof(Blocks), new { tab = tab ?? "sections" });
         }
 
         public async Task<IActionResult> Pages()

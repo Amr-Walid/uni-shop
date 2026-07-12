@@ -9,11 +9,27 @@ namespace FTD.Web.ViewModels
     // ── HOME ──────────────────────────────────────────────────────────────────
     public class HomeViewModel
     {
+        public List<ProductDto> HeroProducts { get; set; } = new();
         public List<ProductDto> FeaturedProducts { get; set; } = new();
         public List<CategoryDto> Categories { get; set; } = new();
         public Dictionary<string, string> ContentBlocks { get; set; } = new();
         public ContactInfoDto? ContactInfo { get; set; }
         public List<SiteSettingDto> Settings { get; set; } = new();
+        public Dictionary<string, string> SettingsMap { get; set; } = new();
+
+        // مساعدات قراءة إعدادات الرئيسية
+        public bool ShowSection(string section)
+            => !SettingsMap.TryGetValue($"homepage.show.{section}", out var v)
+               || v == "1" || v.Equals("true", StringComparison.OrdinalIgnoreCase);
+
+        public List<string> SectionsOrder
+            => (SettingsMap.TryGetValue("homepage.sections.order", out var v) && !string.IsNullOrWhiteSpace(v)
+                    ? v : "hero,values,marquee,categories,featured,about,mission,cta,contact")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+
+        public int HomepageCategoriesCount
+            => SettingsMap.TryGetValue("homepage.categories.count", out var v) && int.TryParse(v, out var n) && n > 0 ? n : 3;
     }
 
     // ── PRODUCTS LIST ─────────────────────────────────────────────────────────
@@ -139,6 +155,14 @@ namespace FTD.Web.ViewModels
         public List<ProductImageDto> ExistingImages { get; set; } = new();
     }
 
+    // ── ADMIN: Home Content bulk block input ───────────────────────────
+    public class BlockInput
+    {
+        public string? Ar { get; set; }
+        public string? En { get; set; }
+        public string? Icon { get; set; }
+    }
+
     // ── ADMIN: Order Detail ───────────────────────────────────────────────────
     public class OrderDetailViewModel
     {
@@ -158,5 +182,11 @@ namespace FTD.Web.ViewModels
         public List<NavigationItemDto> FootItems { get; set; } = new();
         public ContactInfoDto? ContactInfo { get; set; }
         public List<BrandDto> NavBrands { get; set; } = new();
+        public Dictionary<string, string> Blocks { get; set; } = new();
+        public Dictionary<string, string> Settings { get; set; } = new();
+
+        public bool ShowSection(string section)
+            => !Settings.TryGetValue($"homepage.show.{section}", out var v)
+               || v == "1" || v.Equals("true", StringComparison.OrdinalIgnoreCase);
     }
 }

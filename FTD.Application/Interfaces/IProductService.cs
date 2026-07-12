@@ -7,6 +7,7 @@ namespace FTD.Application.Interfaces
     public interface IProductService
     {
         Task<List<ProductDto>> GetFeaturedAsync(int take = 6);
+        Task<List<ProductDto>> GetByIdsOrderedAsync(List<int> ids);
         Task<List<CategoryDto>> GetActiveCategoriesAsync();
         Task<List<CategoryDto>> GetAllCategoriesAsync();
         Task<List<ProductDto>> GetAllActiveAsync();

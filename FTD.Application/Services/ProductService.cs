@@ -27,6 +27,29 @@ namespace FTD.Application.Services
             return entities.Select(p => p.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList();
         }
 
+        // Fetch active products by explicit ID list, preserving the exact order of the IDs.
+        public async Task<List<ProductDto>> GetByIdsOrderedAsync(List<int> ids)
+        {
+            if (ids == null || ids.Count == 0) return new List<ProductDto>();
+
+            var entities = await _db.Products
+                .Include(p => p.Category)
+                .Where(p => p.IsActive && ids.Contains(p.Id))
+                .ToListAsync();
+
+            var map = entities.ToDictionary(p => p.Id);
+            var ordered = new List<ProductDto>();
+            foreach (var id in ids)
+            {
+                if (map.TryGetValue(id, out var entity))
+                {
+                    var dto = entity.ToDto();
+                    if (dto != null) ordered.Add(dto);
+                }
+            }
+            return ordered;
+        }
+
         public async Task<List<CategoryDto>> GetActiveCategoriesAsync()
         {
             var entities = await _db.Categories
@@ -517,6 +540,7 @@ namespace FTD.Application.Services
                 ImagePath = dto.ImagePath,
                 SortOrder = dto.SortOrder,
                 IsActive = dto.IsActive,
+                ShowOnHomepage = dto.ShowOnHomepage,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -535,9 +559,10 @@ namespace FTD.Application.Services
             category.Slug = dto.Slug;
             category.Emoji = dto.Emoji;
             category.Description = dto.Description;
-            category.ImagePath = dto.ImagePath;
+            if (dto.ImagePath != null) category.ImagePath = dto.ImagePath;
             category.SortOrder = dto.SortOrder;
             category.IsActive = dto.IsActive;
+            category.ShowOnHomepage = dto.ShowOnHomepage;
 
             await _db.SaveChangesAsync();
             return category.ToDto()!;
