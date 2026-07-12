@@ -44,6 +44,7 @@ namespace FTD.Application.Mappers
                 Description = entity.Description,
                 SortOrder = entity.SortOrder,
                 IsActive = entity.IsActive,
+                ShowOnHomepage = entity.ShowOnHomepage,
                 CreatedAt = entity.CreatedAt,
                 ProductsCount = entity.Products?.Count ?? 0
             };

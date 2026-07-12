@@ -136,6 +136,7 @@ namespace FTD.Infrastructure.Data
                     Emoji = "📱",
                     SortOrder = 1,
                     IsActive = true,
+                    ShowOnHomepage = true,
                     CreatedAt = new DateTime(2026, 1, 1)
                 },
                 new Category
@@ -147,6 +148,7 @@ namespace FTD.Infrastructure.Data
                     Emoji = "🌀",
                     SortOrder = 2,
                     IsActive = true,
+                    ShowOnHomepage = true,
                     CreatedAt = new DateTime(2026, 1, 1)
                 },
                 new Category
@@ -158,6 +160,7 @@ namespace FTD.Infrastructure.Data
                     Emoji = "📷",
                     SortOrder = 3,
                     IsActive = true,
+                    ShowOnHomepage = true,
                     CreatedAt = new DateTime(2026, 1, 1)
                 }
             );
@@ -313,7 +316,59 @@ namespace FTD.Infrastructure.Data
                 new ContentBlock { Id = 18, Key = "features.3", TitleAr = "💬", BodyAr = "دعم فني على مدار الساعة", BodyEn = "24/7 technical support", UpdatedAt = new DateTime(2026, 1, 1) },
                 new ContentBlock { Id = 19, Key = "features.4", TitleAr = "↩", BodyAr = "سياسة إرجاع 14 يوم", BodyEn = "14-day return policy", UpdatedAt = new DateTime(2026, 1, 1) },
                 new ContentBlock { Id = 20, Key = "features.5", TitleAr = "💳", BodyAr = "تقسيط بدون فوائد", BodyEn = "0% interest installments", UpdatedAt = new DateTime(2026, 1, 1) },
-                new ContentBlock { Id = 21, Key = "features.6", TitleAr = "⭐", BodyAr = "منتجات أصلية 100% معتمدة", BodyEn = "100% authentic certified products", UpdatedAt = new DateTime(2026, 1, 1) }
+                new ContentBlock { Id = 21, Key = "features.6", TitleAr = "⭐", BodyAr = "منتجات أصلية 100% معتمدة", BodyEn = "100% authentic certified products", UpdatedAt = new DateTime(2026, 1, 1) },
+                // ── Homepage Dynamic Content (Hero) ──────────────────────────
+                new ContentBlock { Id = 22, Key = "hero.chip1", BodyAr = "مباشر · الأكثر مبيعاً", BodyEn = "LIVE · Best Seller Q3", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 23, Key = "hero.chip2", BodyAr = "وصل حديثاً · ٢٤", BodyEn = "New Arrivals · 24", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 24, Key = "hero.title.line1", BodyAr = "منصة التحكم", BodyEn = "The command deck", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 25, Key = "hero.title.line2", BodyAr = "للتكنولوجيا العصرية.", BodyEn = "for modern tech.", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 26, Key = "hero.subtitle", BodyAr = "لوحة تحكم ومنصة منسقة لأجهزة DOOGEE و JisuLife و Dreame — صُممت للمحترفين وتمت معايرتها للحياة اليومية. توصيل لكافة محافظات مصر بضمان معتمد.", BodyEn = "A curated instrument panel of DOOGEE, JisuLife and Dreame hardware — engineered for professionals, calibrated for daily life. Delivered across Egypt with certified warranty.", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 27, Key = "hero.btn1.text", BodyAr = "اكتشف الكتالوج", BodyEn = "Explore Catalog", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 28, Key = "hero.btn1.url", BodyAr = "/Products", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 29, Key = "hero.btn2.text", BodyAr = "المميز هذا الأسبوع", BodyEn = "Featured this week", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 30, Key = "hero.btn2.url", BodyAr = "#featured", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 31, Key = "hero.stat1.label", BodyAr = "سنوات خبرة", BodyEn = "Years Experience", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 32, Key = "hero.stat2.label", BodyAr = "عميل سعيد", BodyEn = "Delivered Orders", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 33, Key = "hero.stat3.label", BodyAr = "منتج فريد", BodyEn = "Curated SKUs", UpdatedAt = new DateTime(2026, 7, 12) },
+                // ── Value Props (icon stored in TitleAr as Bootstrap Icons class) ──
+                new ContentBlock { Id = 34, Key = "value.prop1.title", TitleAr = "bi-shield-check", BodyAr = "ضمان معتمد", BodyEn = "Certified Warranty", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 35, Key = "value.prop1.desc", BodyAr = "على جميع المنتجات", BodyEn = "On every product", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 36, Key = "value.prop2.title", TitleAr = "bi-truck", BodyAr = "توصيل سريع", BodyEn = "Fast Delivery", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 37, Key = "value.prop2.desc", BodyAr = "لكل محافظات مصر", BodyEn = "To all governorates", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 38, Key = "value.prop3.title", TitleAr = "bi-headset", BodyAr = "دعم فني 24/7", BodyEn = "24/7 Support", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 39, Key = "value.prop3.desc", BodyAr = "فريق متخصص دائماً", BodyEn = "Expert team, always on", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 40, Key = "value.prop4.title", TitleAr = "bi-arrow-counterclockwise", BodyAr = "استرجاع 14 يوم", BodyEn = "14-Day Returns", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 41, Key = "value.prop4.desc", BodyAr = "بدون أي تعقيدات", BodyEn = "Hassle-free policy", UpdatedAt = new DateTime(2026, 7, 12) },
+                // ── Category Showcase Section ─────────────────────────────────
+                new ContentBlock { Id = 42, Key = "cat.showcase.eyebrow", BodyAr = "تسوق حسب الفئة · ٠١", BodyEn = "Shop by Category · 01", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 43, Key = "cat.showcase.title", BodyAr = "اختر فئتك، واكتشف الأفضل.", BodyEn = "Pick a category, discover the best.", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 44, Key = "cat.showcase.desc", BodyAr = "كل فئة منسقة بعناية — أجهزة مختارة من أفضل العلامات العالمية بمواصفات مؤكدة وأسعار تنافسية.", BodyEn = "Every category is hand-curated — devices from top global brands with verified specs and competitive prices.", UpdatedAt = new DateTime(2026, 7, 12) },
+                // ── Featured Catalog Section ──────────────────────────────────
+                new ContentBlock { Id = 45, Key = "feat.catalog.eyebrow", BodyAr = "كتالوج المنتجات · ٠٢", BodyEn = "Product Catalog · 02", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 46, Key = "feat.catalog.title", BodyAr = "أجهزة منسقة لكل أسلوب عمل.", BodyEn = "Curated hardware for every workflow.", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 47, Key = "feat.catalog.desc", BodyAr = "قم بالتصفية حسب الفئة لاستكشاف المنتجات الهامة فقط. تأتي جميع الوحدات مع ضمان معتمد ودعم فني متاح دائماً.", BodyEn = "Filter by category to explore only what matters. Every unit ships with certified warranty and 24/7 technical support.", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 48, Key = "feat.catalog.btn.text", BodyAr = "عرض جميع المنتجات", BodyEn = "View All Products", UpdatedAt = new DateTime(2026, 7, 12) },
+                // ── CTA Band ──────────────────────────────────────────────────
+                new ContentBlock { Id = 49, Key = "cta.title", BodyAr = "جاهز ترتقي بأجهزتك؟ ابدأ التسوق الآن.", BodyEn = "Ready to upgrade your gear? Start shopping now.", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 50, Key = "cta.desc", BodyAr = "منتجات أصلية 100% بضمان معتمد، توصيل سريع لباب البيت، وتقسيط بدون فوائد. تجربة تسوق عالمية بمعايير مصرية.", BodyEn = "100% authentic products with certified warranty, fast door-to-door delivery, and 0% interest installments.", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 51, Key = "cta.btn.text", BodyAr = "تسوق الآن", BodyEn = "Shop Now", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 52, Key = "cta.btn.url", BodyAr = "/Products", UpdatedAt = new DateTime(2026, 7, 12) },
+                // ── About / Mission / Contact section headers ─────────────────
+                new ContentBlock { Id = 53, Key = "about.eyebrow", BodyAr = "من نحن · ٠٣", BodyEn = "About Us · 03", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 54, Key = "about.headline", BodyAr = "تقديم أفضل التكنولوجيا لحياة أكثر سهولة وذكاءً.", BodyEn = "Delivering the best technology for a better life.", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 55, Key = "mission.eyebrow", BodyAr = "رؤيتنا ورسالتنا · ٠٤", BodyEn = "Mission & Vision · 04", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 56, Key = "mission.headline", BodyAr = "نبني مستقبل التكنولوجيا في مصر.", BodyEn = "Building the tech future in Egypt.", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 57, Key = "contact.eyebrow", BodyAr = "تواصل معنا · ٠٥", BodyEn = "Contact · 05", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 58, Key = "contact.title", BodyAr = "نحن هنا لمساعدتك دائماً.", BodyEn = "We're always here to help.", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 59, Key = "contact.desc", BodyAr = "تواصل مع فريق الدعم الفني والمبيعات مباشرة. نقوم بالرد على كافة الاستفسارات خلال ساعات العمل الرسمية.", BodyEn = "Reach our support team directly. We respond to all requests within official working hours.", UpdatedAt = new DateTime(2026, 7, 12) },
+                // ── Newsletter & Footer ───────────────────────────────────────
+                new ContentBlock { Id = 60, Key = "newsletter.title", BodyAr = "خلّيك أول من يعرف 🔥", BodyEn = "Be the first to know 🔥", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 61, Key = "newsletter.desc", BodyAr = "اشترك ليصلك كل جديد عن المنتجات والعروض الحصرية قبل أي حد.", BodyEn = "Subscribe for new arrivals and exclusive deals before anyone else.", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 62, Key = "newsletter.btn.text", BodyAr = "اشترك", BodyEn = "Subscribe", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 63, Key = "footer.desc", BodyAr = "بوابتك المعتمدة لأحدث الأجهزة التكنولوجية من DOOGEE و JisuLife و Dreame. نوفر جودة فائقة وضمان حقيقي.", BodyEn = "Your certified gateway for the latest tech hardware from DOOGEE, JisuLife, and Dreame. Delivering premium quality and certified warranty.", UpdatedAt = new DateTime(2026, 7, 12) },
+                new ContentBlock { Id = 64, Key = "footer.credits", BodyAr = "يونى شوب. جميع الحقوق محفوظة.", BodyEn = "Uni-Shop. All Rights Reserved.", UpdatedAt = new DateTime(2026, 7, 12) },
+                // ── Brand Marquee (comma-separated items) ─────────────────────
+                new ContentBlock { Id = 65, Key = "marquee.items", BodyAr = "DOOGEE,JISULIFE,DREAME,ضمان معتمد,منتجات أصلية,توصيل سريع", BodyEn = "DOOGEE,JISULIFE,DREAME,CERTIFIED WARRANTY,ORIGINAL PRODUCTS,FAST DELIVERY", UpdatedAt = new DateTime(2026, 7, 12) }
             );
 
             // ── SEED: Contact Info ───────────────────────────────────────────
@@ -353,7 +408,25 @@ namespace FTD.Infrastructure.Data
                 new SiteSetting { Id = 6, Key = "shipping.fee", Value = "150", Description = "رسوم الشحن (EGP)", Type = "text", UpdatedAt = new DateTime(2026, 1, 1) },
                 new SiteSetting { Id = 7, Key = "meta.title.ar", Value = "Uni-Shop — وجهتك للتسوق", Description = "Meta Title", Type = "text", UpdatedAt = new DateTime(2026, 1, 1) },
                 new SiteSetting { Id = 8, Key = "meta.desc.ar", Value = "وجهتك الأولى لأحدث التكنولوجيا في مصر", Description = "Meta Desc AR", Type = "text", UpdatedAt = new DateTime(2026, 1, 1) },
-                new SiteSetting { Id = 9, Key = "meta.desc.en", Value = "Your first destination for the latest technology in Egypt", Description = "Meta Desc EN", Type = "text", UpdatedAt = new DateTime(2026, 1, 1) }
+                new SiteSetting { Id = 9, Key = "meta.desc.en", Value = "Your first destination for the latest technology in Egypt", Description = "Meta Desc EN", Type = "text", UpdatedAt = new DateTime(2026, 1, 1) },
+                // ── Homepage product selections (comma-separated product IDs, order matters) ──
+                new SiteSetting { Id = 10, Key = "homepage.hero.products", Value = "1,3,5", Description = "منتجات سلايدر الهيرو (IDs مرتبة)", Type = "text", UpdatedAt = new DateTime(2026, 7, 12) },
+                new SiteSetting { Id = 11, Key = "homepage.featured.products", Value = "1,2,3,4,5,6", Description = "منتجات الكتالوج المميز (IDs مرتبة)", Type = "text", UpdatedAt = new DateTime(2026, 7, 12) },
+                // ── Homepage section visibility toggles ───────────────────────
+                new SiteSetting { Id = 12, Key = "homepage.show.hero", Value = "1", Description = "إظهار قسم الهيرو", Type = "bool", UpdatedAt = new DateTime(2026, 7, 12) },
+                new SiteSetting { Id = 13, Key = "homepage.show.values", Value = "1", Description = "إظهار شريط المزايا", Type = "bool", UpdatedAt = new DateTime(2026, 7, 12) },
+                new SiteSetting { Id = 14, Key = "homepage.show.marquee", Value = "1", Description = "إظهار شريط البراندات المتحرك", Type = "bool", UpdatedAt = new DateTime(2026, 7, 12) },
+                new SiteSetting { Id = 15, Key = "homepage.show.categories", Value = "1", Description = "إظهار معرض الفئات", Type = "bool", UpdatedAt = new DateTime(2026, 7, 12) },
+                new SiteSetting { Id = 16, Key = "homepage.show.featured", Value = "1", Description = "إظهار الكتالوج المميز", Type = "bool", UpdatedAt = new DateTime(2026, 7, 12) },
+                new SiteSetting { Id = 17, Key = "homepage.show.about", Value = "1", Description = "إظهار قسم من نحن", Type = "bool", UpdatedAt = new DateTime(2026, 7, 12) },
+                new SiteSetting { Id = 18, Key = "homepage.show.mission", Value = "1", Description = "إظهار الرؤية والرسالة", Type = "bool", UpdatedAt = new DateTime(2026, 7, 12) },
+                new SiteSetting { Id = 19, Key = "homepage.show.cta", Value = "1", Description = "إظهار شريط CTA", Type = "bool", UpdatedAt = new DateTime(2026, 7, 12) },
+                new SiteSetting { Id = 20, Key = "homepage.show.contact", Value = "1", Description = "إظهار قسم التواصل", Type = "bool", UpdatedAt = new DateTime(2026, 7, 12) },
+                new SiteSetting { Id = 21, Key = "homepage.show.newsletter", Value = "1", Description = "إظهار النشرة البريدية بالفوتر", Type = "bool", UpdatedAt = new DateTime(2026, 7, 12) },
+                new SiteSetting { Id = 22, Key = "homepage.show.payments", Value = "1", Description = "إظهار شارات الدفع بالفوتر", Type = "bool", UpdatedAt = new DateTime(2026, 7, 12) },
+                // ── Homepage section ordering & misc ──────────────────────────
+                new SiteSetting { Id = 23, Key = "homepage.sections.order", Value = "hero,values,marquee,categories,featured,about,mission,cta,contact", Description = "ترتيب أقسام الرئيسية", Type = "text", UpdatedAt = new DateTime(2026, 7, 12) },
+                new SiteSetting { Id = 24, Key = "homepage.categories.count", Value = "3", Description = "عدد بلاطات الفئات بالرئيسية", Type = "text", UpdatedAt = new DateTime(2026, 7, 12) }
             );
         }
     }
