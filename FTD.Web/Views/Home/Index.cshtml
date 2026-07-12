@@ -166,6 +166,40 @@
     });
 </script>
 
+<!-- ============ VALUE PROPS STRIP ============ -->
+<section class="container">
+    <div class="value-strip reveal">
+        <div class="value-item">
+            <span class="v-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3L4 6v5c0 4.5 8 8 8 8s8-3.5 8-8V6l-8-3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12l2 2 4-4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <div>
+                <div class="v-t"><span data-ar>ضمان معتمد</span><span data-en>Certified Warranty</span></div>
+                <div class="v-s"><span data-ar>على جميع المنتجات</span><span data-en>On every product</span></div>
+            </div>
+        </div>
+        <div class="value-item">
+            <span class="v-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 15h12l4-5h-3l-3-3H3v8z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="6.5" cy="17.5" r="1.8" stroke="currentColor" stroke-width="1.6"/><circle cx="15.5" cy="17.5" r="1.8" stroke="currentColor" stroke-width="1.6"/></svg></span>
+            <div>
+                <div class="v-t"><span data-ar>توصيل سريع</span><span data-en>Fast Delivery</span></div>
+                <div class="v-s"><span data-ar>لكل محافظات مصر</span><span data-en>To all governorates</span></div>
+            </div>
+        </div>
+        <div class="value-item">
+            <span class="v-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3.5 2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+            <div>
+                <div class="v-t"><span data-ar>دعم فني 24/7</span><span data-en>24/7 Support</span></div>
+                <div class="v-s"><span data-ar>فريق متخصص دائماً</span><span data-en>Expert team, always on</span></div>
+            </div>
+        </div>
+        <div class="value-item">
+            <span class="v-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 8l8-4 8 4-8 4-8-4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M4 8v8l8 4 8-4V8" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span>
+            <div>
+                <div class="v-t"><span data-ar>استرجاع 14 يوم</span><span data-en>14-Day Returns</span></div>
+                <div class="v-s"><span data-ar>بدون أي تعقيدات</span><span data-en>Hassle-free policy</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- ============ BRAND MARQUEE ============ -->
 <section class="marquee">
     <div class="marquee-track">
@@ -183,6 +217,47 @@
         <span class="marquee-item"><span data-ar>توصيل سريع</span><span data-en>FAST DELIVERY</span> <span class="dot"></span></span>
     </div>
 </section>
+
+<!-- ============ CATEGORY SHOWCASE ============ -->
+@if (Model.Categories.Any())
+{
+<section class="section" style="padding-bottom:0">
+    <div class="container">
+        <div class="section-header reveal">
+            <div>
+                <span class="eyebrow"><span data-ar>تسوق حسب الفئة · ٠١</span><span data-en>Shop by Category · 01</span></span>
+                <h2 class="headline-lg">
+                    <span data-ar>اختر فئتك،<br>واكتشف <span class="grad-text">الأفضل</span>.</span>
+                    <span data-en>Pick a category,<br>discover <span class="grad-text">the best</span>.</span>
+                </h2>
+            </div>
+            <div class="side">
+                <p>
+                    <span data-ar>كل فئة منسقة بعناية — أجهزة مختارة من أفضل العلامات العالمية بمواصفات مؤكدة وأسعار تنافسية.</span>
+                    <span data-en>Every category is hand-curated — devices from top global brands with verified specs and competitive prices.</span>
+                </p>
+            </div>
+        </div>
+        <div class="cat-showcase-grid reveal">
+            @foreach (var cat in Model.Categories.Take(3))
+            {
+                // Prefer the DTO's real catalog-wide count; fall back to the
+                // featured subset when the service didn't populate it.
+                var catCount = cat.ProductsCount > 0 ? cat.ProductsCount : Model.FeaturedProducts.Count(p => p.CategoryId == cat.Id);
+                <a href="/Products?category=@cat.Slug" class="cat-tile">
+                    <span class="cat-emoji">@(cat.Emoji ?? "📦")</span>
+                    <span class="cat-count">@catCount+ <span data-ar>منتج</span><span data-en>Products</span></span>
+                    <h3><span data-ar>@cat.NameAr</span><span data-en>@cat.NameEn</span></h3>
+                    <span class="cat-link">
+                        <span data-ar>تصفح الفئة</span><span data-en>Browse category</span>
+                        <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </a>
+            }
+        </div>
+    </div>
+</section>
+}
 
 <!-- ============ FEATURED PRODUCTS ============ -->
 <section class="section" id="featured">
@@ -342,6 +417,28 @@
     </div>
 </section>
 
+<!-- ============ CTA BAND ============ -->
+<section class="cta-band reveal-scale">
+    <div class="container">
+        <div class="cta-inner">
+            <div>
+                <h2>
+                    <span data-ar>جاهز ترتقي بأجهزتك؟<br>ابدأ التسوق <span>الآن</span>.</span>
+                    <span data-en>Ready to upgrade your gear?<br>Start shopping <span>now</span>.</span>
+                </h2>
+                <p>
+                    <span data-ar>منتجات أصلية 100% بضمان معتمد، توصيل سريع لباب البيت، وتقسيط بدون فوائد. تجربة تسوق عالمية بمعايير مصرية.</span>
+                    <span data-en>100% authentic products with certified warranty, fast door-to-door delivery, and 0% interest installments.</span>
+                </p>
+            </div>
+            <a href="/Products" class="btn btn-accent btn-lg">
+                <span data-ar>تسوق الآن</span><span data-en>Shop Now</span>
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+        </div>
+    </div>
+</section>
+
 <!-- ============ CONTACT ============ -->
 <section class="section" id="contact">
     <div class="container">
@@ -490,7 +587,7 @@
 <script>
     // Reveal on scroll logic
     document.addEventListener('DOMContentLoaded', function() {
-        const els = document.querySelectorAll('.reveal');
+        const els = document.querySelectorAll('.reveal, .reveal-scale');
         if ('IntersectionObserver' in window) {
             const io = new IntersectionObserver((entries) => {
                 entries.forEach(e => {

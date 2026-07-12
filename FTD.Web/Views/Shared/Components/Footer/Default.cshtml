@@ -1,6 +1,22 @@
 @model FTD.Web.ViewModels.FooterViewModel
 <footer class="footer">
     <div class="footer-inner container">
+        <!-- Newsletter band -->
+        <div class="newsletter-band">
+            <div>
+                <h4><span data-ar>خلّيك أول من يعرف 🔥</span><span data-en>Be the first to know 🔥</span></h4>
+                <p class="nl-sub">
+                    <span data-ar>اشترك ليصلك كل جديد عن المنتجات والعروض الحصرية قبل أي حد.</span>
+                    <span data-en>Subscribe for new arrivals and exclusive deals before anyone else.</span>
+                </p>
+            </div>
+            <form class="newsletter-form" onsubmit="return subscribeNewsletter(event)">
+                <input type="email" required data-ph-ar="بريدك الإلكتروني..." data-ph-en="Your email address..." placeholder="بريدك الإلكتروني..." aria-label="Email">
+                <button type="submit">
+                    <span data-ar>اشترك</span><span data-en>Subscribe</span>
+                </button>
+            </form>
+        </div>
         <div class="footer-grid">
             <!-- Brand & Intro -->
             <div class="footer-brand">
@@ -101,12 +117,19 @@
         </div>
     </div>
     <div class="footer-bottom">
-        <div class="container footer-bottom-inner">
+        <div class="container footer-bottom-inner" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px">
             <p>
                 © @DateTime.Now.Year Uni-Shop —
                 <span data-ar>يونى شوب. جميع الحقوق محفوظة.</span>
                 <span data-en>Uni-Shop. All Rights Reserved.</span>
             </p>
+            <div class="footer-payments" aria-label="Payment methods">
+                <span class="pm">VISA</span>
+                <span class="pm">MASTERCARD</span>
+                <span class="pm">VODAFONE CASH</span>
+                <span class="pm">INSTAPAY</span>
+                <span class="pm"><span data-ar>كاش عند الاستلام</span><span data-en>COD</span></span>
+            </div>
         </div>
     </div>
 </footer>

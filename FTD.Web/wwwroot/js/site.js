@@ -28,6 +28,11 @@ function addToCartQuick(productId, btn) {
         .then(function (r) { return r.json(); })
         .then(function (data) {
             if (data && data.count !== undefined) setCartBadge(data.count);
+            // Pro-level feedback: toast confirmation (defined in the Aurora
+            // Pro layer below; guarded so this never throws if reordered).
+            if (typeof showToast === 'function') {
+                showToast('تمت إضافة المنتج إلى السلة ✓', 'Added to cart ✓');
+            }
             // Flash button success state briefly (uses design-token color,
             // not a hardcoded legacy hex).
             if (btn) {
@@ -220,4 +225,67 @@ document.addEventListener('DOMContentLoaded', function () {
     // Hash-link smooth scroll is handled by the navbar component script
 
     // Note: hash-on-load scroll handled natively by the browser
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ✦ AURORA PRO — UX enhancement layer
+// ═══════════════════════════════════════════════════════════════
+
+// ── TOAST NOTIFICATIONS ──────────────────────────────────────────────────────
+function showToast(msgAr, msgEn) {
+    var stack = document.getElementById('toastStack');
+    if (!stack) {
+        stack = document.createElement('div');
+        stack.id = 'toastStack';
+        stack.className = 'toast-stack';
+        document.body.appendChild(stack);
+    }
+    var en = document.body.classList.contains('en');
+    var toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML =
+        '<span class="t-ico"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
+        + '<span>' + (en ? msgEn : msgAr) + '</span>';
+    stack.appendChild(toast);
+    setTimeout(function () {
+        toast.classList.add('out');
+        setTimeout(function () { toast.remove(); }, 320);
+    }, 2600);
+}
+
+// ── NEWSLETTER (client-side confirmation) ────────────────────────────────────
+function subscribeNewsletter(e) {
+    e.preventDefault();
+    var input = e.target.querySelector('input[type=email]');
+    if (input && input.value) {
+        showToast('تم الاشتراك بنجاح! أهلاً بيك في عيلة يوني شوب 🎉', 'Subscribed! Welcome to the Uni-Shop family 🎉');
+        input.value = '';
+    }
+    return false;
+}
+
+// ── BACK TO TOP + NAVBAR SCROLL STATE ────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+    // Inject back-to-top button
+    var btt = document.createElement('button');
+    btt.className = 'back-to-top';
+    btt.setAttribute('aria-label', 'Back to top');
+    btt.innerHTML = '<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 16V4M5 9l5-5 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    btt.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    document.body.appendChild(btt);
+
+    var navWrap = document.querySelector('.nav-wrap');
+    var ticking = false;
+    function onScroll() {
+        if (!ticking) {
+            window.requestAnimationFrame(function () {
+                btt.classList.toggle('show', window.scrollY > 500);
+                if (navWrap) navWrap.classList.toggle('scrolled', window.scrollY > 20);
+                ticking = false;
+            });
+            ticking = true;
+        }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
 });
