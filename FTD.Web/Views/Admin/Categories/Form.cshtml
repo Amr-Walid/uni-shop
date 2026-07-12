@@ -5,7 +5,7 @@
     ViewData["Title"] = isEdit ? "تعديل كاتيجوري" : "كاتيجوري جديدة";
 }
 
-<form action="@(isEdit ? "/Admin/AdminCategories/Edit/" + Model.Id : "/Admin/AdminCategories/Create")" method="post">
+<form action="@(isEdit ? "/Admin/AdminCategories/Edit/" + Model.Id : "/Admin/AdminCategories/Create")" method="post" enctype="multipart/form-data">
   @Html.AntiForgeryToken()
 
   <div style="max-width:680px">
@@ -36,11 +36,31 @@
           <label>الترتيب</label>
           <input asp-for="SortOrder" type="number" placeholder="0">
         </div>
-        <div class="a-form-group" style="display:flex;align-items:center;padding-top:1.5rem">
+        <div class="a-form-group" style="display:flex;align-items:center;gap:1.5rem;padding-top:1.5rem">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px">
             <input asp-for="IsActive" type="checkbox" style="width:16px;height:16px">
             نشط
           </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px">
+            <input asp-for="ShowOnHomepage" type="checkbox" style="width:16px;height:16px">
+            يظهر في الرئيسية 🏠
+          </label>
+        </div>
+      </div>
+
+      @* ── صورة الكاتيجوري ── *@
+      <div style="margin-top:1.2rem;padding-top:1.2rem;border-top:1px solid var(--a-border)">
+        <h4 style="font-size:14px;margin-bottom:.8rem">🖼️ صورة الكاتيجوري (تظهر في معرض الفئات بالرئيسية)</h4>
+        @if (!string.IsNullOrEmpty(Model.ImagePath))
+        {
+          <div style="margin-bottom:.8rem">
+            <img src="@Model.ImagePath" alt="@Model.NameEn" style="max-height:110px;border-radius:10px;border:1px solid var(--a-border);background:#fff;padding:6px">
+            <div style="font-size:11px;color:var(--a-text3);margin-top:4px">الصورة الحالية — ارفع صورة جديدة لاستبدالها</div>
+          </div>
+        }
+        <div class="a-form-group">
+          <input type="file" name="ImageFile" accept=".jpg,.jpeg,.png,.gif,.webp">
+          <small style="font-size:11px;color:var(--a-text3)">JPG / PNG / WEBP — حد أقصى 5MB. لو مفيش صورة هيظهر الـ Emoji.</small>
         </div>
       </div>
 

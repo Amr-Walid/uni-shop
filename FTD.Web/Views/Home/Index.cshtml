@@ -1,69 +1,98 @@
 @model FTD.Web.ViewModels.HomeViewModel
 @{
     ViewData["Title"] = "الرئيسية";
+
+    // ── Dynamic content helpers ──────────────────────────────────────────
     string Get(string key) => Model.ContentBlocks.TryGetValue(key, out var v) ? v : "";
-    var heroProduct = Model.FeaturedProducts.FirstOrDefault() ?? new ProductDto { Id = 1, NameEn = "F40 Portable Fan", NameAr = "مروحة F40 المحمولة", BrandName = "JisuLife", Price = 1299, Slug = "f40-portable-fan", Emoji = "🍃" };
+    string GetOr(string key, string fallback)
+    {
+        var v = Get(key);
+        return string.IsNullOrWhiteSpace(v) ? fallback : v;
+    }
+
+    // Hero slider products (selected & ordered from the dashboard)
+    var heroList = Model.HeroProducts;
+
+    // Homepage categories (respect ShowOnHomepage + configurable count)
+    var homepageCats = Model.Categories
+        .Where(c => c.ShowOnHomepage)
+        .Take(Model.HomepageCategoriesCount)
+        .ToList();
+
+    // Marquee items (comma-separated, editable from dashboard)
+    var marqueeAr = GetOr("marquee.items.ar", "DOOGEE,JISULIFE,DREAME,ضمان معتمد,منتجات أصلية,توصيل سريع")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    var marqueeEn = GetOr("marquee.items.en", "DOOGEE,JISULIFE,DREAME,CERTIFIED WARRANTY,ORIGINAL PRODUCTS,FAST DELIVERY")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    // Section order (from dashboard) — append any missing known section for safety
+    var knownSections = new[] { "hero", "values", "marquee", "categories", "featured", "about", "mission", "cta", "contact" };
+    var sectionOrder = Model.SectionsOrder.Where(s => knownSections.Contains(s)).ToList();
+    foreach (var s in knownSections)
+    {
+        if (!sectionOrder.Contains(s)) { sectionOrder.Add(s); }
+    }
+
+    // Default value-prop icons (Bootstrap Icons) used when block icon is empty
+    var defaultPropIcons = new[] { "bi-shield-check", "bi-truck", "bi-headset", "bi-arrow-counterclockwise" };
 }
 
+@{
+    // ════════════════ SECTION RENDERERS (local functions) ════════════════
+
+    void RenderHero()
+    {
 <!-- ============ HERO ============ -->
 <section class="hero">
     <div class="container">
         <div class="hero-inner">
             <div class="hero-content">
                 <div class="hero-chips">
-                    <span class="chip"><span class="dot"></span>LIVE · Best Seller Q3</span>
+                    <span class="chip"><span class="dot"></span><span data-ar>@GetOr("hero.chip1.ar", "مباشر · الأكثر مبيعاً")</span><span data-en>@GetOr("hero.chip1.en", "LIVE · Best Seller Q3")</span></span>
                     <span class="chip" style="background:var(--surface-container-low);color:var(--navy-3);border-color:var(--outline-variant)">
                         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                        <span data-ar>وصل حديثاً · ٢٤</span><span data-en>New Arrivals · 24</span>
+                        <span data-ar>@GetOr("hero.chip2.ar", "وصل حديثاً · ٢٤")</span><span data-en>@GetOr("hero.chip2.en", "New Arrivals · 24")</span>
                     </span>
                 </div>
                 <h1>
-                    <span class="flex-line"><span data-ar>منصة التحكم</span><span data-en>The command deck</span></span>
-                    <span class="flex-line"><span data-ar>للتكنولوجيا <em>العصرية</em>.</span><span data-en>for <em>modern tech</em>.</span></span>
+                    <span class="flex-line"><span data-ar>@GetOr("hero.title.line1.ar", "منصة التحكم")</span><span data-en>@GetOr("hero.title.line1.en", "The command deck")</span></span>
+                    <span class="flex-line"><span data-ar>@GetOr("hero.title.line2.ar", "للتكنولوجيا العصرية.")</span><span data-en>@GetOr("hero.title.line2.en", "for modern tech.")</span></span>
                 </h1>
                 <p class="hero-sub">
-                    <span data-ar>لوحة تحكم ومنصة منسقة لأجهزة DOOGEE و JisuLife و Dreame — صُممت للمحترفين وتمت معايرتها للحياة اليومية. توصيل لكافة محافظات مصر بضمان معتمد.</span>
-                    <span data-en>A curated instrument panel of DOOGEE, JisuLife and Dreame hardware — engineered for professionals, calibrated for daily life. Delivered across Egypt with certified warranty.</span>
+                    <span data-ar>@GetOr("hero.subtitle.ar", "منصة منسقة لأحدث الأجهزة التكنولوجية — توصيل لكافة محافظات مصر بضمان معتمد.")</span>
+                    <span data-en>@GetOr("hero.subtitle.en", "A curated platform for the latest tech — delivered across Egypt with certified warranty.")</span>
                 </p>
                 <div class="hero-actions">
-                    <a href="/Products" class="btn btn-primary btn-lg">
-                        <span data-ar>اكتشف الكتالوج</span><span data-en>Explore Catalog</span>
+                    <a href="@GetOr("hero.btn1.url.ar", "/Products")" class="btn btn-primary btn-lg">
+                        <span data-ar>@GetOr("hero.btn1.text.ar", "اكتشف الكتالوج")</span><span data-en>@GetOr("hero.btn1.text.en", "Explore Catalog")</span>
                         <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </a>
-                    <a href="#featured" class="btn btn-ghost btn-lg">
+                    <a href="@GetOr("hero.btn2.url.ar", "#featured")" class="btn btn-ghost btn-lg">
                         <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                        <span data-ar>المميز هذا الأسبوع</span><span data-en>Featured this week</span>
+                        <span data-ar>@GetOr("hero.btn2.text.ar", "المميز هذا الأسبوع")</span><span data-en>@GetOr("hero.btn2.text.en", "Featured this week")</span>
                     </a>
                 </div>
                 <div class="hero-stats">
                     <div class="hero-stat">
                         <div class="value">@Get("about.stat.years.ar")<span class="plus">+</span></div>
-                        <div class="label"><span data-ar>سنوات خبرة</span><span data-en>Years Experience</span></div>
+                        <div class="label"><span data-ar>@GetOr("hero.stat1.label.ar", "سنوات خبرة")</span><span data-en>@GetOr("hero.stat1.label.en", "Years Experience")</span></div>
                     </div>
                     <div class="hero-stat">
                         <div class="value">@Get("about.stat.clients.ar")<span class="plus">+</span></div>
-                        <div class="label"><span data-ar>عميل سعيد</span><span data-en>Delivered Orders</span></div>
+                        <div class="label"><span data-ar>@GetOr("hero.stat2.label.ar", "عميل سعيد")</span><span data-en>@GetOr("hero.stat2.label.en", "Delivered Orders")</span></div>
                     </div>
                     <div class="hero-stat">
                         <div class="value">@Get("about.stat.products.ar")<span class="plus">+</span></div>
-                        <div class="label"><span data-ar>منتج فريد</span><span data-en>Curated SKUs</span></div>
+                        <div class="label"><span data-ar>@GetOr("hero.stat3.label.ar", "منتج فريد")</span><span data-en>@GetOr("hero.stat3.label.en", "Curated SKUs")</span></div>
                     </div>
                 </div>
             </div>
 
             <div class="hero-visual">
                 <div class="showcase-slider">
-                    @{
-                        var featuredList = Model.FeaturedProducts.Take(5).ToList();
-                        if (!featuredList.Any())
-                        {
-                            featuredList.Add(heroProduct);
-                        }
-                    }
-
-                    @for (int i = 0; i < featuredList.Count; i++)
+                    @for (int i = 0; i < heroList.Count; i++)
                     {
-                        var prod = featuredList[i];
+                        var prod = heroList[i];
                         <div class="showcase-slide @(i == 0 ? "active" : "")" data-slide-index="@i">
                             <div class="showcase-card">
                                 <div class="showcase-badge">
@@ -110,7 +139,7 @@
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                         </button>
                         <div class="showcase-dots">
-                            @for (int i = 0; i < featuredList.Count; i++)
+                            @for (int i = 0; i < heroList.Count; i++)
                             {
                                 <button class="dot-indicator @(i == 0 ? "active" : "")" onclick="setShowcaseSlide(@i)" aria-label="Go to slide @(i+1)"></button>
                             }
@@ -127,13 +156,13 @@
 
 <script>
     var currentShowcaseIndex = 0;
-    var totalShowcaseSlides = @featuredList.Count;
+    var totalShowcaseSlides = @heroList.Count;
     var showcaseAutoplayTimer = null;
 
     function setShowcaseSlide(index) {
         if (index < 0 || index >= totalShowcaseSlides) return;
         currentShowcaseIndex = index;
-        
+
         document.querySelectorAll('.showcase-slide').forEach(function(slide, idx) {
             slide.classList.toggle('active', idx === index);
         });
@@ -157,95 +186,91 @@
 
     function resetShowcaseAutoplay() {
         clearInterval(showcaseAutoplayTimer);
-        showcaseAutoplayTimer = setInterval(nextShowcaseSlide, 5000); // switch every 5 seconds
+        if (totalShowcaseSlides > 1) {
+            showcaseAutoplayTimer = setInterval(nextShowcaseSlide, 5000);
+        }
     }
 
-    // Initialize autoplay on load
     document.addEventListener('DOMContentLoaded', function() {
         resetShowcaseAutoplay();
     });
 </script>
+    }
 
-<!-- ============ VALUE PROPS STRIP ============ -->
+    void RenderValues()
+    {
+<!-- ============ VALUE PROPS STRIP (dynamic) ============ -->
 <section class="container">
     <div class="value-strip reveal">
-        <div class="value-item">
-            <span class="v-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3L4 6v5c0 4.5 8 8 8 8s8-3.5 8-8V6l-8-3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12l2 2 4-4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-            <div>
-                <div class="v-t"><span data-ar>ضمان معتمد</span><span data-en>Certified Warranty</span></div>
-                <div class="v-s"><span data-ar>على جميع المنتجات</span><span data-en>On every product</span></div>
+        @for (int i = 1; i <= 4; i++)
+        {
+            var icon = GetOr($"value.prop{i}.title.icon", defaultPropIcons[i - 1]);
+            var titleAr = Get($"value.prop{i}.title.ar");
+            var titleEn = Get($"value.prop{i}.title.en");
+            if (string.IsNullOrWhiteSpace(titleAr) && string.IsNullOrWhiteSpace(titleEn)) { continue; }
+            <div class="value-item">
+                <span class="v-ico"><i class="bi @icon" style="font-size:20px"></i></span>
+                <div>
+                    <div class="v-t"><span data-ar>@titleAr</span><span data-en>@titleEn</span></div>
+                    <div class="v-s"><span data-ar>@Get($"value.prop{i}.desc.ar")</span><span data-en>@Get($"value.prop{i}.desc.en")</span></div>
+                </div>
             </div>
-        </div>
-        <div class="value-item">
-            <span class="v-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 15h12l4-5h-3l-3-3H3v8z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="6.5" cy="17.5" r="1.8" stroke="currentColor" stroke-width="1.6"/><circle cx="15.5" cy="17.5" r="1.8" stroke="currentColor" stroke-width="1.6"/></svg></span>
-            <div>
-                <div class="v-t"><span data-ar>توصيل سريع</span><span data-en>Fast Delivery</span></div>
-                <div class="v-s"><span data-ar>لكل محافظات مصر</span><span data-en>To all governorates</span></div>
-            </div>
-        </div>
-        <div class="value-item">
-            <span class="v-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3.5 2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
-            <div>
-                <div class="v-t"><span data-ar>دعم فني 24/7</span><span data-en>24/7 Support</span></div>
-                <div class="v-s"><span data-ar>فريق متخصص دائماً</span><span data-en>Expert team, always on</span></div>
-            </div>
-        </div>
-        <div class="value-item">
-            <span class="v-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 8l8-4 8 4-8 4-8-4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M4 8v8l8 4 8-4V8" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span>
-            <div>
-                <div class="v-t"><span data-ar>استرجاع 14 يوم</span><span data-en>14-Day Returns</span></div>
-                <div class="v-s"><span data-ar>بدون أي تعقيدات</span><span data-en>Hassle-free policy</span></div>
-            </div>
-        </div>
+        }
     </div>
 </section>
+    }
 
-<!-- ============ BRAND MARQUEE ============ -->
+    void RenderMarquee()
+    {
+<!-- ============ BRAND MARQUEE (dynamic) ============ -->
 <section class="marquee">
     <div class="marquee-track">
-        <span class="marquee-item">DOOGEE <span class="dot"></span></span>
-        <span class="marquee-item">JISULIFE <span class="dot"></span></span>
-        <span class="marquee-item">DREAME <span class="dot"></span></span>
-        <span class="marquee-item"><span data-ar>ضمان معتمد</span><span data-en>CERTIFIED WARRANTY</span> <span class="dot"></span></span>
-        <span class="marquee-item"><span data-ar>منتجات أصلية</span><span data-en>ORIGINAL PRODUCTS</span> <span class="dot"></span></span>
-        <span class="marquee-item"><span data-ar>توصيل سريع</span><span data-en>FAST DELIVERY</span> <span class="dot"></span></span>
-        <span class="marquee-item">DOOGEE <span class="dot"></span></span>
-        <span class="marquee-item">JISULIFE <span class="dot"></span></span>
-        <span class="marquee-item">DREAME <span class="dot"></span></span>
-        <span class="marquee-item"><span data-ar>ضمان معتمد</span><span data-en>CERTIFIED WARRANTY</span> <span class="dot"></span></span>
-        <span class="marquee-item"><span data-ar>منتجات أصلية</span><span data-en>ORIGINAL PRODUCTS</span> <span class="dot"></span></span>
-        <span class="marquee-item"><span data-ar>توصيل سريع</span><span data-en>FAST DELIVERY</span> <span class="dot"></span></span>
+        @for (int rep = 0; rep < 2; rep++)
+        {
+            for (int i = 0; i < marqueeAr.Length; i++)
+            {
+                var en = i < marqueeEn.Length ? marqueeEn[i] : marqueeAr[i];
+                <span class="marquee-item"><span data-ar>@marqueeAr[i]</span><span data-en>@en</span> <span class="dot"></span></span>
+            }
+        }
     </div>
 </section>
+    }
 
-<!-- ============ CATEGORY SHOWCASE ============ -->
-@if (Model.Categories.Any())
-{
+    void RenderCategories()
+    {
+        if (!homepageCats.Any()) { return; }
+<!-- ============ CATEGORY SHOWCASE (dynamic) ============ -->
 <section class="section" style="padding-bottom:0">
     <div class="container">
         <div class="section-header reveal">
             <div>
-                <span class="eyebrow"><span data-ar>تسوق حسب الفئة · ٠١</span><span data-en>Shop by Category · 01</span></span>
+                <span class="eyebrow"><span data-ar>@GetOr("cat.showcase.eyebrow.ar", "تسوق حسب الفئة · ٠١")</span><span data-en>@GetOr("cat.showcase.eyebrow.en", "Shop by Category · 01")</span></span>
                 <h2 class="headline-lg">
-                    <span data-ar>اختر فئتك،<br>واكتشف <span class="grad-text">الأفضل</span>.</span>
-                    <span data-en>Pick a category,<br>discover <span class="grad-text">the best</span>.</span>
+                    <span data-ar>@GetOr("cat.showcase.title.ar", "اختر فئتك، واكتشف الأفضل.")</span>
+                    <span data-en>@GetOr("cat.showcase.title.en", "Pick a category, discover the best.")</span>
                 </h2>
             </div>
             <div class="side">
                 <p>
-                    <span data-ar>كل فئة منسقة بعناية — أجهزة مختارة من أفضل العلامات العالمية بمواصفات مؤكدة وأسعار تنافسية.</span>
-                    <span data-en>Every category is hand-curated — devices from top global brands with verified specs and competitive prices.</span>
+                    <span data-ar>@GetOr("cat.showcase.desc.ar", "كل فئة منسقة بعناية بمواصفات مؤكدة وأسعار تنافسية.")</span>
+                    <span data-en>@GetOr("cat.showcase.desc.en", "Every category is hand-curated with verified specs and competitive prices.")</span>
                 </p>
             </div>
         </div>
         <div class="cat-showcase-grid reveal">
-            @foreach (var cat in Model.Categories.Take(3))
+            @foreach (var cat in homepageCats)
             {
-                // Prefer the DTO's real catalog-wide count; fall back to the
-                // featured subset when the service didn't populate it.
                 var catCount = cat.ProductsCount > 0 ? cat.ProductsCount : Model.FeaturedProducts.Count(p => p.CategoryId == cat.Id);
                 <a href="/Products?category=@cat.Slug" class="cat-tile">
-                    <span class="cat-emoji">@(cat.Emoji ?? "📦")</span>
+                    @if (!string.IsNullOrEmpty(cat.ImagePath))
+                    {
+                        <img src="@cat.ImagePath" alt="@cat.NameEn" class="cat-tile-image">
+                    }
+                    else
+                    {
+                        <span class="cat-emoji">@(cat.Emoji ?? "📦")</span>
+                    }
                     <span class="cat-count">@catCount+ <span data-ar>منتج</span><span data-en>Products</span></span>
                     <h3><span data-ar>@cat.NameAr</span><span data-en>@cat.NameEn</span></h3>
                     <span class="cat-link">
@@ -257,26 +282,28 @@
         </div>
     </div>
 </section>
-}
+    }
 
-<!-- ============ FEATURED PRODUCTS ============ -->
+    void RenderFeatured()
+    {
+<!-- ============ FEATURED PRODUCTS (dynamic) ============ -->
 <section class="section" id="featured">
     <div class="container">
         <div class="section-header reveal">
             <div>
-                <span class="eyebrow"><span data-ar>كتالوج المنتجات · ٠٢</span><span data-en>Product Catalog · 02</span></span>
+                <span class="eyebrow"><span data-ar>@GetOr("feat.catalog.eyebrow.ar", "كتالوج المنتجات · ٠٢")</span><span data-en>@GetOr("feat.catalog.eyebrow.en", "Product Catalog · 02")</span></span>
                 <h2 class="headline-lg">
-                    <span data-ar>أجهزة منسقة<br>لكل أسلوب عمل.</span>
-                    <span data-en>Curated hardware for<br>every workflow.</span>
+                    <span data-ar>@GetOr("feat.catalog.title.ar", "أجهزة منسقة لكل أسلوب عمل.")</span>
+                    <span data-en>@GetOr("feat.catalog.title.en", "Curated hardware for every workflow.")</span>
                 </h2>
             </div>
             <div class="side">
                 <p>
-                    <span data-ar>قم بالتصفية حسب الفئة لاستكشاف المنتجات الهامة فقط. تأتي جميع الوحدات مع ضمان معتمد ودعم فني متاح دائماً.</span>
-                    <span data-en>Filter by category to explore only what matters. Every unit ships with certified warranty and 24/7 technical support.</span>
+                    <span data-ar>@GetOr("feat.catalog.desc.ar", "قم بالتصفية حسب الفئة لاستكشاف المنتجات الهامة فقط.")</span>
+                    <span data-en>@GetOr("feat.catalog.desc.en", "Filter by category to explore only what matters.")</span>
                 </p>
                 <a href="/Products" class="btn btn-secondary">
-                    <span data-ar>عرض جميع المنتجات</span><span data-en>View All Products</span>
+                    <span data-ar>@GetOr("feat.catalog.btn.text.ar", "عرض جميع المنتجات")</span><span data-en>@GetOr("feat.catalog.btn.text.en", "View All Products")</span>
                     <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </a>
             </div>
@@ -290,6 +317,7 @@
             @foreach (var cat in Model.Categories)
             {
                 var count = Model.FeaturedProducts.Count(p => p.CategoryId == cat.Id);
+                if (count == 0) { continue; }
                 <button class="tab" data-cat="@cat.Slug">
                     @(cat.Emoji ?? "")
                     <span data-ar>@cat.NameAr</span><span data-en>@cat.NameEn</span>
@@ -308,16 +336,19 @@
         </div>
     </div>
 </section>
+    }
 
-<!-- ============ ABOUT ============ -->
+    void RenderAbout()
+    {
+<!-- ============ ABOUT (dynamic) ============ -->
 <section class="section" id="about">
     <div class="container">
         <div class="about reveal">
             <div class="about-copy">
-                <span class="eyebrow"><span data-ar>من نحن · ٠٣</span><span data-en>About Us · 03</span></span>
+                <span class="eyebrow"><span data-ar>@GetOr("about.eyebrow.ar", "من نحن · ٠٣")</span><span data-en>@GetOr("about.eyebrow.en", "About Us · 03")</span></span>
                 <h2 class="headline-lg" style="margin-top:20px">
-                    <span data-ar>تقديم أفضل التكنولوجيا<br>لحياة<br><span style="color:var(--primary)">أكثر سهولة وذكاءً</span>.</span>
-                    <span data-en>Delivering the best<br>technology for a<br><span style="color:var(--primary)">better life</span>.</span>
+                    <span data-ar>@GetOr("about.headline.ar", "تقديم أفضل التكنولوجيا لحياة أكثر سهولة وذكاءً.")</span>
+                    <span data-en>@GetOr("about.headline.en", "Delivering the best technology for a better life.")</span>
                 </h2>
                 <p style="margin-top:24px">
                     <span data-ar>@Get("about.body.ar.ar")</span>
@@ -326,20 +357,19 @@
                 <div class="about-stats">
                     <div class="stat-card">
                         <div class="n">@Get("about.stat.years.ar")<span class="plus">+</span></div>
-                        <div class="l"><span data-ar>سنوات خبرة</span><span data-en>Years Exp.</span></div>
+                        <div class="l"><span data-ar>@GetOr("hero.stat1.label.ar", "سنوات خبرة")</span><span data-en>@GetOr("hero.stat1.label.en", "Years Exp.")</span></div>
                     </div>
                     <div class="stat-card">
                         <div class="n">@Get("about.stat.clients.ar")<span class="plus">+</span></div>
-                        <div class="l"><span data-ar>عميل سعيد</span><span data-en>Happy Clients</span></div>
+                        <div class="l"><span data-ar>@GetOr("hero.stat2.label.ar", "عميل سعيد")</span><span data-en>@GetOr("hero.stat2.label.en", "Happy Clients")</span></div>
                     </div>
                     <div class="stat-card">
                         <div class="n">@Get("about.stat.products.ar")<span class="plus">+</span></div>
-                        <div class="l"><span data-ar>منتج فريد</span><span data-en>Products</span></div>
+                        <div class="l"><span data-ar>@GetOr("hero.stat3.label.ar", "منتج فريد")</span><span data-en>@GetOr("hero.stat3.label.en", "Products")</span></div>
                     </div>
                 </div>
             </div>
             @{
-                var featTitle = Model.ContentBlocks.GetValueOrDefault("features.title.ar.ar", "لماذا نحن؟");
                 var features = Enumerable.Range(1, 6)
                 .Select(i => new
                 {
@@ -375,13 +405,16 @@
         </div>
     </div>
 </section>
+    }
 
-<!-- ============ MISSION ============ -->
+    void RenderMission()
+    {
+<!-- ============ MISSION (dynamic) ============ -->
 <section class="mission-section">
     <div class="container">
         <div class="mission-head reveal">
-            <span class="eyebrow"><span data-ar>رؤيتنا ورسالتنا · ٠٤</span><span data-en>Mission & Vision · 04</span></span>
-            <h2><span data-ar>نبني <span>مستقبل التكنولوجيا</span> في مصر.</span><span data-en>Building the <span>tech future</span> in Egypt.</span></h2>
+            <span class="eyebrow"><span data-ar>@GetOr("mission.eyebrow.ar", "رؤيتنا ورسالتنا · ٠٤")</span><span data-en>@GetOr("mission.eyebrow.en", "Mission & Vision · 04")</span></span>
+            <h2><span data-ar>@GetOr("mission.headline.ar", "نبني مستقبل التكنولوجيا في مصر.")</span><span data-en>@GetOr("mission.headline.en", "Building the tech future in Egypt.")</span></h2>
         </div>
         <div class="mission-grid reveal">
             <div class="mission-card">
@@ -416,41 +449,47 @@
         </div>
     </div>
 </section>
+    }
 
-<!-- ============ CTA BAND ============ -->
+    void RenderCta()
+    {
+<!-- ============ CTA BAND (dynamic) ============ -->
 <section class="cta-band reveal-scale">
     <div class="container">
         <div class="cta-inner">
             <div>
                 <h2>
-                    <span data-ar>جاهز ترتقي بأجهزتك؟<br>ابدأ التسوق <span>الآن</span>.</span>
-                    <span data-en>Ready to upgrade your gear?<br>Start shopping <span>now</span>.</span>
+                    <span data-ar>@GetOr("cta.title.ar", "جاهز ترتقي بأجهزتك؟ ابدأ التسوق الآن.")</span>
+                    <span data-en>@GetOr("cta.title.en", "Ready to upgrade your gear? Start shopping now.")</span>
                 </h2>
                 <p>
-                    <span data-ar>منتجات أصلية 100% بضمان معتمد، توصيل سريع لباب البيت، وتقسيط بدون فوائد. تجربة تسوق عالمية بمعايير مصرية.</span>
-                    <span data-en>100% authentic products with certified warranty, fast door-to-door delivery, and 0% interest installments.</span>
+                    <span data-ar>@GetOr("cta.desc.ar", "منتجات أصلية 100% بضمان معتمد وتوصيل سريع لباب البيت.")</span>
+                    <span data-en>@GetOr("cta.desc.en", "100% authentic products with certified warranty and fast delivery.")</span>
                 </p>
             </div>
-            <a href="/Products" class="btn btn-accent btn-lg">
-                <span data-ar>تسوق الآن</span><span data-en>Shop Now</span>
+            <a href="@GetOr("cta.btn.url.ar", "/Products")" class="btn btn-accent btn-lg">
+                <span data-ar>@GetOr("cta.btn.text.ar", "تسوق الآن")</span><span data-en>@GetOr("cta.btn.text.en", "Shop Now")</span>
                 <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </a>
         </div>
     </div>
 </section>
+    }
 
-<!-- ============ CONTACT ============ -->
+    void RenderContact()
+    {
+<!-- ============ CONTACT (dynamic) ============ -->
 <section class="section" id="contact">
     <div class="container">
         <div class="section-header reveal">
             <div>
-                <span class="eyebrow"><span data-ar>تواصل معنا · ٠٥</span><span data-en>Contact · 05</span></span>
-                <h2 class="headline-lg"><span data-ar>نحن هنا<br>لمساعدتك دائماً.</span><span data-en>We're always<br>here to help.</span></h2>
+                <span class="eyebrow"><span data-ar>@GetOr("contact.eyebrow.ar", "تواصل معنا · ٠٥")</span><span data-en>@GetOr("contact.eyebrow.en", "Contact · 05")</span></span>
+                <h2 class="headline-lg"><span data-ar>@Html.Raw(GetOr("contact.title.ar", "نحن هنا<br>لمساعدتك دائماً."))</span><span data-en>@Html.Raw(GetOr("contact.title.en", "We're always<br>here to help."))</span></h2>
             </div>
             <div class="side">
                 <p>
-                    <span data-ar>تواصل مع فريق الدعم الفني والمبيعات مباشرة. نقوم بالرد على كافة الاستفسارات خلال ساعات العمل الرسمية.</span>
-                    <span data-en>Reach our support team directly. We respond to all requests within official working hours.</span>
+                    <span data-ar>@GetOr("contact.desc.ar", "تواصل مع فريق الدعم الفني والمبيعات مباشرة. نقوم بالرد على كافة الاستفسارات خلال ساعات العمل الرسمية.")</span>
+                    <span data-en>@GetOr("contact.desc.en", "Reach our support team directly. We respond to all requests within official working hours.")</span>
                 </p>
             </div>
         </div>
@@ -582,6 +621,26 @@
         </div>
     </div>
 </section>
+    }
+}
+
+@* ============ SECTION DISPATCHER — renders sections in admin-configured order, respecting visibility toggles ============ *@
+@foreach (var s in sectionOrder)
+{
+    if (!Model.ShowSection(s)) { continue; }
+    switch (s)
+    {
+        case "hero": RenderHero(); break;
+        case "values": RenderValues(); break;
+        case "marquee": RenderMarquee(); break;
+        case "categories": RenderCategories(); break;
+        case "featured": RenderFeatured(); break;
+        case "about": RenderAbout(); break;
+        case "mission": RenderMission(); break;
+        case "cta": RenderCta(); break;
+        case "contact": RenderContact(); break;
+    }
+}
 
 @section Scripts {
 <script>
@@ -612,7 +671,6 @@
             var cat = this.dataset.cat;
             var wrappers = document.querySelectorAll('#products-grid [data-category]');
             wrappers.forEach(function(w) {
-                // Look for direct grandparent wrapper
                 var item = w.closest('[data-category]');
                 if (item) {
                     item.style.display = (cat === 'all' || item.dataset.category === cat) ? '' : 'none';
