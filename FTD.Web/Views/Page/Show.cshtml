@@ -23,24 +23,29 @@
         {
             @foreach (var psec in p.Sections.Where(s => s.IsVisible).OrderBy(s => s.SortOrder))
             {
-                @if (psec.Type == "RichText")
+                switch (psec.Type)
                 {
-                    @await Html.PartialAsync("~/Views/Shared/_Section_RichText.cshtml", psec)
-                }
-                else if (psec.Type == "FAQ")
-                {
-
-                    @await Html.PartialAsync("~/Views/Shared/_Section_FAQ.cshtml", psec)
-                }
-                else if (psec.Type == "Cards")
-                {
-
-                    @await Html.PartialAsync("~/Views/Shared/_Section_Cards.cshtml", psec)
-                }
-                else if (psec.Type == "Hero")
-                {
-
-                    @await Html.PartialAsync("~/Views/Shared/_Section_Hero.cshtml", psec)
+                    case "RichText":
+                        @await Html.PartialAsync("~/Views/Shared/_Section_RichText.cshtml", psec)
+                        break;
+                    case "FAQ":
+                        @await Html.PartialAsync("~/Views/Shared/_Section_FAQ.cshtml", psec)
+                        break;
+                    case "Cards":
+                        @await Html.PartialAsync("~/Views/Shared/_Section_Cards.cshtml", psec)
+                        break;
+                    case "Hero":
+                        @await Html.PartialAsync("~/Views/Shared/_Section_Hero.cshtml", psec)
+                        break;
+                    case "Video":
+                        @await Html.PartialAsync("~/Views/Shared/_Section_Video.cshtml", psec)
+                        break;
+                    case "Gallery":
+                        @await Html.PartialAsync("~/Views/Shared/_Section_Gallery.cshtml", psec)
+                        break;
+                    case "Testimonials":
+                        @await Html.PartialAsync("~/Views/Shared/_Section_Testimonials.cshtml", psec)
+                        break;
                 }
             }
         }

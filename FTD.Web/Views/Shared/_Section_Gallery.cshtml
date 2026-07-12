@@ -1,0 +1,121 @@
+@model PageSectionDto
+@{
+    string titleAr = "", titleEn = "";
+    var r = SectionJson.Root(Model.ContentJson);
+    if (r.HasValue)
+    {
+        titleAr = SectionJson.Str(r.Value, "title_ar");
+        titleEn = SectionJson.Str(r.Value, "title_en");
+    }
+    var imgs = new List<(string url, string capAr, string capEn)>();
+    foreach (var el in SectionJson.Items(Model.ContentJson))
+    {
+        var u = SectionJson.Str(el, "url");
+        if (!string.IsNullOrWhiteSpace(u))
+            imgs.Add((u, SectionJson.Str(el, "cap_ar"), SectionJson.Str(el, "cap_en")));
+    }
+    var style = SectionStyle.Parse(Model.ContentJson);
+    var wrapCss = style.WrapperCss();
+    var titleColor = style.IsDark ? "color:#fff;" : "";
+    var uid = "gal_" + Model.Id;
+}
+
+@if (imgs.Any())
+{
+    <div style="@wrapCss margin-bottom:2rem">
+      @if (!string.IsNullOrEmpty(titleAr) || !string.IsNullOrEmpty(titleEn))
+      {
+          <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:1.2rem;@titleColor">
+            <span data-ar>@titleAr</span>
+            <span data-en>@titleEn</span>
+          </h2>
+      }
+      <div class="ftd-gallery" id="@uid">
+        @for (int i = 0; i < imgs.Count; i++)
+        {
+            var g = imgs[i];
+            <figure class="ftd-gal-item" onclick="ftdGalOpen('@uid', @i)">
+              <img src="@g.url" alt="@(string.IsNullOrEmpty(g.capAr) ? titleAr : g.capAr)" loading="lazy"
+                   data-cap-ar="@g.capAr" data-cap-en="@g.capEn">
+              @if (!string.IsNullOrEmpty(g.capAr) || !string.IsNullOrEmpty(g.capEn))
+              {
+                  <figcaption>
+                    <span data-ar>@g.capAr</span>
+                    <span data-en>@g.capEn</span>
+                  </figcaption>
+              }
+            </figure>
+        }
+      </div>
+    </div>
+
+    <style>
+    .ftd-gallery { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1rem; }
+    .ftd-gal-item { margin:0; position:relative; border-radius:14px; overflow:hidden; cursor:zoom-in; aspect-ratio:4/3; background:var(--bg); }
+    .ftd-gal-item img { width:100%; height:100%; object-fit:cover; transition:transform .4s; display:block; }
+    .ftd-gal-item:hover img { transform:scale(1.06); }
+    .ftd-gal-item figcaption { position:absolute; inset-inline:0; bottom:0; padding:.9rem .8rem .6rem; font-size:12.5px; color:#fff; background:linear-gradient(transparent,rgba(0,0,0,.72)); }
+    /* Lightbox */
+    .ftd-lightbox { position:fixed; inset:0; background:rgba(8,12,20,.92); z-index:10000; display:none; align-items:center; justify-content:center; flex-direction:column; padding:2rem; }
+    .ftd-lightbox.open { display:flex; }
+    .ftd-lightbox img { max-width:92vw; max-height:78vh; border-radius:12px; box-shadow:0 24px 80px rgba(0,0,0,.5); }
+    .ftd-lb-cap { color:rgba(255,255,255,.85); font-size:14px; margin-top:1rem; text-align:center; }
+    .ftd-lb-close { position:absolute; top:18px; inset-inline-end:22px; background:rgba(255,255,255,.12); color:#fff; border:none; width:40px; height:40px; border-radius:50%; font-size:18px; cursor:pointer; }
+    .ftd-lb-nav { position:absolute; top:50%; transform:translateY(-50%); background:rgba(255,255,255,.12); color:#fff; border:none; width:44px; height:44px; border-radius:50%; font-size:20px; cursor:pointer; }
+    .ftd-lb-nav:hover, .ftd-lb-close:hover { background:rgba(255,255,255,.25); }
+    .ftd-lb-prev { inset-inline-start:18px; }
+    .ftd-lb-next { inset-inline-end:18px; }
+    </style>
+
+    <script>
+    (function () {
+      if (window._ftdGalInit) return;
+      window._ftdGalInit = true;
+
+      var lb = document.createElement('div');
+      lb.className = 'ftd-lightbox';
+      lb.innerHTML = '<button class="ftd-lb-close" onclick="ftdGalClose()">✕</button>' +
+                     '<button class="ftd-lb-nav ftd-lb-prev" onclick="ftdGalStep(-1)">‹</button>' +
+                     '<img id="ftdLbImg" src="" alt="">' +
+                     '<div class="ftd-lb-cap" id="ftdLbCap"></div>' +
+                     '<button class="ftd-lb-nav ftd-lb-next" onclick="ftdGalStep(1)">›</button>';
+      document.body.appendChild(lb);
+      lb.addEventListener('click', function (e) { if (e.target === lb) ftdGalClose(); });
+      document.addEventListener('keydown', function (e) {
+        if (!lb.classList.contains('open')) return;
+        if (e.key === 'Escape') ftdGalClose();
+        if (e.key === 'ArrowLeft') ftdGalStep(1);
+        if (e.key === 'ArrowRight') ftdGalStep(-1);
+      });
+
+      var curGal = null, curIdx = 0;
+
+      window.ftdGalOpen = function (galId, idx) {
+        curGal = document.getElementById(galId);
+        curIdx = idx;
+        ftdGalShow();
+        lb.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      };
+      window.ftdGalClose = function () {
+        lb.classList.remove('open');
+        document.body.style.overflow = '';
+      };
+      window.ftdGalStep = function (d) {
+        if (!curGal) return;
+        var n = curGal.querySelectorAll('.ftd-gal-item img').length;
+        curIdx = (curIdx + d + n) % n;
+        ftdGalShow();
+      };
+      function ftdGalShow() {
+        var imgs = curGal.querySelectorAll('.ftd-gal-item img');
+        var img = imgs[curIdx];
+        if (!img) return;
+        document.getElementById('ftdLbImg').src = img.src;
+        var en = document.documentElement.lang === 'en';
+        var cap = en ? (img.dataset.capEn || img.dataset.capAr) : (img.dataset.capAr || img.dataset.capEn);
+        document.getElementById('ftdLbCap').textContent = cap || '';
+      }
+    })();
+    </script>
+}

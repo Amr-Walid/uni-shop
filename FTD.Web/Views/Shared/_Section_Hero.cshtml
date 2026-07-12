@@ -1,44 +1,110 @@
 @model PageSectionDto
 @{
-    string titleAr="", titleEn="", descAr="", descEn="", btnAr="", btnEn="", btnUrl="";
+    string titleAr="", titleEn="", descAr="", descEn="", btnAr="", btnEn="", btnUrl="", imagePath="", imageSide="end";
     if (!string.IsNullOrEmpty(Model.ContentJson))
     {
         try {
             var doc = System.Text.Json.JsonDocument.Parse(Model.ContentJson);
-            doc.RootElement.TryGetProperty("title_ar", out var t);  titleAr = t.GetString() ?? "";
-            doc.RootElement.TryGetProperty("title_en", out var te); titleEn = te.GetString() ?? "";
-            doc.RootElement.TryGetProperty("desc_ar",  out var d);  descAr  = d.GetString() ?? "";
-            doc.RootElement.TryGetProperty("desc_en",  out var de); descEn  = de.GetString() ?? "";
-            doc.RootElement.TryGetProperty("btn_ar",   out var b);  btnAr   = b.GetString() ?? "";
-            doc.RootElement.TryGetProperty("btn_en",   out var be); btnEn   = be.GetString() ?? "";
-            doc.RootElement.TryGetProperty("btn_url",  out var u);  btnUrl  = u.GetString() ?? "";
+            var r = doc.RootElement;
+            titleAr   = SectionJson.Str(r, "title_ar");
+            titleEn   = SectionJson.Str(r, "title_en");
+            descAr    = SectionJson.Str(r, "desc_ar");
+            descEn    = SectionJson.Str(r, "desc_en");
+            btnAr     = SectionJson.Str(r, "btn_ar");
+            btnEn     = SectionJson.Str(r, "btn_en");
+            btnUrl    = SectionJson.Str(r, "btn_url");
+            imagePath = SectionJson.Str(r, "image_path");
+            var side  = SectionJson.Str(r, "image_side");
+            if (!string.IsNullOrEmpty(side)) imageSide = side;
         } catch { }
     }
+    var style = SectionStyle.Parse(Model.ContentJson);
+    var hasImage = !string.IsNullOrEmpty(imagePath);
+    // alignment inside hero text column
+    var alignCss = style.Align switch { "center" => "text-align:center;", "end" => "text-align:left;", _ => "" };
+    var padCss = style.Pad switch { "sm" => "padding:1.8rem 1.6rem;", "lg" => "padding:4rem 3rem;", _ => "padding:3rem 2.5rem;" };
+    // background: hero defaults to dark unless overridden
+    var bgCss = style.Bg switch
+    {
+        "light" => "background:var(--bg,#f5f7fa);",
+        "brand" => "background:var(--blue-light,#e8f0ff);",
+        "none"  => "background:var(--dark);",
+        _       => "background:var(--dark);"
+    };
+    var isDarkBg = style.Bg is "dark" or "none";
+    var titleColor = isDarkBg ? "color:white;" : "color:var(--text);";
+    var descColor  = isDarkBg ? "color:rgba(255,255,255,.6);" : "color:var(--text2);";
 }
 
-<div style="background:var(--dark);border-radius:20px;padding:3rem 2.5rem;margin-bottom:2rem;position:relative;overflow:hidden">
-  <div style="position:absolute;top:-60px;left:-60px;width:240px;height:240px;background:var(--blue);border-radius:50%;opacity:.08;filter:blur(40px)"></div>
-  <div style="position:relative;z-index:1">
-    @if (!string.IsNullOrEmpty(titleAr) || !string.IsNullOrEmpty(titleEn))
-    {
-        <h1 style="font-size:clamp(1.8rem,4vw,3rem);font-weight:900;color:white;line-height:1.1;letter-spacing:-1px;margin-bottom:1rem">
-          <span data-ar>@titleAr</span>
-          <span data-en>@titleEn</span>
-        </h1>
-    }
-    @if (!string.IsNullOrEmpty(descAr) || !string.IsNullOrEmpty(descEn))
-    {
-        <p style="color:rgba(255,255,255,.6);font-size:16px;line-height:1.8;margin-bottom:1.8rem;max-width:560px">
-          <span data-ar>@descAr</span>
-          <span data-en>@descEn</span>
-        </p>
-    }
-    @if (!string.IsNullOrEmpty(btnUrl) && (!string.IsNullOrEmpty(btnAr) || !string.IsNullOrEmpty(btnEn)))
-    {
-        <a href="@btnUrl" class="btn-primary">
-          <span data-ar>@btnAr</span>
-          <span data-en>@btnEn</span>
-        </a>
-    }
-  </div>
-</div>
+@if (hasImage)
+{
+    <!-- SPLIT 50/50 HERO -->
+    <div class="hero-split" style="@bgCss border-radius:20px;margin-bottom:2rem;overflow:hidden;position:relative;display:grid;grid-template-columns:1fr 1fr;align-items:stretch;@(imageSide == "start" ? "direction:ltr;" : "")">
+      <div style="position:absolute;top:-60px;left:-60px;width:240px;height:240px;background:var(--blue);border-radius:50%;opacity:.08;filter:blur(40px);pointer-events:none"></div>
+      <div style="position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center;@padCss @alignCss @(imageSide == "start" ? "direction:rtl;" : "")">
+        @if (!string.IsNullOrEmpty(titleAr) || !string.IsNullOrEmpty(titleEn))
+        {
+            <h1 style="font-size:clamp(1.6rem,3.2vw,2.6rem);font-weight:900;@titleColor line-height:1.15;letter-spacing:-1px;margin-bottom:1rem">
+              <span data-ar>@titleAr</span>
+              <span data-en>@titleEn</span>
+            </h1>
+        }
+        @if (!string.IsNullOrEmpty(descAr) || !string.IsNullOrEmpty(descEn))
+        {
+            <p style="@descColor font-size:15.5px;line-height:1.8;margin-bottom:1.6rem;max-width:520px;@(style.Align == "center" ? "margin-left:auto;margin-right:auto;" : "")">
+              <span data-ar>@descAr</span>
+              <span data-en>@descEn</span>
+            </p>
+        }
+        @if (!string.IsNullOrEmpty(btnUrl) && (!string.IsNullOrEmpty(btnAr) || !string.IsNullOrEmpty(btnEn)))
+        {
+            <div>
+              <a href="@btnUrl" class="btn-primary">
+                <span data-ar>@btnAr</span>
+                <span data-en>@btnEn</span>
+              </a>
+            </div>
+        }
+      </div>
+      <div class="hero-split-img" style="position:relative;min-height:280px">
+        <img src="@imagePath" alt="@titleAr" loading="lazy"
+             style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+      </div>
+    </div>
+    <style>
+      @@media (max-width: 768px) {
+        .hero-split { grid-template-columns: 1fr !important; direction: rtl !important; }
+        .hero-split-img { min-height: 220px !important; order: -1; }
+      }
+    </style>
+}
+else
+{
+    <!-- CLASSIC CENTERED HERO (fallback when no image) -->
+    <div style="@bgCss border-radius:20px;@padCss margin-bottom:2rem;position:relative;overflow:hidden;@alignCss">
+      <div style="position:absolute;top:-60px;left:-60px;width:240px;height:240px;background:var(--blue);border-radius:50%;opacity:.08;filter:blur(40px)"></div>
+      <div style="position:relative;z-index:1">
+        @if (!string.IsNullOrEmpty(titleAr) || !string.IsNullOrEmpty(titleEn))
+        {
+            <h1 style="font-size:clamp(1.8rem,4vw,3rem);font-weight:900;@titleColor line-height:1.1;letter-spacing:-1px;margin-bottom:1rem">
+              <span data-ar>@titleAr</span>
+              <span data-en>@titleEn</span>
+            </h1>
+        }
+        @if (!string.IsNullOrEmpty(descAr) || !string.IsNullOrEmpty(descEn))
+        {
+            <p style="@descColor font-size:16px;line-height:1.8;margin-bottom:1.8rem;max-width:560px;@(style.Align == "center" ? "margin-left:auto;margin-right:auto;" : "")">
+              <span data-ar>@descAr</span>
+              <span data-en>@descEn</span>
+            </p>
+        }
+        @if (!string.IsNullOrEmpty(btnUrl) && (!string.IsNullOrEmpty(btnAr) || !string.IsNullOrEmpty(btnEn)))
+        {
+            <a href="@btnUrl" class="btn-primary">
+              <span data-ar>@btnAr</span>
+              <span data-en>@btnEn</span>
+            </a>
+        }
+      </div>
+    </div>
+}

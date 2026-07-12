@@ -1,18 +1,22 @@
-@* _SectionEditor_Hero.cshtml *@
+@* _SectionEditor_Hero.cshtml — with image upload for split 50/50 layout *@
 @model PageSectionDto
 @{
-    string titleAr="", titleEn="", descAr="", descEn="", btnLabelAr="", btnLabelEn="", btnUrl="";
+    string titleAr="", titleEn="", descAr="", descEn="", btnLabelAr="", btnLabelEn="", btnUrl="", imagePath="", imageSide="end";
     if (!string.IsNullOrEmpty(Model.ContentJson))
     {
         try {
             var doc = System.Text.Json.JsonDocument.Parse(Model.ContentJson);
-            doc.RootElement.TryGetProperty("title_ar",    out var t); titleAr    = t.GetString() ?? "";
-            doc.RootElement.TryGetProperty("title_en",    out var te); titleEn   = te.GetString() ?? "";
-            doc.RootElement.TryGetProperty("desc_ar",     out var d); descAr     = d.GetString() ?? "";
-            doc.RootElement.TryGetProperty("desc_en",     out var de); descEn    = de.GetString() ?? "";
-            doc.RootElement.TryGetProperty("btn_ar",      out var b); btnLabelAr = b.GetString() ?? "";
-            doc.RootElement.TryGetProperty("btn_en",      out var be); btnLabelEn= be.GetString() ?? "";
-            doc.RootElement.TryGetProperty("btn_url",     out var u); btnUrl     = u.GetString() ?? "";
+            var r = doc.RootElement;
+            titleAr    = SectionJson.Str(r, "title_ar");
+            titleEn    = SectionJson.Str(r, "title_en");
+            descAr     = SectionJson.Str(r, "desc_ar");
+            descEn     = SectionJson.Str(r, "desc_en");
+            btnLabelAr = SectionJson.Str(r, "btn_ar");
+            btnLabelEn = SectionJson.Str(r, "btn_en");
+            btnUrl     = SectionJson.Str(r, "btn_url");
+            imagePath  = SectionJson.Str(r, "image_path");
+            var side   = SectionJson.Str(r, "image_side");
+            if (!string.IsNullOrEmpty(side)) imageSide = side;
         } catch { }
     }
 }
@@ -45,4 +49,31 @@
         <label>رابط الزرار (URL)</label>
         <input type="text" name="btn_url" value="@btnUrl" placeholder="/products" dir="ltr">
     </div>
+
+    <!-- HERO IMAGE — enables the premium 50/50 split layout -->
+    <div class="a-form-group" style="grid-column:1/-1;background:var(--a-bg);border:1px dashed var(--a-border);border-radius:10px;padding:1rem">
+        <label style="display:flex;align-items:center;gap:6px">
+          <i class="bi bi-image"></i> صورة البانر (اختياري — بتفعّل تصميم Split 50/50)
+        </label>
+        <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-top:.5rem">
+            <div class="img-preview" data-preview="hero_img_@Model.Id"
+                 style="width:120px;height:76px;border-radius:10px;border:1px solid var(--a-border);background:#fff center/cover no-repeat;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--a-text3);font-size:11px;overflow:hidden;@(string.IsNullOrEmpty(imagePath) ? "" : $"background-image:url('{imagePath}')")">
+                @if (string.IsNullOrEmpty(imagePath)) { <span>لا توجد صورة</span> }
+            </div>
+            <div style="flex:1;min-width:220px">
+                <input type="hidden" name="image_path" id="hero_img_@Model.Id" value="@imagePath">
+                <input type="file" accept=".png,.jpg,.jpeg,.webp,.svg,.gif" class="ajax-img-upload" data-target="hero_img_@Model.Id" style="font-size:12px">
+                <div style="display:flex;gap:1rem;align-items:center;margin-top:.6rem;flex-wrap:wrap">
+                    <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer">
+                        <input type="radio" name="image_side" value="end" checked="@(imageSide != "start")"> الصورة يسار / النص يمين
+                    </label>
+                    <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer">
+                        <input type="radio" name="image_side" value="start" checked="@(imageSide == "start")"> الصورة يمين / النص يسار
+                    </label>
+                    <button type="button" class="a-btn-sm a-btn-danger clear-img" data-target="hero_img_@Model.Id" style="@(string.IsNullOrEmpty(imagePath) ? "display:none" : "")">✕ إزالة الصورة</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+@await Html.PartialAsync("~/Views/Admin/Content/_SectionStyleControls.cshtml", Model)

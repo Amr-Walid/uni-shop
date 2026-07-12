@@ -1,0 +1,80 @@
+@* _SectionEditor_Testimonials.cshtml — customer reviews with avatar & star rating *@
+@model PageSectionDto
+@{
+    string titleAr = "", titleEn = "";
+    var r = SectionJson.Root(Model.ContentJson);
+    if (r.HasValue)
+    {
+        titleAr = SectionJson.Str(r.Value, "title_ar");
+        titleEn = SectionJson.Str(r.Value, "title_en");
+    }
+    var items = new List<(string name, string role, string avatar, int rating, string textAr, string textEn)>();
+    foreach (var el in SectionJson.Items(Model.ContentJson))
+        items.Add((SectionJson.Str(el, "name"), SectionJson.Str(el, "role"), SectionJson.Str(el, "avatar"),
+                   SectionJson.Int(el, "rating", 5), SectionJson.Str(el, "text_ar"), SectionJson.Str(el, "text_en")));
+    if (items.Count == 0) items.Add(("", "", "", 5, "", ""));
+    var sid = Model.Id;
+}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+    <div class="a-form-group">
+        <label>عنوان القسم بالعربي (اختياري)</label>
+        <input type="text" name="title_ar" value="@titleAr" placeholder="آراء عملائنا">
+    </div>
+    <div class="a-form-group">
+        <label>Section Title EN (optional)</label>
+        <input type="text" name="title_en" value="@titleEn" placeholder="What our customers say" dir="ltr">
+    </div>
+</div>
+
+<div id="tstRows-@sid" class="builder-rows">
+    @for (int i = 0; i < items.Count; i++)
+    {
+        var t = items[i];
+        var uid = $"{sid}_{i}";
+        <div class="tst-row builder-row" style="background:var(--a-bg);border-radius:10px;padding:1rem;margin-bottom:.8rem;border:1px solid var(--a-border)">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem">
+                <span style="font-size:11px;font-weight:700;color:var(--a-text3)">💬 رأي عميل</span>
+                <button type="button" onclick="this.closest('.tst-row').remove()" style="background:none;border:none;color:var(--a-text3);cursor:pointer">✕</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 120px;gap:.8rem;margin-bottom:.8rem">
+                <div class="a-form-group">
+                    <label>اسم العميل</label>
+                    <input type="text" name="tst_name_@sid" value="@t.name" placeholder="أحمد محمد">
+                </div>
+                <div class="a-form-group">
+                    <label>الصفة / المدينة (اختياري)</label>
+                    <input type="text" name="tst_role_@sid" value="@t.role" placeholder="القاهرة">
+                </div>
+                <div class="a-form-group">
+                    <label>التقييم ⭐</label>
+                    <select name="tst_rating_@sid" class="a-select">
+                        @for (int s = 5; s >= 1; s--)
+                        {
+                            <option value="@s" selected="@(t.rating == s)">@s نجوم</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:.8rem">
+                <div class="a-form-group">
+                    <label>نص الرأي بالعربي</label>
+                    <textarea name="tst_text_ar_@sid" rows="2" placeholder="تجربة ممتازة وسرعة في التوصيل...">@t.textAr</textarea>
+                </div>
+                <div class="a-form-group">
+                    <label>Review Text EN</label>
+                    <textarea name="tst_text_en_@sid" rows="2" placeholder="Great experience..." dir="ltr">@t.textEn</textarea>
+                </div>
+            </div>
+            <div style="display:flex;gap:.8rem;align-items:center">
+                <div class="img-preview" data-preview="tst_img_@uid"
+                     style="width:44px;height:44px;border-radius:50%;border:1px solid var(--a-border);background:#fff center/cover no-repeat;flex-shrink:0;@(string.IsNullOrEmpty(t.avatar) ? "" : $"background-image:url('{t.avatar}')")"></div>
+                <input type="hidden" name="tst_avatar_@sid" id="tst_img_@uid" value="@t.avatar">
+                <input type="file" accept=".png,.jpg,.jpeg,.webp" class="ajax-img-upload" data-target="tst_img_@uid" style="font-size:11px;flex:1">
+                <button type="button" class="a-btn-sm a-btn-danger clear-img" data-target="tst_img_@uid" style="@(string.IsNullOrEmpty(t.avatar) ? "display:none" : "")">✕</button>
+            </div>
+            <small style="font-size:10.5px;color:var(--a-text3)">صورة العميل اختيارية — لو مفيش، بيظهر أول حرف من الاسم</small>
+        </div>
+    }
+</div>
+<button type="button" class="a-btn-sm add-tst-row" data-sid="@sid" style="margin-top:.5rem">+ رأي جديد</button>
+@await Html.PartialAsync("~/Views/Admin/Content/_SectionStyleControls.cshtml", Model)

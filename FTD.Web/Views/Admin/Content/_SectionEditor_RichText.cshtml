@@ -1,4 +1,4 @@
-@* _SectionEditor_RichText.cshtml *@
+@* _SectionEditor_RichText.cshtml — Quill.js visual editors (AR + EN) *@
 @model PageSectionDto
 @{
     string bodyAr = "", bodyEn = "";
@@ -6,18 +6,21 @@
     {
         try {
             var doc = System.Text.Json.JsonDocument.Parse(Model.ContentJson);
-            doc.RootElement.TryGetProperty("ar", out var ar); bodyAr = ar.GetString() ?? "";
-            doc.RootElement.TryGetProperty("en", out var en); bodyEn = en.GetString() ?? "";
+            doc.RootElement.TryGetProperty("ar", out var ar); bodyAr = ar.ValueKind == System.Text.Json.JsonValueKind.String ? ar.GetString() ?? "" : "";
+            doc.RootElement.TryGetProperty("en", out var en); bodyEn = en.ValueKind == System.Text.Json.JsonValueKind.String ? en.GetString() ?? "" : "";
         } catch { bodyAr = Model.ContentJson; }
     }
 }
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem" class="quill-pair">
     <div class="a-form-group">
-        <label>المحتوى بالعربي (HTML مسموح)</label>
-        <textarea name="ar" rows="6" placeholder="<h2>العنوان</h2><p>النص...</p>" style="font-family:monospace;font-size:12px">@bodyAr</textarea>
+        <label><i class="bi bi-fonts"></i> المحتوى بالعربي</label>
+        <div class="quill-holder" data-target="rt_ar_@Model.Id" data-dir="rtl"></div>
+        <textarea name="ar" id="rt_ar_@Model.Id" style="display:none">@bodyAr</textarea>
     </div>
     <div class="a-form-group">
-        <label>Content in English (HTML allowed)</label>
-        <textarea name="en" rows="6" placeholder="<h2>Title</h2><p>Text...</p>" dir="ltr" style="font-family:monospace;font-size:12px">@bodyEn</textarea>
+        <label><i class="bi bi-fonts"></i> Content in English</label>
+        <div class="quill-holder" data-target="rt_en_@Model.Id" data-dir="ltr"></div>
+        <textarea name="en" id="rt_en_@Model.Id" style="display:none">@bodyEn</textarea>
     </div>
 </div>
+@await Html.PartialAsync("~/Views/Admin/Content/_SectionStyleControls.cshtml", Model)

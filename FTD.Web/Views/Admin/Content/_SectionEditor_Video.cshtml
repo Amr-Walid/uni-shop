@@ -1,0 +1,38 @@
+@* _SectionEditor_Video.cshtml — YouTube / Vimeo / direct mp4 *@
+@model PageSectionDto
+@{
+    string titleAr = "", titleEn = "", descAr = "", descEn = "", videoUrl = "";
+    var r = SectionJson.Root(Model.ContentJson);
+    if (r.HasValue)
+    {
+        titleAr = SectionJson.Str(r.Value, "title_ar");
+        titleEn = SectionJson.Str(r.Value, "title_en");
+        descAr  = SectionJson.Str(r.Value, "desc_ar");
+        descEn  = SectionJson.Str(r.Value, "desc_en");
+        videoUrl = SectionJson.Str(r.Value, "video_url");
+    }
+}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+    <div class="a-form-group">
+        <label>عنوان القسم بالعربي</label>
+        <input type="text" name="title_ar" value="@titleAr" placeholder="شاهد الفيديو">
+    </div>
+    <div class="a-form-group">
+        <label>Section Title EN</label>
+        <input type="text" name="title_en" value="@titleEn" placeholder="Watch the video" dir="ltr">
+    </div>
+    <div class="a-form-group">
+        <label>وصف مختصر AR (اختياري)</label>
+        <textarea name="desc_ar" rows="2">@descAr</textarea>
+    </div>
+    <div class="a-form-group">
+        <label>Short Description EN (optional)</label>
+        <textarea name="desc_en" rows="2" dir="ltr">@descEn</textarea>
+    </div>
+    <div class="a-form-group" style="grid-column:1/-1">
+        <label><i class="bi bi-youtube"></i> رابط الفيديو — YouTube أو Vimeo أو ملف MP4 مباشر</label>
+        <input type="text" name="video_url" value="@videoUrl" placeholder="https://www.youtube.com/watch?v=..." dir="ltr">
+        <small style="font-size:11px;color:var(--a-text3)">أمثلة: youtube.com/watch?v=XXXX — youtu.be/XXXX — vimeo.com/12345 — /videos/intro.mp4</small>
+    </div>
+</div>
+@await Html.PartialAsync("~/Views/Admin/Content/_SectionStyleControls.cshtml", Model)

@@ -1,0 +1,74 @@
+@model PageSectionDto
+@{
+    string titleAr = "", titleEn = "";
+    var r = SectionJson.Root(Model.ContentJson);
+    if (r.HasValue)
+    {
+        titleAr = SectionJson.Str(r.Value, "title_ar");
+        titleEn = SectionJson.Str(r.Value, "title_en");
+    }
+    var items = new List<(string name, string role, string avatar, int rating, string textAr, string textEn)>();
+    foreach (var el in SectionJson.Items(Model.ContentJson))
+    {
+        items.Add((SectionJson.Str(el, "name"), SectionJson.Str(el, "role"), SectionJson.Str(el, "avatar"),
+                   SectionJson.Int(el, "rating", 5), SectionJson.Str(el, "text_ar"), SectionJson.Str(el, "text_en")));
+    }
+    var style = SectionStyle.Parse(Model.ContentJson);
+    var wrapCss = style.WrapperCss();
+    var titleColor = style.IsDark ? "color:#fff;" : "";
+}
+
+@if (items.Any())
+{
+    <div style="@wrapCss margin-bottom:2rem">
+      @if (!string.IsNullOrEmpty(titleAr) || !string.IsNullOrEmpty(titleEn))
+      {
+          <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:1.4rem;@titleColor">
+            <span data-ar>@titleAr</span>
+            <span data-en>@titleEn</span>
+          </h2>
+      }
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:1.2rem">
+        @foreach (var t in items)
+        {
+            <div style="background:white;border:1px solid var(--border);border-radius:16px;padding:1.5rem;display:flex;flex-direction:column;gap:.9rem;transition:all .3s"
+                 onmouseover="this.style.boxShadow='0 10px 36px rgba(26,107,255,.12)'" onmouseout="this.style.boxShadow=''">
+              <!-- stars -->
+              <div style="color:#f59e0b;font-size:14px;letter-spacing:2px" aria-label="@t.rating/5">
+                @for (int s = 1; s <= 5; s++)
+                {
+                    <i class="bi @(s <= t.rating ? "bi-star-fill" : "bi-star")"></i>
+                }
+              </div>
+              @if (!string.IsNullOrEmpty(t.textAr) || !string.IsNullOrEmpty(t.textEn))
+              {
+                  <p style="font-size:14px;color:var(--text2);line-height:1.9;flex:1;margin:0">
+                    <span data-ar>”@t.textAr“</span>
+                    <span data-en>“@t.textEn”</span>
+                  </p>
+              }
+              <div style="display:flex;align-items:center;gap:.8rem;margin-top:auto">
+                @if (!string.IsNullOrEmpty(t.avatar))
+                {
+                    <img src="@t.avatar" alt="@t.name" loading="lazy"
+                         style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid var(--blue-light)">
+                }
+                else
+                {
+                    <div style="width:42px;height:42px;border-radius:50%;background:var(--blue-light);color:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px">
+                      @(string.IsNullOrEmpty(t.name) ? "؟" : t.name.Substring(0, 1))
+                    </div>
+                }
+                <div>
+                  <div style="font-size:13.5px;font-weight:800">@t.name</div>
+                  @if (!string.IsNullOrEmpty(t.role))
+                  {
+                      <div style="font-size:11.5px;color:var(--text3,#94a3b8)">@t.role</div>
+                  }
+                </div>
+              </div>
+            </div>
+        }
+      </div>
+    </div>
+}

@@ -1,20 +1,24 @@
 @model PageSectionDto
-@{
-    var en = Context.Request.Cookies["ftd_lang"] == "en";
-}
-@* Parse JSON: {"ar":"...","en":"..."} *@
+@* Parse JSON: {"ar":"...","en":"...","style":{...}} *@
 @{
     string bodyAr = "", bodyEn = "";
     if (!string.IsNullOrEmpty(Model.ContentJson))
     {
         try {
             var doc = System.Text.Json.JsonDocument.Parse(Model.ContentJson);
-            doc.RootElement.TryGetProperty("ar", out var arEl); bodyAr = arEl.GetString() ?? "";
-            doc.RootElement.TryGetProperty("en", out var enEl); bodyEn = enEl.GetString() ?? "";
+            bodyAr = SectionJson.Str(doc.RootElement, "ar");
+            bodyEn = SectionJson.Str(doc.RootElement, "en");
         } catch { bodyAr = Model.ContentJson; }
     }
+    var style = SectionStyle.Parse(Model.ContentJson);
+    var wrapCss = style.WrapperCss();
+    var darkCss = style.IsDark ? "color:#fff;" : "";
 }
-<div class="page-content" style="margin-bottom:2rem">
+<div class="page-content @(style.IsDark ? "pc-dark" : "")" style="@wrapCss @darkCss margin-bottom:2rem">
   <span data-ar>@Html.Raw(FTD.Application.Common.HtmlSanitizer.Sanitize(bodyAr))</span>
   <span data-en>@Html.Raw(FTD.Application.Common.HtmlSanitizer.Sanitize(bodyEn))</span>
 </div>
+@if (style.IsDark)
+{
+    <style>.pc-dark p, .pc-dark li { color: rgba(255,255,255,.75) !important; }</style>
+}

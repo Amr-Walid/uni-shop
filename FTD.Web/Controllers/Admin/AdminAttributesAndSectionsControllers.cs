@@ -107,15 +107,15 @@ namespace FTD.Web.Controllers.Admin
     public class AdminPageSectionsController : Controller
     {
         private readonly IContentService _contentService;
-        public AdminPageSectionsController(IContentService contentService) => _contentService = contentService;
+        private readonly Microsoft.AspNetCore.Hosting.IWebHostEnvironment _env;
+        public AdminPageSectionsController(IContentService contentService,
+            Microsoft.AspNetCore.Hosting.IWebHostEnvironment env)
+        { _contentService = contentService; _env = env; }
 
         // GET /Admin/AdminPageSections/Manage/{pageId}
-        public async Task<IActionResult> Manage(int id)
-        {
-            var page = await _contentService.GetPageWithSectionsAsync(id);
-            if (page == null) return NotFound();
-            return View("~/Views/Admin/Content/PageSections.cshtml", page);
-        }
+        // Legacy URL — now redirects to the unified visual builder (EditPage)
+        public IActionResult Manage(int id)
+            => Redirect($"/Admin/AdminContent/EditPage/{id}");
 
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> AddSection(int id, string type)
@@ -127,12 +127,66 @@ namespace FTD.Web.Controllers.Admin
                 "FAQ" => "[]",
                 "Cards" => "[]",
                 "Hero" => "{}",
+                "Video" => "{}",
+                "Gallery" => "{}",
+                "Testimonials" => "{}",
                 _ => "{\"ar\":\"\",\"en\":\"\"}"
             };
 
             await _contentService.AddPageSectionAsync(pageId, type, defaultJson);
             TempData["Success"] = "تم إضافة الـ Section";
-            return RedirectToAction(nameof(Manage), new { id = pageId });
+            return Redirect($"/Admin/AdminContent/EditPage/{pageId}#sections");
+        }
+
+        // ── AJAX: bulk drag-and-drop reorder ──────────────────────────────────
+        [HttpPost]
+        [Route("Admin/AdminPageSections/UpdateSortOrders")]
+        [ValidateAntiForgeryToken] // token sent via RequestVerificationToken header from JS
+        public async Task<IActionResult> UpdateSortOrders([FromBody] List<int> orderedSectionIds)
+        {
+            if (orderedSectionIds == null || orderedSectionIds.Count == 0)
+                return BadRequest(new { success = false, message = "Empty list" });
+
+            try
+            {
+                await _contentService.UpdatePageSectionsOrderAsync(orderedSectionIds);
+                return Json(new { success = true });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        // ── AJAX: image upload (Quill inline images + section images) ─────────
+        private static readonly string[] AllowedImageExts = { ".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif" };
+        private const long MaxImageBytes = 5 * 1024 * 1024; // 5 MB
+
+        [HttpPost]
+        [Route("Admin/AdminPageSections/UploadImage")]
+        [ValidateAntiForgeryToken] // token sent as form field or header from JS
+        public async Task<IActionResult> UploadImage(IFormFile? file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(new { error = "لم يتم اختيار ملف" });
+
+            if (file.Length > MaxImageBytes)
+                return BadRequest(new { error = "حجم الصورة أكبر من 5 ميجا" });
+
+            var ext = System.IO.Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!AllowedImageExts.Contains(ext))
+                return BadRequest(new { error = "صيغة غير مدعومة — المسموح: jpg, png, webp, svg, gif" });
+
+            var dir = System.IO.Path.Combine(_env.WebRootPath, "images", "uploads");
+            System.IO.Directory.CreateDirectory(dir);
+
+            var filename = Guid.NewGuid().ToString("N") + ext;
+            var fullPath = System.IO.Path.Combine(dir, filename);
+
+            using (var stream = new System.IO.FileStream(fullPath, System.IO.FileMode.Create))
+                await file.CopyToAsync(stream);
+
+            return Json(new { url = $"/images/uploads/{filename}" });
         }
 
         [HttpPost, ValidateAntiForgeryToken]
@@ -147,12 +201,20 @@ namespace FTD.Web.Controllers.Admin
                 "FAQ" => BuildFaqJson(form, id),
                 "Cards" => BuildCardsJson(form, id),
                 "Hero" => BuildHeroJson(form),
+                "Video" => BuildVideoJson(form),
+                "Gallery" => BuildGalleryJson(form, id),
+                "Testimonials" => BuildTestimonialsJson(form, id),
                 _ => section.ContentJson
             };
 
             await _contentService.SavePageSectionContentAsync(id, contentJson ?? "");
+
+            // AJAX save (from the visual builder) → JSON response, no reload
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return Json(new { success = true });
+
             TempData["Success"] = "تم حفظ الـ Section";
-            return RedirectToAction(nameof(Manage), new { id = section.PageId });
+            return Redirect($"/Admin/AdminContent/EditPage/{section.PageId}#sections");
         }
 
         [HttpPost, ValidateAntiForgeryToken]
@@ -163,8 +225,12 @@ namespace FTD.Web.Controllers.Admin
             var pageId = section.PageId;
 
             await _contentService.DeletePageSectionAsync(id);
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return Json(new { success = true });
+
             TempData["Success"] = "تم الحذف";
-            return RedirectToAction(nameof(Manage), new { id = pageId });
+            return Redirect($"/Admin/AdminContent/EditPage/{pageId}#sections");
         }
 
         [HttpPost, ValidateAntiForgeryToken]
@@ -174,7 +240,11 @@ namespace FTD.Web.Controllers.Admin
             if (section == null) return NotFound();
 
             await _contentService.TogglePageSectionVisibilityAsync(id);
-            return RedirectToAction(nameof(Manage), new { id = section.PageId });
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return Json(new { success = true, visible = !section.IsVisible });
+
+            return Redirect($"/Admin/AdminContent/EditPage/{section.PageId}#sections");
         }
 
         [HttpPost, ValidateAntiForgeryToken]
@@ -184,7 +254,7 @@ namespace FTD.Web.Controllers.Admin
             if (section == null) return NotFound();
 
             await _contentService.MovePageSectionUpAsync(id);
-            return RedirectToAction(nameof(Manage), new { id = section.PageId });
+            return Redirect($"/Admin/AdminContent/EditPage/{section.PageId}#sections");
         }
 
         [HttpPost, ValidateAntiForgeryToken]
@@ -194,12 +264,31 @@ namespace FTD.Web.Controllers.Admin
             if (section == null) return NotFound();
 
             await _contentService.MovePageSectionDownAsync(id);
-            return RedirectToAction(nameof(Manage), new { id = section.PageId });
+            return Redirect($"/Admin/AdminContent/EditPage/{section.PageId}#sections");
+        }
+
+        // ── Style helper — shared appearance options for every section type ──
+        // bg: "light" | "dark" | "brand" | "none"
+        // pad: "sm" | "md" | "lg"
+        // align: "start" | "center" | "end"
+        private static Dictionary<string, object> WithStyle(IFormCollection f, Dictionary<string, object> data)
+        {
+            data["style"] = new
+            {
+                bg = f["style_bg"].ToString(),
+                pad = f["style_pad"].ToString(),
+                align = f["style_align"].ToString()
+            };
+            return data;
         }
 
         // ── JSON Builders ──────────────────────────────────────────────────────
         private static string BuildRichTextJson(IFormCollection f)
-            => JsonSerializer.Serialize(new { ar = f["ar"].ToString(), en = f["en"].ToString() });
+            => JsonSerializer.Serialize(WithStyle(f, new Dictionary<string, object>
+            {
+                ["ar"] = f["ar"].ToString(),
+                ["en"] = f["en"].ToString()
+            }));
 
         private static string BuildFaqJson(IFormCollection f, int sectionId)
         {
@@ -220,12 +309,13 @@ namespace FTD.Web.Controllers.Admin
                     a_en = i < aEns.Length ? aEns[i] : ""
                 });
             }
-            return JsonSerializer.Serialize(items);
+            return JsonSerializer.Serialize(WithStyle(f, new Dictionary<string, object> { ["items"] = items }));
         }
 
         private static string BuildCardsJson(IFormCollection f, int sectionId)
         {
-            var icons = f[$"card_icon_@{sectionId}"].ToArray();
+            var icons = f[$"card_icon_{sectionId}"].ToArray();
+            var images = f[$"card_image_{sectionId}"].ToArray();
             var titleArs = f[$"card_title_ar_{sectionId}"].ToArray();
             var titleEns = f[$"card_title_en_{sectionId}"].ToArray();
             var bodyArs = f[$"card_body_ar_{sectionId}"].ToArray();
@@ -238,25 +328,95 @@ namespace FTD.Web.Controllers.Admin
                 items.Add(new
                 {
                     icon = i < icons.Length ? icons[i] : "",
+                    card_image_path = i < images.Length ? images[i] : "",
                     title_ar = titleArs[i],
                     title_en = i < titleEns.Length ? titleEns[i] : "",
                     body_ar = i < bodyArs.Length ? bodyArs[i] : "",
                     body_en = i < bodyEns.Length ? bodyEns[i] : ""
                 });
             }
-            return JsonSerializer.Serialize(items);
+            return JsonSerializer.Serialize(WithStyle(f, new Dictionary<string, object> { ["items"] = items }));
         }
 
         private static string BuildHeroJson(IFormCollection f)
-            => JsonSerializer.Serialize(new
+            => JsonSerializer.Serialize(WithStyle(f, new Dictionary<string, object>
             {
-                title_ar = f["title_ar"].ToString(),
-                title_en = f["title_en"].ToString(),
-                desc_ar = f["desc_ar"].ToString(),
-                desc_en = f["desc_en"].ToString(),
-                btn_ar = f["btn_ar"].ToString(),
-                btn_en = f["btn_en"].ToString(),
-                btn_url = f["btn_url"].ToString()
-            });
+                ["title_ar"] = f["title_ar"].ToString(),
+                ["title_en"] = f["title_en"].ToString(),
+                ["desc_ar"] = f["desc_ar"].ToString(),
+                ["desc_en"] = f["desc_en"].ToString(),
+                ["btn_ar"] = f["btn_ar"].ToString(),
+                ["btn_en"] = f["btn_en"].ToString(),
+                ["btn_url"] = f["btn_url"].ToString(),
+                ["image_path"] = f["image_path"].ToString(),
+                ["image_side"] = f["image_side"].ToString() // "start" | "end"
+            }));
+
+        private static string BuildVideoJson(IFormCollection f)
+            => JsonSerializer.Serialize(WithStyle(f, new Dictionary<string, object>
+            {
+                ["title_ar"] = f["title_ar"].ToString(),
+                ["title_en"] = f["title_en"].ToString(),
+                ["desc_ar"] = f["desc_ar"].ToString(),
+                ["desc_en"] = f["desc_en"].ToString(),
+                ["video_url"] = f["video_url"].ToString() // YouTube / Vimeo / direct mp4
+            }));
+
+        private static string BuildGalleryJson(IFormCollection f, int sectionId)
+        {
+            var urls = f[$"gal_url_{sectionId}"].ToArray();
+            var captionsAr = f[$"gal_cap_ar_{sectionId}"].ToArray();
+            var captionsEn = f[$"gal_cap_en_{sectionId}"].ToArray();
+
+            var items = new List<object>();
+            for (int i = 0; i < urls.Length; i++)
+            {
+                if (string.IsNullOrWhiteSpace(urls[i])) continue;
+                items.Add(new
+                {
+                    url = urls[i],
+                    cap_ar = i < captionsAr.Length ? captionsAr[i] : "",
+                    cap_en = i < captionsEn.Length ? captionsEn[i] : ""
+                });
+            }
+            return JsonSerializer.Serialize(WithStyle(f, new Dictionary<string, object>
+            {
+                ["title_ar"] = f["title_ar"].ToString(),
+                ["title_en"] = f["title_en"].ToString(),
+                ["items"] = items
+            }));
+        }
+
+        private static string BuildTestimonialsJson(IFormCollection f, int sectionId)
+        {
+            var names = f[$"tst_name_{sectionId}"].ToArray();
+            var roles = f[$"tst_role_{sectionId}"].ToArray();
+            var avatars = f[$"tst_avatar_{sectionId}"].ToArray();
+            var ratings = f[$"tst_rating_{sectionId}"].ToArray();
+            var textArs = f[$"tst_text_ar_{sectionId}"].ToArray();
+            var textEns = f[$"tst_text_en_{sectionId}"].ToArray();
+
+            var items = new List<object>();
+            for (int i = 0; i < names.Length; i++)
+            {
+                if (string.IsNullOrWhiteSpace(names[i]) &&
+                    (i >= textArs.Length || string.IsNullOrWhiteSpace(textArs[i]))) continue;
+                items.Add(new
+                {
+                    name = names[i],
+                    role = i < roles.Length ? roles[i] : "",
+                    avatar = i < avatars.Length ? avatars[i] : "",
+                    rating = i < ratings.Length && int.TryParse(ratings[i], out var r) ? Math.Clamp(r, 1, 5) : 5,
+                    text_ar = i < textArs.Length ? textArs[i] : "",
+                    text_en = i < textEns.Length ? textEns[i] : ""
+                });
+            }
+            return JsonSerializer.Serialize(WithStyle(f, new Dictionary<string, object>
+            {
+                ["title_ar"] = f["title_ar"].ToString(),
+                ["title_en"] = f["title_en"].ToString(),
+                ["items"] = items
+            }));
+        }
     }
 }

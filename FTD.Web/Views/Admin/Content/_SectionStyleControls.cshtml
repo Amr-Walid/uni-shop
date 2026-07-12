@@ -1,0 +1,37 @@
+@* _SectionStyleControls.cshtml — shared appearance controls (bg / padding / alignment) *@
+@model PageSectionDto
+@{
+    var style = SectionStyle.Parse(Model.ContentJson);
+}
+<div style="margin-top:1rem;padding:1rem;background:var(--a-bg);border:1px dashed var(--a-border);border-radius:10px">
+  <div style="font-size:11px;font-weight:800;color:var(--a-text3);margin-bottom:.8rem;display:flex;align-items:center;gap:6px">
+    <i class="bi bi-palette"></i> تخصيص المظهر
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem">
+    <div class="a-form-group" style="margin:0">
+      <label>لون الخلفية</label>
+      <select name="style_bg" class="a-select">
+        <option value="none" selected="@(style.Bg == "none")">بدون خلفية</option>
+        <option value="light" selected="@(style.Bg == "light")">فاتح</option>
+        <option value="dark" selected="@(style.Bg == "dark")">داكن</option>
+        <option value="brand" selected="@(style.Bg == "brand")">لون المتجر</option>
+      </select>
+    </div>
+    <div class="a-form-group" style="margin:0">
+      <label>الهوامش (Padding)</label>
+      <select name="style_pad" class="a-select">
+        <option value="sm" selected="@(style.Pad == "sm")">صغيرة</option>
+        <option value="md" selected="@(style.Pad == "md")">متوسطة</option>
+        <option value="lg" selected="@(style.Pad == "lg")">كبيرة</option>
+      </select>
+    </div>
+    <div class="a-form-group" style="margin:0">
+      <label>محاذاة النصوص</label>
+      <select name="style_align" class="a-select">
+        <option value="start" selected="@(style.Align == "start")">يمين (افتراضي)</option>
+        <option value="center" selected="@(style.Align == "center")">وسط</option>
+        <option value="end" selected="@(style.Align == "end")">يسار</option>
+      </select>
+    </div>
+  </div>
+</div>

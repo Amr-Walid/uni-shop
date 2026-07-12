@@ -2,44 +2,95 @@
 @{
     Layout = "_AdminLayout";
     var isEdit = Model.Id > 0;
-    ViewData["Title"] = isEdit ? "تعديل صفحة" : "صفحة جديدة";
+    ViewData["Title"] = isEdit ? "محرر الصفحة — " + Model.TitleAr : "صفحة جديدة";
+    var sections = (Model.Sections ?? new List<PageSectionDto>()).OrderBy(s => s.SortOrder).ToList();
 }
 
-<form action="@(isEdit ? "/Admin/AdminContent/EditPage/" + Model.Id : "/Admin/AdminContent/CreatePage")" method="post">
-  @Html.AntiForgeryToken()
+@section Styles {
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+<style>
+  .pb-wrap { display:grid; grid-template-columns:320px 1fr; gap:1.5rem; align-items:start; }
+  @@media (max-width: 1100px) { .pb-wrap { grid-template-columns:1fr; } }
 
-  <div style="display:grid;grid-template-columns:1fr 300px;gap:1.5rem;align-items:start">
-    <div>
-      <div class="a-card" style="margin-bottom:1.5rem">
-        <h3 class="a-card-title">محتوى الصفحة</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
-          <div class="a-form-group">
-            <label>العنوان بالعربي *</label>
-            <input asp-for="TitleAr" placeholder="عنوان الصفحة بالعربي">
-          </div>
-          <div class="a-form-group">
-            <label>العنوان بالإنجليزي *</label>
-            <input asp-for="TitleEn" placeholder="Page title in English" dir="ltr">
-          </div>
-        </div>
-        <div class="a-form-group" style="margin-top:1rem">
-          <label>المحتوى بالعربي (HTML)</label>
-          <textarea asp-for="BodyAr" rows="10" placeholder="محتوى الصفحة بالعربي — HTML مسموح به..." style="font-family:monospace;font-size:13px"></textarea>
+  /* Sidebar */
+  .pb-sidebar { position:sticky; top:1rem; display:flex; flex-direction:column; gap:1rem; }
+
+  /* Section cards on canvas */
+  .pb-section { background:var(--a-card); border:1px solid var(--a-border); border-radius:14px; overflow:hidden; transition:box-shadow .2s, border-color .2s; }
+  .pb-section.dragging { opacity:.55; box-shadow:0 12px 40px rgba(26,107,255,.25); border-color:var(--a-blue); }
+  .pb-section.drag-over { border-top:3px solid var(--a-blue); }
+  .pb-sec-head { display:flex; align-items:center; gap:10px; padding:.9rem 1.1rem; cursor:pointer; user-select:none; }
+  .pb-sec-head:hover { background:var(--a-bg); }
+  .pb-grip { cursor:grab; color:var(--a-text3); font-size:17px; padding:2px 4px; border-radius:6px; }
+  .pb-grip:hover { color:var(--a-blue); background:var(--a-bg); }
+  .pb-grip:active { cursor:grabbing; }
+  .pb-sec-body { display:none; padding:1.1rem 1.3rem 1.3rem; border-top:1px solid var(--a-border); }
+  .pb-section.open .pb-sec-body { display:block; }
+  .pb-sec-chevron { transition:transform .2s; color:var(--a-text3); }
+  .pb-section.open .pb-sec-chevron { transform:rotate(180deg); }
+  .pb-hidden-badge { font-size:10px; background:#fee2e2; color:#b91c1c; border-radius:20px; padding:2px 9px; font-weight:700; }
+
+  /* Add-section menu */
+  .pb-add-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:.7rem; }
+  .pb-add-tile { border:1px dashed var(--a-border); border-radius:12px; padding:1rem .7rem; text-align:center; cursor:pointer; background:var(--a-card); transition:all .18s; }
+  .pb-add-tile:hover { border-color:var(--a-blue); background:var(--a-bg); transform:translateY(-2px); }
+  .pb-add-tile .t-ico { font-size:22px; margin-bottom:.35rem; }
+  .pb-add-tile .t-name { font-size:12.5px; font-weight:800; }
+  .pb-add-tile .t-desc { font-size:10.5px; color:var(--a-text3); margin-top:2px; line-height:1.5; }
+
+  /* Quill tweaks (RTL admin) */
+  .quill-holder { background:#fff; border-radius:0 0 8px 8px; }
+  .ql-toolbar.ql-snow { border-radius:8px 8px 0 0; border-color:var(--a-border); }
+  .ql-container.ql-snow { border-color:var(--a-border); border-radius:0 0 8px 8px; min-height:140px; font-family:'Tajawal',sans-serif; font-size:14px; }
+  .ql-editor { min-height:140px; }
+  .ql-editor[dir="rtl"] { text-align:right; }
+
+  /* Save feedback */
+  .pb-save-ok { color:#16a34a; font-size:12px; font-weight:700; opacity:0; transition:opacity .3s; }
+  .pb-save-ok.show { opacity:1; }
+  .pb-toast { position:fixed; bottom:22px; left:22px; background:#111827; color:#fff; padding:.7rem 1.2rem; border-radius:10px; font-size:13px; z-index:9999; opacity:0; transform:translateY(8px); transition:all .25s; pointer-events:none; }
+  .pb-toast.show { opacity:1; transform:none; }
+  .pb-toast.err { background:#b91c1c; }
+</style>
+}
+
+@Html.AntiForgeryToken()
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.2rem">
+  <div style="display:flex;align-items:center;gap:.8rem">
+    <a href="/Admin/AdminContent/Pages" style="color:var(--a-text2);font-size:13px">← الصفحات</a>
+    <span style="color:var(--a-text3)">/</span>
+    <span style="font-size:14px;font-weight:800">@(isEdit ? Model.TitleAr : "صفحة جديدة")</span>
+  </div>
+  @if (isEdit && !string.IsNullOrEmpty(Model.Slug))
+  {
+    <a href="/page/@Model.Slug" target="_blank" class="a-btn-outline" style="font-size:12.5px">
+      <i class="bi bi-eye"></i> معاينة الصفحة
+    </a>
+  }
+</div>
+
+<div class="pb-wrap">
+
+  <!-- ═══════════ SIDEBAR: SETTINGS & SEO ═══════════ -->
+  <div class="pb-sidebar">
+    <form id="pageMetaForm" action="@(isEdit ? "/Admin/AdminContent/EditPage/" + Model.Id : "/Admin/AdminContent/CreatePage")" method="post">
+      @Html.AntiForgeryToken()
+
+      <div class="a-card" style="margin-bottom:1rem">
+        <h3 class="a-card-title"><i class="bi bi-gear"></i> إعدادات الصفحة</h3>
+        <div class="a-form-group" style="margin-top:.8rem">
+          <label>العنوان بالعربي *</label>
+          <input asp-for="TitleAr" placeholder="عنوان الصفحة بالعربي" required>
         </div>
         <div class="a-form-group">
-          <label>المحتوى بالإنجليزي (HTML)</label>
-          <textarea asp-for="BodyEn" rows="10" placeholder="Page content in English — HTML allowed..." dir="ltr" style="font-family:monospace;font-size:13px"></textarea>
+          <label>العنوان بالإنجليزي *</label>
+          <input asp-for="TitleEn" placeholder="Page title in English" dir="ltr" required>
         </div>
-      </div>
-    </div>
-
-    <div>
-      <div class="a-card" style="margin-bottom:1rem">
-        <h3 class="a-card-title">إعدادات الصفحة</h3>
         <div class="a-form-group">
           <label>الـ Slug (URL)</label>
           <input asp-for="Slug" placeholder="privacy-policy" dir="ltr">
-          <small style="font-size:11px;color:var(--a-text2)">/page/<strong>@(Model.Slug ?? "slug")</strong></small>
+          <small style="font-size:11px;color:var(--a-text2)">/page/<strong>@(string.IsNullOrEmpty(Model.Slug) ? "slug" : Model.Slug)</strong></small>
         </div>
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;margin-top:.8rem">
           <input asp-for="IsPublished" type="checkbox" style="width:16px;height:16px">
@@ -48,8 +99,8 @@
       </div>
 
       <div class="a-card" style="margin-bottom:1rem">
-        <h3 class="a-card-title">SEO</h3>
-        <div class="a-form-group">
+        <h3 class="a-card-title"><i class="bi bi-search"></i> SEO</h3>
+        <div class="a-form-group" style="margin-top:.8rem">
           <label>Meta Title</label>
           <input asp-for="MetaTitle" placeholder="عنوان لمحركات البحث">
         </div>
@@ -59,12 +110,182 @@
         </div>
       </div>
 
-      <div style="display:flex;gap:.8rem">
-        <button type="submit" class="a-btn" style="flex:1">
-          @(isEdit ? "💾 حفظ التعديلات" : "✚ إنشاء الصفحة")
-        </button>
-        <a href="/Admin/AdminContent/Pages" class="a-btn-outline">إلغاء</a>
-      </div>
-    </div>
+      @if (isEdit)
+      {
+        <div class="a-card" style="margin-bottom:1rem">
+          <div class="pb-sec-head" onclick="this.parentElement.classList.toggle('open')" style="padding:.3rem 0">
+            <h3 class="a-card-title" style="margin:0;flex:1"><i class="bi bi-file-text"></i> المحتوى القديم (Legacy)</h3>
+            <i class="bi bi-chevron-down pb-sec-chevron"></i>
+          </div>
+          <div class="pb-sec-body" style="border:none;padding:.8rem 0 0">
+            <small style="font-size:11px;color:var(--a-text3);display:block;margin-bottom:.6rem">
+              يظهر فقط لو الصفحة مفيهاش أقسام. لو ضفت أقسام تحت، الأقسام هي اللي بتظهر.
+            </small>
+            <div class="a-form-group">
+              <label>المحتوى بالعربي</label>
+              <div class="quill-holder" data-target="legacy_ar" data-dir="rtl"></div>
+              <textarea asp-for="BodyAr" id="legacy_ar" style="display:none"></textarea>
+            </div>
+            <div class="a-form-group">
+              <label>Content in English</label>
+              <div class="quill-holder" data-target="legacy_en" data-dir="ltr"></div>
+              <textarea asp-for="BodyEn" id="legacy_en" style="display:none"></textarea>
+            </div>
+          </div>
+        </div>
+      }
+
+      <button type="submit" class="a-btn" style="width:100%">
+        @(isEdit ? "💾 حفظ الإعدادات" : "✚ إنشاء الصفحة والانتقال للأقسام")
+      </button>
+    </form>
   </div>
-</form>
+
+  <!-- ═══════════ CANVAS: SECTIONS ═══════════ -->
+  <div id="sections">
+    @if (!isEdit)
+    {
+      <div style="text-align:center;padding:4rem 2rem;color:var(--a-text2);background:var(--a-card);border-radius:14px;border:1px dashed var(--a-border)">
+        <div style="font-size:2.4rem;margin-bottom:.6rem">🧩</div>
+        <p style="font-weight:700;margin-bottom:.3rem">أنشئ الصفحة الأول</p>
+        <p style="font-size:13px">بعد إنشاء الصفحة هتقدر تضيف أقسام (Hero، نصوص، فيديو، معرض صور، آراء عملاء...) وترتبها بالسحب والإفلات</p>
+      </div>
+    }
+    else
+    {
+      <!-- ADD SECTION MENU -->
+      <div class="a-card" style="margin-bottom:1.2rem">
+        <h3 class="a-card-title" style="margin-bottom:.9rem"><i class="bi bi-plus-square"></i> إضافة قسم جديد</h3>
+        <div class="pb-add-grid">
+          <div class="pb-add-tile" onclick="pbAddSection('Hero')">
+            <div class="t-ico">🖼️</div><div class="t-name">Hero بانر</div>
+            <div class="t-desc">بانر علوي — يدعم صورة Split 50/50</div>
+          </div>
+          <div class="pb-add-tile" onclick="pbAddSection('RichText')">
+            <div class="t-ico">📝</div><div class="t-name">نص حر</div>
+            <div class="t-desc">محرر مرئي مع تنسيق وصور</div>
+          </div>
+          <div class="pb-add-tile" onclick="pbAddSection('Cards')">
+            <div class="t-ico">🃏</div><div class="t-name">بطاقات</div>
+            <div class="t-desc">مميزات/خدمات بأيقونة أو صورة</div>
+          </div>
+          <div class="pb-add-tile" onclick="pbAddSection('FAQ')">
+            <div class="t-ico">❓</div><div class="t-name">أسئلة وأجوبة</div>
+            <div class="t-desc">أكورديون تفاعلي</div>
+          </div>
+          <div class="pb-add-tile" onclick="pbAddSection('Video')">
+            <div class="t-ico">🎬</div><div class="t-name">فيديو</div>
+            <div class="t-desc">YouTube / Vimeo / MP4</div>
+          </div>
+          <div class="pb-add-tile" onclick="pbAddSection('Gallery')">
+            <div class="t-ico">🖼</div><div class="t-name">معرض صور</div>
+            <div class="t-desc">شبكة صور مع Lightbox</div>
+          </div>
+          <div class="pb-add-tile" onclick="pbAddSection('Testimonials')">
+            <div class="t-ico">💬</div><div class="t-name">آراء العملاء</div>
+            <div class="t-desc">تقييمات بنجوم وصور</div>
+          </div>
+        </div>
+        <form id="pbAddForm" action="/Admin/AdminPageSections/AddSection" method="post" style="display:none">
+          @Html.AntiForgeryToken()
+          <input type="hidden" name="id" value="@Model.Id">
+          <input type="hidden" name="type" id="pbAddType" value="">
+        </form>
+      </div>
+
+      <!-- SECTIONS LIST (drag & drop) -->
+      @if (sections.Any())
+      {
+        <div id="pbSectionList" style="display:flex;flex-direction:column;gap:1rem">
+          @foreach (var sec in sections)
+          {
+            var (icon, label) = sec.Type switch
+            {
+              "FAQ" => ("❓", "أسئلة وأجوبة"),
+              "Cards" => ("🃏", "بطاقات"),
+              "Hero" => ("🖼️", "Hero بانر"),
+              "Video" => ("🎬", "فيديو"),
+              "Gallery" => ("🖼", "معرض صور"),
+              "Testimonials" => ("💬", "آراء العملاء"),
+              _ => ("📝", "نص حر")
+            };
+            <div class="pb-section" data-section-id="@sec.Id" id="pbsec_@sec.Id">
+              <div class="pb-sec-head" onclick="pbToggleSection(event, @sec.Id)">
+                <span class="pb-grip" draggable="true" title="اسحب لإعادة الترتيب" onclick="event.stopPropagation()">
+                  <i class="bi bi-grip-vertical"></i>
+                </span>
+                <span style="font-size:17px">@icon</span>
+                <div style="flex:1">
+                  <span style="font-weight:800;font-size:13.5px">@label</span>
+                  <span style="font-size:10.5px;color:var(--a-text3);margin-right:8px">#@sec.Id</span>
+                  @if (!sec.IsVisible) { <span class="pb-hidden-badge">مخفي</span> }
+                </div>
+                <div style="display:flex;gap:6px;align-items:center" onclick="event.stopPropagation()">
+                  <button type="button" class="a-btn-sm @(sec.IsVisible ? "a-btn-success" : "a-btn-danger")"
+                          onclick="pbToggleVisible(@sec.Id, this)" title="إظهار/إخفاء">
+                    @(sec.IsVisible ? "👁" : "🚫")
+                  </button>
+                  <button type="button" class="a-btn-sm a-btn-danger" onclick="pbDeleteSection(@sec.Id)" title="حذف">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+                <i class="bi bi-chevron-down pb-sec-chevron"></i>
+              </div>
+
+              <div class="pb-sec-body">
+                <form class="pb-section-form" action="/Admin/AdminPageSections/SaveSection" method="post" data-section-id="@sec.Id">
+                  @Html.AntiForgeryToken()
+                  <input type="hidden" name="id" value="@sec.Id">
+
+                  @switch (sec.Type)
+                  {
+                    case "RichText":
+                      @await Html.PartialAsync("~/Views/Admin/Content/_SectionEditor_RichText.cshtml", sec)
+                      break;
+                    case "FAQ":
+                      @await Html.PartialAsync("~/Views/Admin/Content/_SectionEditor_FAQ.cshtml", sec)
+                      break;
+                    case "Cards":
+                      @await Html.PartialAsync("~/Views/Admin/Content/_SectionEditor_Cards.cshtml", sec)
+                      break;
+                    case "Hero":
+                      @await Html.PartialAsync("~/Views/Admin/Content/_SectionEditor_Hero.cshtml", sec)
+                      break;
+                    case "Video":
+                      @await Html.PartialAsync("~/Views/Admin/Content/_SectionEditor_Video.cshtml", sec)
+                      break;
+                    case "Gallery":
+                      @await Html.PartialAsync("~/Views/Admin/Content/_SectionEditor_Gallery.cshtml", sec)
+                      break;
+                    case "Testimonials":
+                      @await Html.PartialAsync("~/Views/Admin/Content/_SectionEditor_Testimonials.cshtml", sec)
+                      break;
+                  }
+
+                  <div style="display:flex;align-items:center;gap:1rem;margin-top:1.2rem">
+                    <button type="submit" class="a-btn-sm">💾 حفظ هذا القسم</button>
+                    <span class="pb-save-ok"><i class="bi bi-check-circle-fill"></i> تم الحفظ</span>
+                  </div>
+                </form>
+              </div>
+            </div>
+          }
+        </div>
+      }
+      else
+      {
+        <div style="text-align:center;padding:3rem;color:var(--a-text2);background:var(--a-card);border-radius:14px;border:1px dashed var(--a-border)">
+          <div style="font-size:2rem;margin-bottom:.5rem">📄</div>
+          <p>الصفحة دي مفيهاش أقسام بعد — اختر نوع القسم من فوق</p>
+        </div>
+      }
+    }
+  </div>
+</div>
+
+<div class="pb-toast" id="pbToast"></div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+<script src="~/js/page-builder.js" asp-append-version="true"></script>
+}

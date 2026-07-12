@@ -495,9 +495,9 @@ namespace FTD.Web.Controllers.Admin
             if (!ModelState.IsValid)
                 return View("~/Views/Admin/Content/PageForm.cshtml", model);
             
-            await _content.CreatePageAsync(model);
-            TempData["Success"] = "تم إنشاء الصفحة";
-            return RedirectToAction(nameof(Pages));
+            var created = await _content.CreatePageAsync(model);
+            TempData["Success"] = "تم إنشاء الصفحة — أضف الأقسام من هنا";
+            return RedirectToAction(nameof(EditPage), new { id = created.Id });
         }
 
         public async Task<IActionResult> EditPage(int id)
@@ -511,8 +511,13 @@ namespace FTD.Web.Controllers.Admin
         public async Task<IActionResult> EditPage(int id, ContentPageDto model)
         {
             await _content.UpdatePageAsync(id, model);
+
+            // AJAX save from the visual builder → JSON, no reload
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return Json(new { success = true });
+
             TempData["Success"] = "تم تحديث الصفحة";
-            return RedirectToAction(nameof(Pages));
+            return RedirectToAction(nameof(EditPage), new { id });
         }
     }
 

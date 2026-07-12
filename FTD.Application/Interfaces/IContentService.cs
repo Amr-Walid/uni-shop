@@ -28,6 +28,7 @@ namespace FTD.Application.Interfaces
         Task TogglePageSectionVisibilityAsync(int sectionId);
         Task MovePageSectionUpAsync(int sectionId);
         Task MovePageSectionDownAsync(int sectionId);
+        Task UpdatePageSectionsOrderAsync(List<int> orderedSectionIds);
         Task<List<NavigationItemDto>> GetAllNavigationItemsForAdminAsync();
         Task CreateNavigationItemAsync(NavigationItemDto dto);
         Task SetNavigationItemLocationAsync(int id, string location);

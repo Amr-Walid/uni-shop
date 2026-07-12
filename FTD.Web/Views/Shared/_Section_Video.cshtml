@@ -1,0 +1,52 @@
+@model PageSectionDto
+@{
+    string titleAr = "", titleEn = "", descAr = "", descEn = "", videoUrl = "";
+    var r = SectionJson.Root(Model.ContentJson);
+    if (r.HasValue)
+    {
+        titleAr = SectionJson.Str(r.Value, "title_ar");
+        titleEn = SectionJson.Str(r.Value, "title_en");
+        descAr  = SectionJson.Str(r.Value, "desc_ar");
+        descEn  = SectionJson.Str(r.Value, "desc_en");
+        videoUrl = SectionJson.Str(r.Value, "video_url");
+    }
+    var (embedUrl, isFile) = SectionJson.VideoEmbed(videoUrl);
+    var style = SectionStyle.Parse(Model.ContentJson);
+    var wrapCss = style.WrapperCss();
+    var titleColor = style.IsDark ? "color:#fff;" : "";
+    var descColor  = style.IsDark ? "color:rgba(255,255,255,.65);" : "color:var(--text2);";
+}
+
+@if (!string.IsNullOrEmpty(embedUrl))
+{
+    <div style="@wrapCss margin-bottom:2rem">
+      @if (!string.IsNullOrEmpty(titleAr) || !string.IsNullOrEmpty(titleEn))
+      {
+          <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:.5rem;@titleColor">
+            <span data-ar>@titleAr</span>
+            <span data-en>@titleEn</span>
+          </h2>
+      }
+      @if (!string.IsNullOrEmpty(descAr) || !string.IsNullOrEmpty(descEn))
+      {
+          <p style="font-size:14px;@descColor line-height:1.8;margin-bottom:1.2rem">
+            <span data-ar>@descAr</span>
+            <span data-en>@descEn</span>
+          </p>
+      }
+      <div style="position:relative;width:100%;padding-bottom:56.25%;border-radius:16px;overflow:hidden;background:#000;box-shadow:0 12px 40px rgba(0,0,0,.15)">
+        @if (isFile)
+        {
+            <video controls preload="metadata" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain">
+              <source src="@embedUrl">
+            </video>
+        }
+        else
+        {
+            <iframe src="@embedUrl" title="@titleAr" loading="lazy" allowfullscreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe>
+        }
+      </div>
+    </div>
+}

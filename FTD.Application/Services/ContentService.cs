@@ -246,6 +246,32 @@ namespace FTD.Application.Services
             }
         }
 
+        // Bulk reorder — sets SortOrder to match the exact order of the received IDs.
+        // All IDs must belong to the same page (validated) to prevent cross-page tampering.
+        public async Task UpdatePageSectionsOrderAsync(List<int> orderedSectionIds)
+        {
+            if (orderedSectionIds == null || orderedSectionIds.Count == 0) return;
+
+            var sections = await _db.PageSections
+                .Where(s => orderedSectionIds.Contains(s.Id))
+                .ToListAsync();
+
+            if (sections.Count == 0) return;
+
+            // Safety: all sections must belong to a single page
+            var pageId = sections[0].PageId;
+            if (sections.Any(s => s.PageId != pageId))
+                throw new ArgumentException("All sections must belong to the same page");
+
+            for (int i = 0; i < orderedSectionIds.Count; i++)
+            {
+                var sec = sections.FirstOrDefault(s => s.Id == orderedSectionIds[i]);
+                if (sec != null) sec.SortOrder = i + 1;
+            }
+
+            await _db.SaveChangesAsync();
+        }
+
         public async Task<List<NavigationItemDto>> GetAllNavigationItemsForAdminAsync()
         {
             var items = await _db.NavigationItems
