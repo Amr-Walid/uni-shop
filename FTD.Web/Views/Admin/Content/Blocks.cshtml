@@ -438,7 +438,6 @@
     {
         ("hero",       "bi-stars",           "الهيرو"),
         ("values",     "bi-patch-check",     "شريط المزايا"),
-        ("marquee",    "bi-arrow-left-right","شريط البراندات المتحرك"),
         ("categories", "bi-grid",            "معرض الفئات"),
         ("featured",   "bi-grid-3x3-gap",    "الكتالوج المميز"),
         ("about",      "bi-info-circle",     "من نحن"),
@@ -481,9 +480,9 @@
                 <div class="a-form-group">
                     <label><i class="bi bi-sort-numeric-down"></i> ترتيب الأقسام (مفاتيح مفصولة بفواصل)</label>
                     <input type="text" name="sectionsOrder" dir="ltr" style="font-family:monospace;font-size:12px"
-                           value="@S("homepage.sections.order", "hero,values,marquee,categories,featured,about,mission,cta,contact")">
+                           value="@S("homepage.sections.order", "hero,values,categories,featured,about,mission,cta,contact")">
                     <small style="color:var(--a-text2);font-size:11px;display:block;margin-top:4px">
-                        المفاتيح المتاحة: hero, values, marquee, categories, featured, about, mission, cta, contact
+                        المفاتيح المتاحة: hero, values, categories, featured, about, mission, cta, contact
                     </small>
                 </div>
                 <div class="a-form-group">
@@ -578,14 +577,12 @@
             </div>
 
             <hr class="hp-divider">
-            <h4 style="font-size:13px;font-weight:800;margin:0 0 .8rem;color:var(--a-blue)">الفوتر وشريط البراندات</h4>
+            <h4 style="font-size:13px;font-weight:800;margin:0 0 .8rem;color:var(--a-blue)">الفوتر</h4>
             <div class="hp-grid-2">
                 <div class="a-form-group"><label>وصف الفوتر (عربي)</label><textarea name="blocks[footer.desc].Ar" rows="2">@BA("footer.desc")</textarea></div>
                 <div class="a-form-group"><label>Footer Description (English)</label><textarea name="blocks[footer.desc].En" rows="2" dir="ltr">@BE("footer.desc")</textarea></div>
                 <div class="a-form-group"><label>حقوق النشر (عربي)</label><input type="text" name="blocks[footer.credits].Ar" value="@BA("footer.credits")"></div>
                 <div class="a-form-group"><label>Copyright (English)</label><input type="text" name="blocks[footer.credits].En" value="@BE("footer.credits")" dir="ltr"></div>
-                <div class="a-form-group"><label>عناصر شريط البراندات المتحرك (عربي — مفصولة بفواصل)</label><input type="text" name="blocks[marquee.items].Ar" value="@BA("marquee.items")"></div>
-                <div class="a-form-group"><label>Marquee Items (English — comma separated)</label><input type="text" name="blocks[marquee.items].En" value="@BE("marquee.items")" dir="ltr"></div>
             </div>
 
             <button type="submit" class="a-btn" style="margin-top:1rem"><i class="bi bi-check2-circle"></i> حفظ كل النصوص</button>

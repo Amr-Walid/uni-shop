@@ -366,9 +366,7 @@ namespace FTD.Infrastructure.Data
                 new ContentBlock { Id = 61, Key = "newsletter.desc", BodyAr = "اشترك ليصلك كل جديد عن المنتجات والعروض الحصرية قبل أي حد.", BodyEn = "Subscribe for new arrivals and exclusive deals before anyone else.", UpdatedAt = new DateTime(2026, 7, 12) },
                 new ContentBlock { Id = 62, Key = "newsletter.btn.text", BodyAr = "اشترك", BodyEn = "Subscribe", UpdatedAt = new DateTime(2026, 7, 12) },
                 new ContentBlock { Id = 63, Key = "footer.desc", BodyAr = "بوابتك المعتمدة لأحدث الأجهزة التكنولوجية من DOOGEE و JisuLife و Dreame. نوفر جودة فائقة وضمان حقيقي.", BodyEn = "Your certified gateway for the latest tech hardware from DOOGEE, JisuLife, and Dreame. Delivering premium quality and certified warranty.", UpdatedAt = new DateTime(2026, 7, 12) },
-                new ContentBlock { Id = 64, Key = "footer.credits", BodyAr = "يونى شوب. جميع الحقوق محفوظة.", BodyEn = "Uni-Shop. All Rights Reserved.", UpdatedAt = new DateTime(2026, 7, 12) },
-                // ── Brand Marquee (comma-separated items) ─────────────────────
-                new ContentBlock { Id = 65, Key = "marquee.items", BodyAr = "DOOGEE,JISULIFE,DREAME,ضمان معتمد,منتجات أصلية,توصيل سريع", BodyEn = "DOOGEE,JISULIFE,DREAME,CERTIFIED WARRANTY,ORIGINAL PRODUCTS,FAST DELIVERY", UpdatedAt = new DateTime(2026, 7, 12) }
+                new ContentBlock { Id = 64, Key = "footer.credits", BodyAr = "يونى شوب. جميع الحقوق محفوظة.", BodyEn = "Uni-Shop. All Rights Reserved.", UpdatedAt = new DateTime(2026, 7, 12) }
             );
 
             // ── SEED: Contact Info ───────────────────────────────────────────
@@ -415,7 +413,6 @@ namespace FTD.Infrastructure.Data
                 // ── Homepage section visibility toggles ───────────────────────
                 new SiteSetting { Id = 12, Key = "homepage.show.hero", Value = "1", Description = "إظهار قسم الهيرو", Type = "bool", UpdatedAt = new DateTime(2026, 7, 12) },
                 new SiteSetting { Id = 13, Key = "homepage.show.values", Value = "1", Description = "إظهار شريط المزايا", Type = "bool", UpdatedAt = new DateTime(2026, 7, 12) },
-                new SiteSetting { Id = 14, Key = "homepage.show.marquee", Value = "1", Description = "إظهار شريط البراندات المتحرك", Type = "bool", UpdatedAt = new DateTime(2026, 7, 12) },
                 new SiteSetting { Id = 15, Key = "homepage.show.categories", Value = "1", Description = "إظهار معرض الفئات", Type = "bool", UpdatedAt = new DateTime(2026, 7, 12) },
                 new SiteSetting { Id = 16, Key = "homepage.show.featured", Value = "1", Description = "إظهار الكتالوج المميز", Type = "bool", UpdatedAt = new DateTime(2026, 7, 12) },
                 new SiteSetting { Id = 17, Key = "homepage.show.about", Value = "1", Description = "إظهار قسم من نحن", Type = "bool", UpdatedAt = new DateTime(2026, 7, 12) },
@@ -425,7 +422,7 @@ namespace FTD.Infrastructure.Data
                 new SiteSetting { Id = 21, Key = "homepage.show.newsletter", Value = "1", Description = "إظهار النشرة البريدية بالفوتر", Type = "bool", UpdatedAt = new DateTime(2026, 7, 12) },
                 new SiteSetting { Id = 22, Key = "homepage.show.payments", Value = "1", Description = "إظهار شارات الدفع بالفوتر", Type = "bool", UpdatedAt = new DateTime(2026, 7, 12) },
                 // ── Homepage section ordering & misc ──────────────────────────
-                new SiteSetting { Id = 23, Key = "homepage.sections.order", Value = "hero,values,marquee,categories,featured,about,mission,cta,contact", Description = "ترتيب أقسام الرئيسية", Type = "text", UpdatedAt = new DateTime(2026, 7, 12) },
+                new SiteSetting { Id = 23, Key = "homepage.sections.order", Value = "hero,values,categories,featured,about,mission,cta,contact", Description = "ترتيب أقسام الرئيسية", Type = "text", UpdatedAt = new DateTime(2026, 7, 12) },
                 new SiteSetting { Id = 24, Key = "homepage.categories.count", Value = "3", Description = "عدد بلاطات الفئات بالرئيسية", Type = "text", UpdatedAt = new DateTime(2026, 7, 12) }
             );
         }

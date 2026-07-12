@@ -444,7 +444,7 @@ namespace FTD.Web.Controllers.Admin
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveHomepageSettings(List<string>? visibleSections, string? sectionsOrder, string? categoriesCount, string? tab)
         {
-            var all = new[] { "hero", "values", "marquee", "categories", "featured", "about", "mission", "cta", "contact", "newsletter", "payments" };
+            var all = new[] { "hero", "values", "categories", "featured", "about", "mission", "cta", "contact", "newsletter", "payments" };
             var visible = visibleSections ?? new List<string>();
             foreach (var section in all)
             {

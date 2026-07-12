@@ -19,14 +19,8 @@
         .Take(Model.HomepageCategoriesCount)
         .ToList();
 
-    // Marquee items (comma-separated, editable from dashboard)
-    var marqueeAr = GetOr("marquee.items.ar", "DOOGEE,JISULIFE,DREAME,ضمان معتمد,منتجات أصلية,توصيل سريع")
-        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-    var marqueeEn = GetOr("marquee.items.en", "DOOGEE,JISULIFE,DREAME,CERTIFIED WARRANTY,ORIGINAL PRODUCTS,FAST DELIVERY")
-        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
     // Section order (from dashboard) — append any missing known section for safety
-    var knownSections = new[] { "hero", "values", "marquee", "categories", "featured", "about", "mission", "cta", "contact" };
+    var knownSections = new[] { "hero", "values", "categories", "featured", "about", "mission", "cta", "contact" };
     var sectionOrder = Model.SectionsOrder.Where(s => knownSections.Contains(s)).ToList();
     foreach (var s in knownSections)
     {
@@ -220,22 +214,6 @@
 </section>
     }
 
-    async Task RenderMarquee()
-    {
-<!-- ============ BRAND MARQUEE (dynamic) ============ -->
-<section class="marquee">
-    <div class="marquee-track">
-        @for (int rep = 0; rep < 2; rep++)
-        {
-            for (int i = 0; i < marqueeAr.Length; i++)
-            {
-                var en = i < marqueeEn.Length ? marqueeEn[i] : marqueeAr[i];
-                <span class="marquee-item"><span data-ar>@marqueeAr[i]</span><span data-en>@en</span> <span class="dot"></span></span>
-            }
-        }
-    </div>
-</section>
-    }
 
     async Task RenderCategories()
     {
@@ -632,7 +610,7 @@
     {
         case "hero": await RenderHero(); break;
         case "values": await RenderValues(); break;
-        case "marquee": await RenderMarquee(); break;
+
         case "categories": await RenderCategories(); break;
         case "featured": await RenderFeatured(); break;
         case "about": await RenderAbout(); break;
