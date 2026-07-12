@@ -266,7 +266,8 @@
     var currentQty = 1;
 
     function changeQty(n) {
-        currentQty = Math.max(1, Math.min(10, currentQty + n));
+        var maxLimit = Math.max(99, @p.Stock);
+        currentQty = Math.max(1, Math.min(maxLimit, currentQty + n));
         document.getElementById('qty-n').textContent = currentQty;
         document.getElementById('form-qty').value = currentQty;
         document.getElementById('btnPrice').textContent = (basePrice * currentQty).toLocaleString('en-US');
