@@ -40,7 +40,7 @@
 @{
     // ════════════════ SECTION RENDERERS (local functions) ════════════════
 
-    void RenderHero()
+    async Task RenderHero()
     {
 <!-- ============ HERO ============ -->
 <section class="hero">
@@ -197,7 +197,7 @@
 </script>
     }
 
-    void RenderValues()
+    async Task RenderValues()
     {
 <!-- ============ VALUE PROPS STRIP (dynamic) ============ -->
 <section class="container">
@@ -220,7 +220,7 @@
 </section>
     }
 
-    void RenderMarquee()
+    async Task RenderMarquee()
     {
 <!-- ============ BRAND MARQUEE (dynamic) ============ -->
 <section class="marquee">
@@ -237,7 +237,7 @@
 </section>
     }
 
-    void RenderCategories()
+    async Task RenderCategories()
     {
         if (!homepageCats.Any()) { return; }
 <!-- ============ CATEGORY SHOWCASE (dynamic) ============ -->
@@ -284,7 +284,7 @@
 </section>
     }
 
-    void RenderFeatured()
+    async Task RenderFeatured()
     {
 <!-- ============ FEATURED PRODUCTS (dynamic) ============ -->
 <section class="section" id="featured">
@@ -338,7 +338,7 @@
 </section>
     }
 
-    void RenderAbout()
+    async Task RenderAbout()
     {
 <!-- ============ ABOUT (dynamic) ============ -->
 <section class="section" id="about">
@@ -407,7 +407,7 @@
 </section>
     }
 
-    void RenderMission()
+    async Task RenderMission()
     {
 <!-- ============ MISSION (dynamic) ============ -->
 <section class="mission-section">
@@ -451,7 +451,7 @@
 </section>
     }
 
-    void RenderCta()
+    async Task RenderCta()
     {
 <!-- ============ CTA BAND (dynamic) ============ -->
 <section class="cta-band reveal-scale">
@@ -476,7 +476,7 @@
 </section>
     }
 
-    void RenderContact()
+    async Task RenderContact()
     {
 <!-- ============ CONTACT (dynamic) ============ -->
 <section class="section" id="contact">
@@ -630,15 +630,15 @@
     if (!Model.ShowSection(s)) { continue; }
     switch (s)
     {
-        case "hero": RenderHero(); break;
-        case "values": RenderValues(); break;
-        case "marquee": RenderMarquee(); break;
-        case "categories": RenderCategories(); break;
-        case "featured": RenderFeatured(); break;
-        case "about": RenderAbout(); break;
-        case "mission": RenderMission(); break;
-        case "cta": RenderCta(); break;
-        case "contact": RenderContact(); break;
+        case "hero": await RenderHero(); break;
+        case "values": await RenderValues(); break;
+        case "marquee": await RenderMarquee(); break;
+        case "categories": await RenderCategories(); break;
+        case "featured": await RenderFeatured(); break;
+        case "about": await RenderAbout(); break;
+        case "mission": await RenderMission(); break;
+        case "cta": await RenderCta(); break;
+        case "contact": await RenderContact(); break;
     }
 }
 
