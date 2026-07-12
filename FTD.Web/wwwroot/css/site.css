@@ -3958,6 +3958,19 @@ select:focus {
   transition: transform .4s cubic-bezier(.34, 1.56, .64, 1);
 }
 .cat-tile:hover .cat-emoji { transform: scale(1.15) rotate(-6deg); }
+.cat-tile .cat-tile-image {
+  position: absolute;
+  top: 18px;
+  inset-inline-end: 18px;
+  width: 76px;
+  height: 76px;
+  object-fit: cover;
+  border-radius: 18px;
+  border: 1px solid rgba(11, 28, 48, .08);
+  filter: drop-shadow(0 12px 18px rgba(11, 28, 48, .14));
+  transition: transform .4s cubic-bezier(.34, 1.56, .64, 1);
+}
+.cat-tile:hover .cat-tile-image { transform: scale(1.1) rotate(-4deg); }
 .cat-tile .cat-count {
   font-size: 11px;
   font-weight: 700;

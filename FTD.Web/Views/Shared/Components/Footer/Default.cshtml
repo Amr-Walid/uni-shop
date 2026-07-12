@@ -1,22 +1,33 @@
 @model FTD.Web.ViewModels.FooterViewModel
+@{
+    string? Get(string key) => Model.Blocks != null && Model.Blocks.TryGetValue(key, out var v) ? v : null;
+    string GetOr(string key, string fallback)
+    {
+        var v = Get(key);
+        return string.IsNullOrWhiteSpace(v) ? fallback : v;
+    }
+}
 <footer class="footer">
     <div class="footer-inner container">
-        <!-- Newsletter band -->
+        @if (Model.ShowSection("newsletter"))
+        {
+        <!-- Newsletter band (dynamic) -->
         <div class="newsletter-band">
             <div>
-                <h4><span data-ar>خلّيك أول من يعرف 🔥</span><span data-en>Be the first to know 🔥</span></h4>
+                <h4><span data-ar>@GetOr("newsletter.title.ar", "خلّيك أول من يعرف 🔥")</span><span data-en>@GetOr("newsletter.title.en", "Be the first to know 🔥")</span></h4>
                 <p class="nl-sub">
-                    <span data-ar>اشترك ليصلك كل جديد عن المنتجات والعروض الحصرية قبل أي حد.</span>
-                    <span data-en>Subscribe for new arrivals and exclusive deals before anyone else.</span>
+                    <span data-ar>@GetOr("newsletter.desc.ar", "اشترك ليصلك كل جديد عن المنتجات والعروض الحصرية قبل أي حد.")</span>
+                    <span data-en>@GetOr("newsletter.desc.en", "Subscribe for new arrivals and exclusive deals before anyone else.")</span>
                 </p>
             </div>
             <form class="newsletter-form" onsubmit="return subscribeNewsletter(event)">
                 <input type="email" required data-ph-ar="بريدك الإلكتروني..." data-ph-en="Your email address..." placeholder="بريدك الإلكتروني..." aria-label="Email">
                 <button type="submit">
-                    <span data-ar>اشترك</span><span data-en>Subscribe</span>
+                    <span data-ar>@GetOr("newsletter.btn.text.ar", "اشترك")</span><span data-en>@GetOr("newsletter.btn.text.en", "Subscribe")</span>
                 </button>
             </form>
         </div>
+        }
         <div class="footer-grid">
             <!-- Brand & Intro -->
             <div class="footer-brand">
@@ -25,8 +36,8 @@
                     <span>Uni<strong>-Shop</strong></span>
                 </a>
                 <p class="footer-desc">
-                    <span data-ar>بوابتك المعتمدة لأحدث الأجهزة التكنولوجية من DOOGEE و JisuLife و Dreame. نوفر جودة فائقة وضمان حقيقي.</span>
-                    <span data-en>Your certified gateway for the latest tech hardware from DOOGEE, JisuLife, and Dreame. Delivering premium quality and certified warranty.</span>
+                    <span data-ar>@GetOr("footer.desc.ar", "بوابتك المعتمدة لأحدث الأجهزة التكنولوجية من DOOGEE و JisuLife و Dreame. نوفر جودة فائقة وضمان حقيقي.")</span>
+                    <span data-en>@GetOr("footer.desc.en", "Your certified gateway for the latest tech hardware from DOOGEE, JisuLife, and Dreame. Delivering premium quality and certified warranty.")</span>
                 </p>
                 @if (Model.ContactInfo != null)
                 {
@@ -120,9 +131,11 @@
         <div class="container footer-bottom-inner" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px">
             <p>
                 © @DateTime.Now.Year Uni-Shop —
-                <span data-ar>يونى شوب. جميع الحقوق محفوظة.</span>
-                <span data-en>Uni-Shop. All Rights Reserved.</span>
+                <span data-ar>@GetOr("footer.credits.ar", "يونى شوب. جميع الحقوق محفوظة.")</span>
+                <span data-en>@GetOr("footer.credits.en", "Uni-Shop. All Rights Reserved.")</span>
             </p>
+            @if (Model.ShowSection("payments"))
+            {
             <div class="footer-payments" aria-label="Payment methods">
                 <span class="pm">VISA</span>
                 <span class="pm">MASTERCARD</span>
@@ -130,6 +143,7 @@
                 <span class="pm">INSTAPAY</span>
                 <span class="pm"><span data-ar>كاش عند الاستلام</span><span data-en>COD</span></span>
             </div>
+            }
         </div>
     </div>
 </footer>
