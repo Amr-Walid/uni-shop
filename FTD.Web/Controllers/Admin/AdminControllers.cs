@@ -421,14 +421,20 @@ namespace FTD.Web.Controllers.Admin
         }
 
         // حفظ اختيارات منتجات السلايدر والكتالوج (الترتيب يتبع ترتيب الاختيار)
+        // scope = "hero" أو "featured" لتحديث مفتاح واحد فقط دون مسح الآخر
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> SaveProductSelections(List<int>? heroProductIds, List<int>? featuredProductIds, string? tab)
+        public async Task<IActionResult> SaveProductSelections(List<int>? heroProductIds, List<int>? featuredProductIds, string? scope, string? tab)
         {
-            var hero = heroProductIds != null ? string.Join(",", heroProductIds.Distinct()) : "";
-            var featured = featuredProductIds != null ? string.Join(",", featuredProductIds.Distinct()) : "";
-
-            await _content.SaveSettingByKeyAsync("homepage.hero.products", hero, "منتجات سلايدر الهيرو (IDs مرتبة)");
-            await _content.SaveSettingByKeyAsync("homepage.featured.products", featured, "منتجات الكتالوج المميز (IDs مرتبة)");
+            if (string.IsNullOrEmpty(scope) || scope == "hero")
+            {
+                var hero = heroProductIds != null ? string.Join(",", heroProductIds.Distinct()) : "";
+                await _content.SaveSettingByKeyAsync("homepage.hero.products", hero, "منتجات سلايدر الهيرو (IDs مرتبة)");
+            }
+            if (string.IsNullOrEmpty(scope) || scope == "featured")
+            {
+                var featured = featuredProductIds != null ? string.Join(",", featuredProductIds.Distinct()) : "";
+                await _content.SaveSettingByKeyAsync("homepage.featured.products", featured, "منتجات الكتالوج المميز (IDs مرتبة)");
+            }
 
             TempData["Success"] = "تم حفظ اختيارات المنتجات";
             return RedirectToAction(nameof(Blocks), new { tab });

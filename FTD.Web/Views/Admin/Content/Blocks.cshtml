@@ -1,97 +1,743 @@
 @model List<ContentBlockDto>
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "محتوى الرئيسية";
-    var featBlocks = Model.Where(b => b.Key.StartsWith("features.") && b.Key != "features.title.ar" && b.Key != "features.title.en").OrderBy(b => b.Key).ToList();
-    var featTitle = Model.FirstOrDefault(b => b.Key == "features.title.ar");
-    var featTitleEn = Model.FirstOrDefault(b => b.Key == "features.title.en");
-    var otherBlocks = Model.Where(b => !b.Key.StartsWith("features.")).ToList();
+    ViewData["Title"] = "التحكم في الصفحة الرئيسية";
+
+    var settings = ViewBag.Settings as Dictionary<string, string> ?? new Dictionary<string, string>();
+    var products = ViewBag.Products as List<FTD.Application.DTOs.ProductDto> ?? new List<FTD.Application.DTOs.ProductDto>();
+    var categories = ViewBag.Categories as List<FTD.Application.DTOs.CategoryDto> ?? new List<FTD.Application.DTOs.CategoryDto>();
+    var activeTab = (ViewBag.ActiveTab as string) ?? "hero";
+
+    // ── Helpers ──
+    ContentBlockDto? B(string key) => Model.FirstOrDefault(b => b.Key == key);
+    string BA(string key) => B(key)?.BodyAr ?? "";
+    string BE(string key) => B(key)?.BodyEn ?? "";
+    string BI(string key) => B(key)?.TitleAr ?? "";
+    string S(string key, string def = "") => settings.TryGetValue(key, out var v) ? v : def;
+    bool Show(string section)
+    {
+        var v = S($"homepage.show.{section}", "1");
+        return v == "1" || v.Equals("true", StringComparison.OrdinalIgnoreCase);
+    }
+    List<int> Ids(string key) => S(key, "")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Select(x => int.TryParse(x, out var n) ? n : 0)
+        .Where(n => n > 0).ToList();
+
+    var heroIds = Ids("homepage.hero.products");
+    var featuredIds = Ids("homepage.featured.products");
+
+    var tabs = new (string Key, string Icon, string Label)[]
+    {
+        ("hero",     "bi-stars",        "الهيرو والإحصائيات"),
+        ("values",   "bi-patch-check",  "شريط المزايا"),
+        ("catalog",  "bi-grid-3x3-gap", "الكتالوج المميز"),
+        ("sections", "bi-layout-text-window-reverse", "الأقسام والفئات"),
+        ("about",    "bi-info-circle",  "من نحن والتواصل"),
+    };
 }
 
-<p style="color:var(--a-text2);font-size:13px;margin-bottom:1.5rem">
-    هنا تعدّل النصوص الثابتة في الموقع — عنوان "من نحن"، الرسالة، الرؤية، إلخ.
+<style>
+    .hp-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.5rem; background: var(--a-bg); padding: 6px; border-radius: 12px; border: 1px solid var(--a-border); }
+    .hp-tab { display: flex; align-items: center; gap: 7px; padding: 9px 16px; border-radius: 9px; font-size: 13px; font-weight: 700; color: var(--a-text2); text-decoration: none; transition: all .18s ease; }
+    .hp-tab:hover { color: var(--a-blue); background: rgba(26,107,255,.06); }
+    .hp-tab.active { background: var(--a-blue); color: #fff; box-shadow: 0 4px 12px rgba(26,107,255,.3); }
+    .hp-tab i { font-size: 15px; }
+    .hp-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .hp-grid-3 { display: grid; grid-template-columns: 90px 1fr 1fr; gap: 1rem; align-items: end; }
+    .hp-hint { font-size: 12px; color: var(--a-text2); margin: -4px 0 12px; }
+    .hp-divider { border: 0; border-top: 1px dashed var(--a-border); margin: 1.2rem 0; }
+    .hp-toggle-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+    .hp-toggle { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid var(--a-border); border-radius: 10px; cursor: pointer; transition: all .15s; background: #fff; }
+    .hp-toggle:hover { border-color: var(--a-blue); }
+    .hp-toggle input { width: 18px; height: 18px; accent-color: var(--a-blue); cursor: pointer; }
+    .hp-toggle .t-name { font-size: 13px; font-weight: 700; }
+    .hp-toggle .t-key { font-size: 10px; color: var(--a-text2); font-family: monospace; display: block; }
+    .picker-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .picker-col h5 { font-size: 12px; font-weight: 800; color: var(--a-text2); margin: 0 0 8px; letter-spacing: .4px; }
+    .picker-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--a-border); border-radius: 10px; min-height: 200px; max-height: 340px; overflow-y: auto; background: #fff; }
+    .picker-list li { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--a-border); font-size: 13px; }
+    .picker-list li:last-child { border-bottom: 0; }
+    .picker-list .p-name { flex: 1; font-weight: 600; }
+    .picker-list .p-num { width: 22px; height: 22px; border-radius: 6px; background: var(--a-bg); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: var(--a-blue); }
+    .picker-list button { border: 1px solid var(--a-border); background: #fff; border-radius: 6px; width: 26px; height: 26px; cursor: pointer; font-size: 12px; color: var(--a-text2); display: inline-flex; align-items: center; justify-content: center; }
+    .picker-list button:hover { border-color: var(--a-blue); color: var(--a-blue); }
+    .picker-list button.rm:hover { border-color: #dc2626; color: #dc2626; }
+    .picker-empty { padding: 24px 12px; text-align: center; color: var(--a-text2); font-size: 12px; }
+    .icon-select-row { display: flex; align-items: center; gap: 10px; }
+    .icon-preview { width: 42px; height: 42px; border-radius: 10px; background: var(--a-bg); border: 1px solid var(--a-border); display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--a-blue); flex-shrink: 0; }
+    .cat-row td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--a-border); vertical-align: middle; }
+    .cat-thumb { width: 38px; height: 38px; border-radius: 9px; object-fit: cover; border: 1px solid var(--a-border); }
+    .cat-thumb-emoji { width: 38px; height: 38px; border-radius: 9px; background: var(--a-bg); display: flex; align-items: center; justify-content: center; font-size: 19px; }
+    .badge-on { background: rgba(5,150,105,.12); color: #059669; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+    .badge-off { background: rgba(220,38,38,.1); color: #dc2626; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+    @@media (max-width: 900px) { .hp-grid-2, .picker-wrap { grid-template-columns: 1fr; } .hp-grid-3 { grid-template-columns: 1fr; } }
+</style>
+
+<p style="color:var(--a-text2);font-size:13px;margin-bottom:1rem">
+    <i class="bi bi-magic"></i>
+    تحكم كامل في كل تفاصيل الصفحة الرئيسية — النصوص، المنتجات، الفئات، ترتيب الأقسام، وإظهار/إخفاء أي قسم بنقرة واحدة.
 </p>
 
-@* ── FEATURES SECTION ── *@
-<div class="a-card" style="margin-bottom:1.5rem">
-    <h3 class="a-card-title" style="margin-bottom:1.2rem">✨ قسم "لماذا نحن؟"</h3>
-
-    @* Title *@
-    @if (featTitle != null || featTitleEn != null)
+@* ── TAB NAVIGATION ── *@
+<nav class="hp-tabs">
+    @foreach (var t in tabs)
     {
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--a-border)">
-            <form action="/Admin/AdminContent/SaveBlock" method="post" style="display:contents">
-                @Html.AntiForgeryToken()
-                @if (featTitle != null)
-                {
-                    <div class="a-form-group">
-                        <label>عنوان القسم (عربي)</label>
-                        <input type="hidden" name="id" value="@featTitle.Id">
-                        <input type="text" name="bodyAr" value="@featTitle.BodyAr">
-                    </div>
-                }
-                @if (featTitleEn != null)
-                {
-                    <div class="a-form-group">
-                        <label>Section Title (English)</label>
-                        <input type="hidden" name="id" value="@featTitleEn.Id">
-                        <input type="text" name="bodyEn" value="@featTitleEn.BodyEn" dir="ltr">
-                    </div>
-                }
-                <div style="grid-column:1/-1">
-                    <button type="submit" class="a-btn-sm">💾 حفظ العنوان</button>
-                </div>
-            </form>
-        </div>
+        <a href="/Admin/AdminContent/Blocks?tab=@t.Key" class="hp-tab @(activeTab == t.Key ? "active" : "")">
+            <i class="bi @t.Icon"></i> @t.Label
+        </a>
     }
+</nav>
 
-    @* Features 1-6 *@
-    @foreach (var b in featBlocks)
-    {
-        <form action="/Admin/AdminContent/SaveBlock" method="post" style="margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--a-border)">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="id" value="@b.Id">
-            <div style="display:grid;grid-template-columns:80px 1fr 1fr;gap:1rem;align-items:end">
-                <div class="a-form-group">
-                    <label>أيقون</label>
-                    <input type="text" name="titleAr" value="@b.TitleAr" placeholder="✓" style="text-align:center;font-size:18px">
-                </div>
-                <div class="a-form-group">
-                    <label>النص بالعربي</label>
-                    <input type="text" name="bodyAr" value="@b.BodyAr" placeholder="ميزة...">
-                </div>
-                <div class="a-form-group">
-                    <label>Text in English</label>
-                    <input type="text" name="bodyEn" value="@b.BodyEn" placeholder="Feature..." dir="ltr">
-                </div>
-            </div>
-            <button type="submit" class="a-btn-sm">💾 حفظ</button>
-        </form>
-    }
-</div>
-
-@* ── OTHER BLOCKS ── *@
-@foreach (var block in otherBlocks)
+@* ════════════════════ TAB 1: HERO & STATS ════════════════════ *@
+@if (activeTab == "hero")
 {
-    <div class="a-card" style="margin-bottom:1rem">
-        <form action="/Admin/AdminContent/SaveBlock" method="post">
+    <div class="a-card" style="margin-bottom:1.5rem">
+        <h3 class="a-card-title" style="margin-bottom:.4rem"><i class="bi bi-stars"></i> نصوص قسم الهيرو</h3>
+        <p class="hp-hint">العنوان الرئيسي، الوصف، الشارات، وأزرار الهيرو.</p>
+        <form action="/Admin/AdminContent/SaveBlocksBulk?tab=hero" method="post">
             @Html.AntiForgeryToken()
-            <input type="hidden" name="id" value="@block.Id">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-                <span style="font-family:monospace;font-size:12px;background:var(--a-bg);padding:3px 8px;border-radius:6px;color:var(--a-blue)">@block.Key</span>
-                <span style="font-size:11px;color:var(--a-text2)">@block.UpdatedAt.ToString("dd/MM/yyyy")</span>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+
+            <div class="hp-grid-2">
                 <div class="a-form-group">
-                    <label>عربي</label>
-                    <textarea name="bodyAr" rows="2" placeholder="النص بالعربي...">@block.BodyAr</textarea>
+                    <label>الشارة الأولى (عربي)</label>
+                    <input type="text" name="blocks[hero.chip1].Ar" value="@BA("hero.chip1")">
                 </div>
                 <div class="a-form-group">
-                    <label>English</label>
-                    <textarea name="bodyEn" rows="2" placeholder="Text in English..." dir="ltr">@block.BodyEn</textarea>
+                    <label>Chip 1 (English)</label>
+                    <input type="text" name="blocks[hero.chip1].En" value="@BE("hero.chip1")" dir="ltr">
+                </div>
+                <div class="a-form-group">
+                    <label>الشارة الثانية (عربي)</label>
+                    <input type="text" name="blocks[hero.chip2].Ar" value="@BA("hero.chip2")">
+                </div>
+                <div class="a-form-group">
+                    <label>Chip 2 (English)</label>
+                    <input type="text" name="blocks[hero.chip2].En" value="@BE("hero.chip2")" dir="ltr">
                 </div>
             </div>
-            <button type="submit" class="a-btn-sm" style="margin-top:.5rem">💾 حفظ</button>
+
+            <hr class="hp-divider">
+
+            <div class="hp-grid-2">
+                <div class="a-form-group">
+                    <label>سطر العنوان الأول (عربي)</label>
+                    <input type="text" name="blocks[hero.title.line1].Ar" value="@BA("hero.title.line1")">
+                </div>
+                <div class="a-form-group">
+                    <label>Title Line 1 (English)</label>
+                    <input type="text" name="blocks[hero.title.line1].En" value="@BE("hero.title.line1")" dir="ltr">
+                </div>
+                <div class="a-form-group">
+                    <label>سطر العنوان الثاني — المُلوَّن (عربي)</label>
+                    <input type="text" name="blocks[hero.title.line2].Ar" value="@BA("hero.title.line2")">
+                </div>
+                <div class="a-form-group">
+                    <label>Title Line 2 — Accent (English)</label>
+                    <input type="text" name="blocks[hero.title.line2].En" value="@BE("hero.title.line2")" dir="ltr">
+                </div>
+                <div class="a-form-group">
+                    <label>الوصف (عربي)</label>
+                    <textarea name="blocks[hero.subtitle].Ar" rows="3">@BA("hero.subtitle")</textarea>
+                </div>
+                <div class="a-form-group">
+                    <label>Subtitle (English)</label>
+                    <textarea name="blocks[hero.subtitle].En" rows="3" dir="ltr">@BE("hero.subtitle")</textarea>
+                </div>
+            </div>
+
+            <hr class="hp-divider">
+
+            <div class="hp-grid-2">
+                <div class="a-form-group">
+                    <label>نص الزر الأساسي (عربي)</label>
+                    <input type="text" name="blocks[hero.btn1.text].Ar" value="@BA("hero.btn1.text")">
+                </div>
+                <div class="a-form-group">
+                    <label>Primary Button (English)</label>
+                    <input type="text" name="blocks[hero.btn1.text].En" value="@BE("hero.btn1.text")" dir="ltr">
+                </div>
+                <div class="a-form-group">
+                    <label><i class="bi bi-link-45deg"></i> رابط الزر الأساسي</label>
+                    <input type="text" name="blocks[hero.btn1.url].Ar" value="@BA("hero.btn1.url")" dir="ltr" placeholder="/Products">
+                </div>
+                <div></div>
+                <div class="a-form-group">
+                    <label>نص الزر الثانوي (عربي)</label>
+                    <input type="text" name="blocks[hero.btn2.text].Ar" value="@BA("hero.btn2.text")">
+                </div>
+                <div class="a-form-group">
+                    <label>Secondary Button (English)</label>
+                    <input type="text" name="blocks[hero.btn2.text].En" value="@BE("hero.btn2.text")" dir="ltr">
+                </div>
+                <div class="a-form-group">
+                    <label><i class="bi bi-link-45deg"></i> رابط الزر الثانوي</label>
+                    <input type="text" name="blocks[hero.btn2.url].Ar" value="@BA("hero.btn2.url")" dir="ltr" placeholder="#featured">
+                </div>
+            </div>
+
+            <hr class="hp-divider">
+
+            <h4 style="font-size:14px;font-weight:800;margin:0 0 .8rem"><i class="bi bi-graph-up-arrow"></i> الإحصائيات (تظهر في الهيرو وقسم "من نحن")</h4>
+            <div class="hp-grid-3">
+                <div class="a-form-group">
+                    <label>القيمة ١</label>
+                    <input type="text" name="blocks[about.stat.years].Ar" value="@BA("about.stat.years")" style="text-align:center;font-weight:800">
+                </div>
+                <div class="a-form-group">
+                    <label>التسمية ١ (عربي)</label>
+                    <input type="text" name="blocks[hero.stat1.label].Ar" value="@BA("hero.stat1.label")">
+                </div>
+                <div class="a-form-group">
+                    <label>Label 1 (English)</label>
+                    <input type="text" name="blocks[hero.stat1.label].En" value="@BE("hero.stat1.label")" dir="ltr">
+                </div>
+                <div class="a-form-group">
+                    <label>القيمة ٢</label>
+                    <input type="text" name="blocks[about.stat.clients].Ar" value="@BA("about.stat.clients")" style="text-align:center;font-weight:800">
+                </div>
+                <div class="a-form-group">
+                    <label>التسمية ٢ (عربي)</label>
+                    <input type="text" name="blocks[hero.stat2.label].Ar" value="@BA("hero.stat2.label")">
+                </div>
+                <div class="a-form-group">
+                    <label>Label 2 (English)</label>
+                    <input type="text" name="blocks[hero.stat2.label].En" value="@BE("hero.stat2.label")" dir="ltr">
+                </div>
+                <div class="a-form-group">
+                    <label>القيمة ٣</label>
+                    <input type="text" name="blocks[about.stat.products].Ar" value="@BA("about.stat.products")" style="text-align:center;font-weight:800">
+                </div>
+                <div class="a-form-group">
+                    <label>التسمية ٣ (عربي)</label>
+                    <input type="text" name="blocks[hero.stat3.label].Ar" value="@BA("hero.stat3.label")">
+                </div>
+                <div class="a-form-group">
+                    <label>Label 3 (English)</label>
+                    <input type="text" name="blocks[hero.stat3.label].En" value="@BE("hero.stat3.label")" dir="ltr">
+                </div>
+            </div>
+
+            <button type="submit" class="a-btn" style="margin-top:1rem"><i class="bi bi-check2-circle"></i> حفظ نصوص الهيرو</button>
         </form>
     </div>
+
+    <div class="a-card">
+        <h3 class="a-card-title" style="margin-bottom:.4rem"><i class="bi bi-collection-play"></i> منتجات سلايدر الهيرو</h3>
+        <p class="hp-hint">اختر المنتجات التي تظهر في سلايدر الهيرو — الترتيب في القائمة اليمنى هو ترتيب العرض. استخدم الأسهم لإعادة الترتيب.</p>
+        <form action="/Admin/AdminContent/SaveProductSelections?tab=hero&scope=hero" method="post" id="heroPickerForm">
+            @Html.AntiForgeryToken()
+            <div class="picker-wrap" data-picker="hero">
+                <div class="picker-col">
+                    <h5><i class="bi bi-box-seam"></i> المنتجات المتاحة</h5>
+                    <ul class="picker-list" data-role="available">
+                        @foreach (var p in products.Where(p => !heroIds.Contains(p.Id)))
+                        {
+                            <li data-id="@p.Id" data-name="@p.NameAr">
+                                <span class="p-name">@p.NameAr <small style="color:var(--a-text2)">(@p.Price EGP)</small></span>
+                                <button type="button" class="add" title="إضافة"><i class="bi bi-plus-lg"></i></button>
+                            </li>
+                        }
+                    </ul>
+                </div>
+                <div class="picker-col">
+                    <h5><i class="bi bi-check2-square"></i> المختارة (بالترتيب)</h5>
+                    <ul class="picker-list" data-role="selected" data-input-name="heroProductIds">
+                        @foreach (var id in heroIds)
+                        {
+                            var p = products.FirstOrDefault(x => x.Id == id);
+                            if (p == null) { continue; }
+                            <li data-id="@p.Id" data-name="@p.NameAr">
+                                <span class="p-num"></span>
+                                <span class="p-name">@p.NameAr</span>
+                                <button type="button" class="up" title="أعلى"><i class="bi bi-arrow-up"></i></button>
+                                <button type="button" class="down" title="أسفل"><i class="bi bi-arrow-down"></i></button>
+                                <button type="button" class="rm" title="إزالة"><i class="bi bi-x-lg"></i></button>
+                                <input type="hidden" name="heroProductIds" value="@p.Id">
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+            <button type="submit" class="a-btn" style="margin-top:1rem"><i class="bi bi-check2-circle"></i> حفظ منتجات السلايدر</button>
+        </form>
+    </div>
+}
+
+@* ════════════════════ TAB 2: VALUE PROPS ════════════════════ *@
+@if (activeTab == "values")
+{
+    var iconOptions = new (string Cls, string Label)[]
+    {
+        ("bi-shield-check", "🛡 درع الحماية"),
+        ("bi-truck", "🚚 شاحنة التوصيل"),
+        ("bi-headset", "🎧 سماعة الدعم"),
+        ("bi-arrow-counterclockwise", "↩ سهم الاسترجاع"),
+        ("bi-credit-card", "💳 بطاقة الدفع"),
+        ("bi-patch-check", "⭐ شارة الجودة"),
+        ("bi-lightning-charge", "⚡ برق السرعة"),
+        ("bi-gift", "🎁 هدية"),
+        ("bi-award", "🏆 جائزة"),
+        ("bi-box-seam", "📦 صندوق"),
+        ("bi-cash-coin", "💰 نقود"),
+        ("bi-star", "✨ نجمة"),
+    };
+
+    <div class="a-card">
+        <h3 class="a-card-title" style="margin-bottom:.4rem"><i class="bi bi-patch-check"></i> شريط المزايا (٤ بطاقات تحت الهيرو)</h3>
+        <p class="hp-hint">لكل ميزة: أيقونة من مكتبة Bootstrap Icons + عنوان ووصف بالعربي والإنجليزي.</p>
+        <form action="/Admin/AdminContent/SaveBlocksBulk?tab=values" method="post">
+            @Html.AntiForgeryToken()
+            @for (int i = 1; i <= 4; i++)
+            {
+                var titleKey = $"value.prop{i}.title";
+                var descKey = $"value.prop{i}.desc";
+                var currentIcon = BI(titleKey);
+                <div style="@(i > 1 ? "border-top:1px dashed var(--a-border);padding-top:1.2rem;margin-top:1.2rem;" : "")">
+                    <h4 style="font-size:13px;font-weight:800;margin:0 0 .8rem;color:var(--a-blue)">الميزة @i</h4>
+                    <div class="hp-grid-2">
+                        <div class="a-form-group">
+                            <label>الأيقونة</label>
+                            <div class="icon-select-row">
+                                <span class="icon-preview"><i class="bi @(string.IsNullOrEmpty(currentIcon) ? "bi-star" : currentIcon)"></i></span>
+                                <select name="blocks[@titleKey].Icon" onchange="this.parentElement.querySelector('.icon-preview i').className = 'bi ' + this.value" style="flex:1">
+                                    @foreach (var opt in iconOptions)
+                                    {
+                                        if (opt.Cls == currentIcon)
+                                        {
+                                            <option value="@opt.Cls" selected>@opt.Label — @opt.Cls</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@opt.Cls">@opt.Label — @opt.Cls</option>
+                                        }
+                                    }
+                                    @if (!string.IsNullOrEmpty(currentIcon) && !iconOptions.Any(o => o.Cls == currentIcon))
+                                    {
+                                        <option value="@currentIcon" selected>مخصصة — @currentIcon</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div></div>
+                        <div class="a-form-group">
+                            <label>العنوان (عربي)</label>
+                            <input type="text" name="blocks[@titleKey].Ar" value="@BA(titleKey)">
+                        </div>
+                        <div class="a-form-group">
+                            <label>Title (English)</label>
+                            <input type="text" name="blocks[@titleKey].En" value="@BE(titleKey)" dir="ltr">
+                        </div>
+                        <div class="a-form-group">
+                            <label>الوصف (عربي)</label>
+                            <input type="text" name="blocks[@descKey].Ar" value="@BA(descKey)">
+                        </div>
+                        <div class="a-form-group">
+                            <label>Description (English)</label>
+                            <input type="text" name="blocks[@descKey].En" value="@BE(descKey)" dir="ltr">
+                        </div>
+                    </div>
+                </div>
+            }
+            <button type="submit" class="a-btn" style="margin-top:1.2rem"><i class="bi bi-check2-circle"></i> حفظ المزايا</button>
+        </form>
+    </div>
+}
+
+@* ════════════════════ TAB 3: FEATURED CATALOG ════════════════════ *@
+@if (activeTab == "catalog")
+{
+    <div class="a-card" style="margin-bottom:1.5rem">
+        <h3 class="a-card-title" style="margin-bottom:.4rem"><i class="bi bi-card-text"></i> نصوص قسم الكتالوج المميز</h3>
+        <form action="/Admin/AdminContent/SaveBlocksBulk?tab=catalog" method="post">
+            @Html.AntiForgeryToken()
+            <div class="hp-grid-2">
+                <div class="a-form-group">
+                    <label>العنوان الصغير Eyebrow (عربي)</label>
+                    <input type="text" name="blocks[feat.catalog.eyebrow].Ar" value="@BA("feat.catalog.eyebrow")">
+                </div>
+                <div class="a-form-group">
+                    <label>Eyebrow (English)</label>
+                    <input type="text" name="blocks[feat.catalog.eyebrow].En" value="@BE("feat.catalog.eyebrow")" dir="ltr">
+                </div>
+                <div class="a-form-group">
+                    <label>العنوان الرئيسي (عربي)</label>
+                    <input type="text" name="blocks[feat.catalog.title].Ar" value="@BA("feat.catalog.title")">
+                </div>
+                <div class="a-form-group">
+                    <label>Title (English)</label>
+                    <input type="text" name="blocks[feat.catalog.title].En" value="@BE("feat.catalog.title")" dir="ltr">
+                </div>
+                <div class="a-form-group">
+                    <label>الوصف (عربي)</label>
+                    <textarea name="blocks[feat.catalog.desc].Ar" rows="2">@BA("feat.catalog.desc")</textarea>
+                </div>
+                <div class="a-form-group">
+                    <label>Description (English)</label>
+                    <textarea name="blocks[feat.catalog.desc].En" rows="2" dir="ltr">@BE("feat.catalog.desc")</textarea>
+                </div>
+                <div class="a-form-group">
+                    <label>نص زر "عرض الكل" (عربي)</label>
+                    <input type="text" name="blocks[feat.catalog.btn.text].Ar" value="@BA("feat.catalog.btn.text")">
+                </div>
+                <div class="a-form-group">
+                    <label>View All Button (English)</label>
+                    <input type="text" name="blocks[feat.catalog.btn.text].En" value="@BE("feat.catalog.btn.text")" dir="ltr">
+                </div>
+            </div>
+            <button type="submit" class="a-btn" style="margin-top:1rem"><i class="bi bi-check2-circle"></i> حفظ النصوص</button>
+        </form>
+    </div>
+
+    <div class="a-card">
+        <h3 class="a-card-title" style="margin-bottom:.4rem"><i class="bi bi-grid-3x3-gap"></i> منتجات الكتالوج المميز</h3>
+        <p class="hp-hint">المنتجات التي تظهر في شبكة الكتالوج بالرئيسية — بالترتيب الذي تحدده.</p>
+        <form action="/Admin/AdminContent/SaveProductSelections?tab=catalog&scope=featured" method="post">
+            @Html.AntiForgeryToken()
+            <div class="picker-wrap" data-picker="featured">
+                <div class="picker-col">
+                    <h5><i class="bi bi-box-seam"></i> المنتجات المتاحة</h5>
+                    <ul class="picker-list" data-role="available">
+                        @foreach (var p in products.Where(p => !featuredIds.Contains(p.Id)))
+                        {
+                            <li data-id="@p.Id" data-name="@p.NameAr">
+                                <span class="p-name">@p.NameAr <small style="color:var(--a-text2)">(@p.Price EGP)</small></span>
+                                <button type="button" class="add" title="إضافة"><i class="bi bi-plus-lg"></i></button>
+                            </li>
+                        }
+                    </ul>
+                </div>
+                <div class="picker-col">
+                    <h5><i class="bi bi-check2-square"></i> المختارة (بالترتيب)</h5>
+                    <ul class="picker-list" data-role="selected" data-input-name="featuredProductIds">
+                        @foreach (var id in featuredIds)
+                        {
+                            var p = products.FirstOrDefault(x => x.Id == id);
+                            if (p == null) { continue; }
+                            <li data-id="@p.Id" data-name="@p.NameAr">
+                                <span class="p-num"></span>
+                                <span class="p-name">@p.NameAr</span>
+                                <button type="button" class="up" title="أعلى"><i class="bi bi-arrow-up"></i></button>
+                                <button type="button" class="down" title="أسفل"><i class="bi bi-arrow-down"></i></button>
+                                <button type="button" class="rm" title="إزالة"><i class="bi bi-x-lg"></i></button>
+                                <input type="hidden" name="featuredProductIds" value="@p.Id">
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+            <button type="submit" class="a-btn" style="margin-top:1rem"><i class="bi bi-check2-circle"></i> حفظ منتجات الكتالوج</button>
+        </form>
+    </div>
+}
+
+@* ════════════════════ TAB 4: SECTIONS & CATEGORIES ════════════════════ *@
+@if (activeTab == "sections")
+{
+    var sectionDefs = new (string Key, string Icon, string Label)[]
+    {
+        ("hero",       "bi-stars",           "الهيرو"),
+        ("values",     "bi-patch-check",     "شريط المزايا"),
+        ("marquee",    "bi-arrow-left-right","شريط البراندات المتحرك"),
+        ("categories", "bi-grid",            "معرض الفئات"),
+        ("featured",   "bi-grid-3x3-gap",    "الكتالوج المميز"),
+        ("about",      "bi-info-circle",     "من نحن"),
+        ("mission",    "bi-bullseye",        "الرؤية والرسالة"),
+        ("cta",        "bi-megaphone",       "شريط الدعوة CTA"),
+        ("contact",    "bi-envelope",        "تواصل معنا"),
+        ("newsletter", "bi-send",            "النشرة البريدية (الفوتر)"),
+        ("payments",   "bi-credit-card-2-front", "شارات الدفع (الفوتر)"),
+    };
+
+    <div class="a-card" style="margin-bottom:1.5rem">
+        <h3 class="a-card-title" style="margin-bottom:.4rem"><i class="bi bi-toggles"></i> إظهار / إخفاء الأقسام</h3>
+        <p class="hp-hint">أخفِ أي قسم من الصفحة الرئيسية بنقرة واحدة، وتحكم في ترتيب الأقسام وعدد بلاطات الفئات.</p>
+        <form action="/Admin/AdminContent/SaveHomepageSettings?tab=sections" method="post">
+            @Html.AntiForgeryToken()
+            <div class="hp-toggle-grid">
+                @foreach (var sd in sectionDefs)
+                {
+                    <label class="hp-toggle">
+                        @if (Show(sd.Key))
+                        {
+                            <input type="checkbox" name="visibleSections" value="@sd.Key" checked>
+                        }
+                        else
+                        {
+                            <input type="checkbox" name="visibleSections" value="@sd.Key">
+                        }
+                        <i class="bi @sd.Icon" style="color:var(--a-blue)"></i>
+                        <span>
+                            <span class="t-name">@sd.Label</span>
+                            <span class="t-key">@sd.Key</span>
+                        </span>
+                    </label>
+                }
+            </div>
+
+            <hr class="hp-divider">
+
+            <div class="hp-grid-2">
+                <div class="a-form-group">
+                    <label><i class="bi bi-sort-numeric-down"></i> ترتيب الأقسام (مفاتيح مفصولة بفواصل)</label>
+                    <input type="text" name="sectionsOrder" dir="ltr" style="font-family:monospace;font-size:12px"
+                           value="@S("homepage.sections.order", "hero,values,marquee,categories,featured,about,mission,cta,contact")">
+                    <small style="color:var(--a-text2);font-size:11px;display:block;margin-top:4px">
+                        المفاتيح المتاحة: hero, values, marquee, categories, featured, about, mission, cta, contact
+                    </small>
+                </div>
+                <div class="a-form-group">
+                    <label><i class="bi bi-123"></i> عدد بلاطات الفئات بالرئيسية</label>
+                    <input type="number" name="categoriesCount" min="1" max="12" value="@S("homepage.categories.count", "3")" style="max-width:120px">
+                </div>
+            </div>
+
+            <button type="submit" class="a-btn" style="margin-top:.6rem"><i class="bi bi-check2-circle"></i> حفظ إعدادات الأقسام</button>
+        </form>
+    </div>
+
+    <div class="a-card" style="margin-bottom:1.5rem">
+        <h3 class="a-card-title" style="margin-bottom:.4rem"><i class="bi bi-grid"></i> فئات الرئيسية</h3>
+        <p class="hp-hint">بدّل ظهور أي فئة في معرض الفئات بالرئيسية بنقرة واحدة. لرفع صورة الفئة استخدم صفحة <a href="/Admin/AdminCategories" style="color:var(--a-blue)">إدارة الفئات</a>.</p>
+        <table style="width:100%;border-collapse:collapse">
+            <tbody>
+                @foreach (var c in categories)
+                {
+                    <tr class="cat-row">
+                        <td style="width:50px">
+                            @if (!string.IsNullOrEmpty(c.ImagePath))
+                            {
+                                <img src="@c.ImagePath" alt="@c.NameAr" class="cat-thumb">
+                            }
+                            else
+                            {
+                                <span class="cat-thumb-emoji">@(string.IsNullOrEmpty(c.Emoji) ? "📦" : c.Emoji)</span>
+                            }
+                        </td>
+                        <td style="font-weight:700">@c.NameAr <small style="color:var(--a-text2)" dir="ltr">@c.NameEn</small></td>
+                        <td style="width:110px;text-align:center">
+                            @if (c.ShowOnHomepage)
+                            {
+                                <span class="badge-on"><i class="bi bi-eye"></i> تظهر</span>
+                            }
+                            else
+                            {
+                                <span class="badge-off"><i class="bi bi-eye-slash"></i> مخفية</span>
+                            }
+                        </td>
+                        <td style="width:130px;text-align:left">
+                            <form action="/Admin/AdminContent/ToggleCategoryHomepage?tab=sections" method="post" style="display:inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@c.Id">
+                                <button type="submit" class="a-btn-sm a-btn-outline">
+                                    <i class="bi bi-arrow-repeat"></i> @(c.ShowOnHomepage ? "إخفاء" : "إظهار")
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="a-card" style="margin-bottom:1.5rem">
+        <h3 class="a-card-title" style="margin-bottom:.4rem"><i class="bi bi-card-heading"></i> نصوص معرض الفئات + الـ CTA + الفوتر</h3>
+        <form action="/Admin/AdminContent/SaveBlocksBulk?tab=sections" method="post">
+            @Html.AntiForgeryToken()
+            <h4 style="font-size:13px;font-weight:800;margin:0 0 .8rem;color:var(--a-blue)">معرض الفئات</h4>
+            <div class="hp-grid-2">
+                <div class="a-form-group"><label>Eyebrow (عربي)</label><input type="text" name="blocks[cat.showcase.eyebrow].Ar" value="@BA("cat.showcase.eyebrow")"></div>
+                <div class="a-form-group"><label>Eyebrow (English)</label><input type="text" name="blocks[cat.showcase.eyebrow].En" value="@BE("cat.showcase.eyebrow")" dir="ltr"></div>
+                <div class="a-form-group"><label>العنوان (عربي)</label><input type="text" name="blocks[cat.showcase.title].Ar" value="@BA("cat.showcase.title")"></div>
+                <div class="a-form-group"><label>Title (English)</label><input type="text" name="blocks[cat.showcase.title].En" value="@BE("cat.showcase.title")" dir="ltr"></div>
+                <div class="a-form-group"><label>الوصف (عربي)</label><textarea name="blocks[cat.showcase.desc].Ar" rows="2">@BA("cat.showcase.desc")</textarea></div>
+                <div class="a-form-group"><label>Description (English)</label><textarea name="blocks[cat.showcase.desc].En" rows="2" dir="ltr">@BE("cat.showcase.desc")</textarea></div>
+            </div>
+
+            <hr class="hp-divider">
+            <h4 style="font-size:13px;font-weight:800;margin:0 0 .8rem;color:var(--a-blue)">شريط الدعوة CTA</h4>
+            <div class="hp-grid-2">
+                <div class="a-form-group"><label>العنوان (عربي)</label><input type="text" name="blocks[cta.title].Ar" value="@BA("cta.title")"></div>
+                <div class="a-form-group"><label>Title (English)</label><input type="text" name="blocks[cta.title].En" value="@BE("cta.title")" dir="ltr"></div>
+                <div class="a-form-group"><label>الوصف (عربي)</label><textarea name="blocks[cta.desc].Ar" rows="2">@BA("cta.desc")</textarea></div>
+                <div class="a-form-group"><label>Description (English)</label><textarea name="blocks[cta.desc].En" rows="2" dir="ltr">@BE("cta.desc")</textarea></div>
+                <div class="a-form-group"><label>نص الزر (عربي)</label><input type="text" name="blocks[cta.btn.text].Ar" value="@BA("cta.btn.text")"></div>
+                <div class="a-form-group"><label>Button (English)</label><input type="text" name="blocks[cta.btn.text].En" value="@BE("cta.btn.text")" dir="ltr"></div>
+                <div class="a-form-group"><label><i class="bi bi-link-45deg"></i> رابط الزر</label><input type="text" name="blocks[cta.btn.url].Ar" value="@BA("cta.btn.url")" dir="ltr" placeholder="/Products"></div>
+            </div>
+
+            <hr class="hp-divider">
+            <h4 style="font-size:13px;font-weight:800;margin:0 0 .8rem;color:var(--a-blue)">النشرة البريدية (الفوتر)</h4>
+            <div class="hp-grid-2">
+                <div class="a-form-group"><label>العنوان (عربي)</label><input type="text" name="blocks[newsletter.title].Ar" value="@BA("newsletter.title")"></div>
+                <div class="a-form-group"><label>Title (English)</label><input type="text" name="blocks[newsletter.title].En" value="@BE("newsletter.title")" dir="ltr"></div>
+                <div class="a-form-group"><label>الوصف (عربي)</label><textarea name="blocks[newsletter.desc].Ar" rows="2">@BA("newsletter.desc")</textarea></div>
+                <div class="a-form-group"><label>Description (English)</label><textarea name="blocks[newsletter.desc].En" rows="2" dir="ltr">@BE("newsletter.desc")</textarea></div>
+                <div class="a-form-group"><label>نص زر الاشتراك (عربي)</label><input type="text" name="blocks[newsletter.btn.text].Ar" value="@BA("newsletter.btn.text")"></div>
+                <div class="a-form-group"><label>Subscribe Button (English)</label><input type="text" name="blocks[newsletter.btn.text].En" value="@BE("newsletter.btn.text")" dir="ltr"></div>
+            </div>
+
+            <hr class="hp-divider">
+            <h4 style="font-size:13px;font-weight:800;margin:0 0 .8rem;color:var(--a-blue)">الفوتر وشريط البراندات</h4>
+            <div class="hp-grid-2">
+                <div class="a-form-group"><label>وصف الفوتر (عربي)</label><textarea name="blocks[footer.desc].Ar" rows="2">@BA("footer.desc")</textarea></div>
+                <div class="a-form-group"><label>Footer Description (English)</label><textarea name="blocks[footer.desc].En" rows="2" dir="ltr">@BE("footer.desc")</textarea></div>
+                <div class="a-form-group"><label>حقوق النشر (عربي)</label><input type="text" name="blocks[footer.credits].Ar" value="@BA("footer.credits")"></div>
+                <div class="a-form-group"><label>Copyright (English)</label><input type="text" name="blocks[footer.credits].En" value="@BE("footer.credits")" dir="ltr"></div>
+                <div class="a-form-group"><label>عناصر شريط البراندات المتحرك (عربي — مفصولة بفواصل)</label><input type="text" name="blocks[marquee.items].Ar" value="@BA("marquee.items")"></div>
+                <div class="a-form-group"><label>Marquee Items (English — comma separated)</label><input type="text" name="blocks[marquee.items].En" value="@BE("marquee.items")" dir="ltr"></div>
+            </div>
+
+            <button type="submit" class="a-btn" style="margin-top:1rem"><i class="bi bi-check2-circle"></i> حفظ كل النصوص</button>
+        </form>
+    </div>
+}
+
+@* ════════════════════ TAB 5: ABOUT & CONTACT ════════════════════ *@
+@if (activeTab == "about")
+{
+    <div class="a-card" style="margin-bottom:1.5rem">
+        <h3 class="a-card-title" style="margin-bottom:.4rem"><i class="bi bi-info-circle"></i> قسم "من نحن"</h3>
+        <form action="/Admin/AdminContent/SaveBlocksBulk?tab=about" method="post">
+            @Html.AntiForgeryToken()
+            <div class="hp-grid-2">
+                <div class="a-form-group"><label>Eyebrow (عربي)</label><input type="text" name="blocks[about.eyebrow].Ar" value="@BA("about.eyebrow")"></div>
+                <div class="a-form-group"><label>Eyebrow (English)</label><input type="text" name="blocks[about.eyebrow].En" value="@BE("about.eyebrow")" dir="ltr"></div>
+                <div class="a-form-group"><label>العنوان الرئيسي (عربي)</label><input type="text" name="blocks[about.headline].Ar" value="@BA("about.headline")"></div>
+                <div class="a-form-group"><label>Headline (English)</label><input type="text" name="blocks[about.headline].En" value="@BE("about.headline")" dir="ltr"></div>
+                <div class="a-form-group"><label>النبذة (عربي)</label><textarea name="blocks[about.body.ar].Ar" rows="3">@BA("about.body.ar")</textarea></div>
+                <div class="a-form-group"><label>About Body (English)</label><textarea name="blocks[about.body.en].En" rows="3" dir="ltr">@BE("about.body.en")</textarea></div>
+            </div>
+
+            <hr class="hp-divider">
+            <h4 style="font-size:13px;font-weight:800;margin:0 0 .8rem;color:var(--a-blue)">مميزات "لماذا نحن؟" (تظهر في قسم من نحن)</h4>
+            <div class="hp-grid-2" style="margin-bottom:.6rem">
+                <div class="a-form-group"><label>عنوان القسم (عربي)</label><input type="text" name="blocks[features.title.ar].Ar" value="@BA("features.title.ar")"></div>
+                <div class="a-form-group"><label>Section Title (English)</label><input type="text" name="blocks[features.title.en].En" value="@BE("features.title.en")" dir="ltr"></div>
+            </div>
+            @for (int i = 1; i <= 6; i++)
+            {
+                var fKey = $"features.{i}";
+                <div class="hp-grid-3" style="margin-bottom:.6rem">
+                    <div class="a-form-group">
+                        <label>أيقونة @i</label>
+                        <input type="text" name="blocks[@fKey].Icon" value="@BI(fKey)" placeholder="✓" style="text-align:center;font-size:17px">
+                    </div>
+                    <div class="a-form-group">
+                        <label>النص (عربي)</label>
+                        <input type="text" name="blocks[@fKey].Ar" value="@BA(fKey)">
+                    </div>
+                    <div class="a-form-group">
+                        <label>Text (English)</label>
+                        <input type="text" name="blocks[@fKey].En" value="@BE(fKey)" dir="ltr">
+                    </div>
+                </div>
+            }
+
+            <hr class="hp-divider">
+            <h4 style="font-size:13px;font-weight:800;margin:0 0 .8rem;color:var(--a-blue)">الرؤية والرسالة</h4>
+            <div class="hp-grid-2">
+                <div class="a-form-group"><label>Eyebrow (عربي)</label><input type="text" name="blocks[mission.eyebrow].Ar" value="@BA("mission.eyebrow")"></div>
+                <div class="a-form-group"><label>Eyebrow (English)</label><input type="text" name="blocks[mission.eyebrow].En" value="@BE("mission.eyebrow")" dir="ltr"></div>
+                <div class="a-form-group"><label>العنوان (عربي)</label><input type="text" name="blocks[mission.headline].Ar" value="@BA("mission.headline")"></div>
+                <div class="a-form-group"><label>Headline (English)</label><input type="text" name="blocks[mission.headline].En" value="@BE("mission.headline")" dir="ltr"></div>
+                <div class="a-form-group"><label>نص الرسالة (عربي)</label><textarea name="blocks[mission.text.ar].Ar" rows="3">@BA("mission.text.ar")</textarea></div>
+                <div class="a-form-group"><label>Mission Text (English)</label><textarea name="blocks[mission.text.en].En" rows="3" dir="ltr">@BE("mission.text.en")</textarea></div>
+                <div class="a-form-group"><label>نص الرؤية (عربي)</label><textarea name="blocks[vision.text.ar].Ar" rows="3">@BA("vision.text.ar")</textarea></div>
+                <div class="a-form-group"><label>Vision Text (English)</label><textarea name="blocks[vision.text.en].En" rows="3" dir="ltr">@BE("vision.text.en")</textarea></div>
+            </div>
+
+            <hr class="hp-divider">
+            <h4 style="font-size:13px;font-weight:800;margin:0 0 .8rem;color:var(--a-blue)">قسم "تواصل معنا"</h4>
+            <div class="hp-grid-2">
+                <div class="a-form-group"><label>Eyebrow (عربي)</label><input type="text" name="blocks[contact.eyebrow].Ar" value="@BA("contact.eyebrow")"></div>
+                <div class="a-form-group"><label>Eyebrow (English)</label><input type="text" name="blocks[contact.eyebrow].En" value="@BE("contact.eyebrow")" dir="ltr"></div>
+                <div class="a-form-group"><label>العنوان (عربي)</label><input type="text" name="blocks[contact.title].Ar" value="@BA("contact.title")"></div>
+                <div class="a-form-group"><label>Title (English)</label><input type="text" name="blocks[contact.title].En" value="@BE("contact.title")" dir="ltr"></div>
+                <div class="a-form-group"><label>الوصف (عربي)</label><textarea name="blocks[contact.desc].Ar" rows="2">@BA("contact.desc")</textarea></div>
+                <div class="a-form-group"><label>Description (English)</label><textarea name="blocks[contact.desc].En" rows="2" dir="ltr">@BE("contact.desc")</textarea></div>
+            </div>
+            <p class="hp-hint" style="margin-top:.6rem">
+                <i class="bi bi-info-circle"></i>
+                بيانات التواصل نفسها (العنوان، الهاتف، البريد، السوشيال) تُدار من صفحة <a href="/Admin/AdminContent/Contact" style="color:var(--a-blue)">معلومات التواصل</a>.
+            </p>
+
+            <button type="submit" class="a-btn" style="margin-top:1rem"><i class="bi bi-check2-circle"></i> حفظ كل النصوص</button>
+        </form>
+    </div>
+}
+
+@section Scripts {
+<script>
+    // ── Product picker (add / remove / reorder) ──
+    document.querySelectorAll('.picker-wrap').forEach(function (wrap) {
+        var available = wrap.querySelector('[data-role="available"]');
+        var selected = wrap.querySelector('[data-role="selected"]');
+        var inputName = selected.dataset.inputName;
+
+        function renumber() {
+            selected.querySelectorAll('li').forEach(function (li, i) {
+                var num = li.querySelector('.p-num');
+                if (num) num.textContent = i + 1;
+            });
+            if (!selected.querySelector('li')) {
+                if (!selected.querySelector('.picker-empty')) {
+                    var d = document.createElement('div');
+                    d.className = 'picker-empty';
+                    d.textContent = 'لم يتم اختيار منتجات — سيتم استخدام الافتراضي';
+                    selected.appendChild(d);
+                }
+            } else {
+                var e = selected.querySelector('.picker-empty');
+                if (e) e.remove();
+            }
+        }
+
+        function makeSelectedLi(id, name) {
+            var li = document.createElement('li');
+            li.dataset.id = id;
+            li.dataset.name = name;
+            li.innerHTML = '<span class="p-num"></span><span class="p-name"></span>'
+                + '<button type="button" class="up" title="أعلى"><i class="bi bi-arrow-up"></i></button>'
+                + '<button type="button" class="down" title="أسفل"><i class="bi bi-arrow-down"></i></button>'
+                + '<button type="button" class="rm" title="إزالة"><i class="bi bi-x-lg"></i></button>'
+                + '<input type="hidden" name="' + inputName + '" value="' + id + '">';
+            li.querySelector('.p-name').textContent = name;
+            return li;
+        }
+
+        function makeAvailableLi(id, name) {
+            var li = document.createElement('li');
+            li.dataset.id = id;
+            li.dataset.name = name;
+            li.innerHTML = '<span class="p-name"></span><button type="button" class="add" title="إضافة"><i class="bi bi-plus-lg"></i></button>';
+            li.querySelector('.p-name').textContent = name;
+            return li;
+        }
+
+        wrap.addEventListener('click', function (ev) {
+            var btn = ev.target.closest('button');
+            if (!btn) return;
+            var li = btn.closest('li');
+            if (!li) return;
+
+            if (btn.classList.contains('add')) {
+                selected.appendChild(makeSelectedLi(li.dataset.id, li.dataset.name));
+                li.remove();
+            } else if (btn.classList.contains('rm')) {
+                available.appendChild(makeAvailableLi(li.dataset.id, li.dataset.name));
+                li.remove();
+            } else if (btn.classList.contains('up')) {
+                var prev = li.previousElementSibling;
+                if (prev) li.parentNode.insertBefore(li, prev);
+            } else if (btn.classList.contains('down')) {
+                var next = li.nextElementSibling;
+                if (next) li.parentNode.insertBefore(next, li);
+            }
+            renumber();
+        });
+
+        renumber();
+    });
+</script>
 }
