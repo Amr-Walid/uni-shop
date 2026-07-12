@@ -519,6 +519,14 @@ namespace FTD.Web.Controllers.Admin
             TempData["Success"] = "تم تحديث الصفحة";
             return RedirectToAction(nameof(EditPage), new { id });
         }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeletePage(int id)
+        {
+            await _content.DeletePageAsync(id);
+            TempData["Success"] = "تم حذف الصفحة بنجاح";
+            return RedirectToAction(nameof(Pages));
+        }
     }
 
     // ── ADMIN SETTINGS ────────────────────────────────────────────────────────

@@ -154,6 +154,16 @@ namespace FTD.Application.Services
             return page.ToDto()!;
         }
 
+        public async Task DeletePageAsync(int id)
+        {
+            var page = await _db.ContentPages.FindAsync(id);
+            if (page != null)
+            {
+                _db.ContentPages.Remove(page);
+                await _db.SaveChangesAsync();
+            }
+        }
+
         public async Task<ContentPageDto?> GetPageWithSectionsAsync(int id)
         {
             var page = await _db.ContentPages

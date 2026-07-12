@@ -20,6 +20,7 @@ namespace FTD.Application.Interfaces
         Task<List<ContentPageDto>> GetAllPagesAsync();
         Task<ContentPageDto> CreatePageAsync(ContentPageDto dto);
         Task<ContentPageDto> UpdatePageAsync(int id, ContentPageDto dto);
+        Task DeletePageAsync(int id);
         Task<ContentPageDto?> GetPageWithSectionsAsync(int id);
         Task AddPageSectionAsync(int pageId, string type, string defaultJson);
         Task<PageSectionDto?> GetPageSectionAsync(int sectionId);
