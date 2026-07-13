@@ -47,6 +47,10 @@
     </main>
 
     @await Component.InvokeAsync("Footer")
+    @* Global antiforgery token: site.js reads input[name=__RequestVerificationToken]
+       for AJAX cart POSTs, so it must exist on every page — not only pages that
+       happen to render a <form>. *@
+    @Html.AntiForgeryToken()
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

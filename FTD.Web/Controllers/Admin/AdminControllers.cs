@@ -2,6 +2,7 @@ using FTD.Application.Interfaces;
 using FTD.Application.DTOs;
 using FTD.Application.Mappers;
 using FTD.Domain.Entities;
+using FTD.Web.Helpers;
 using FTD.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -83,31 +84,32 @@ namespace FTD.Web.Controllers.Admin
             if (string.IsNullOrEmpty(vm.Product.Slug))
                 vm.Product.Slug = GenerateSlug(vm.Product.NameEn);
 
+            if (!ModelState.IsValid)
+                return await RedisplayFormAsync(vm, null);
+
             try
             {
                 if (vm.MainImage != null && vm.MainImage.Length > 0)
-                    vm.Product.ImagePath = await SaveImageAsync(vm.MainImage, "products");
+                    vm.Product.ImagePath = await ImageUploadHelper.SaveAsync(vm.MainImage, _env, "products");
 
                 var additionalImages = new List<ProductImageDto>();
                 if (vm.ProductImages != null)
                     foreach (var img in vm.ProductImages.Take(3))
                         if (img.Length > 0)
                         {
-                            var path = await SaveImageAsync(img, "products");
+                            var path = await ImageUploadHelper.SaveAsync(img, _env, "products");
                             additionalImages.Add(new ProductImageDto { ImagePath = path });
                         }
 
                 var attributeSelections = await ResolveAttributeSelectionsAsync(vm);
                 await _productService.CreateProductAsync(vm.Product, additionalImages, attributeSelections);
             }
-            catch (InvalidOperationException ex)
+            // ArgumentException covers invalid references (e.g. stale CategoryId);
+            // InvalidOperationException covers slug conflicts + upload validation.
+            catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
             {
                 ModelState.AddModelError("", ex.Message);
-                vm.Categories = await _productService.GetActiveCategoriesAsync();
-                var brandsRetry = await _productService.GetAllBrandsAsync();
-                vm.Brands = brandsRetry.Where(b => b.IsActive).ToList();
-                vm.Attributes = await _productService.GetAttributesWithDetailsAsync(null);
-                return View("~/Views/Admin/Products/Form.cshtml", vm);
+                return await RedisplayFormAsync(vm, null);
             }
 
             TempData["Success"] = "تم إضافة المنتج بنجاح";
@@ -148,10 +150,13 @@ namespace FTD.Web.Controllers.Admin
             if (string.IsNullOrEmpty(vm.Product.Slug))
                 vm.Product.Slug = GenerateSlug(vm.Product.NameEn);
 
+            if (!ModelState.IsValid)
+                return await RedisplayFormAsync(vm, vm.Product.CategoryId);
+
             try
             {
                 if (vm.MainImage != null && vm.MainImage.Length > 0)
-                    vm.Product.ImagePath = await SaveImageAsync(vm.MainImage, "products");
+                    vm.Product.ImagePath = await ImageUploadHelper.SaveAsync(vm.MainImage, _env, "products");
 
                 var additionalImages = new List<ProductImageDto>();
                 if (vm.ProductImages != null)
@@ -159,7 +164,7 @@ namespace FTD.Web.Controllers.Admin
                     foreach (var img in vm.ProductImages.Take(3))
                         if (img.Length > 0)
                         {
-                            var path = await SaveImageAsync(img, "products");
+                            var path = await ImageUploadHelper.SaveAsync(img, _env, "products");
                             additionalImages.Add(new ProductImageDto { ImagePath = path });
                         }
                 }
@@ -167,14 +172,12 @@ namespace FTD.Web.Controllers.Admin
                 var attributeSelections = await ResolveAttributeSelectionsAsync(vm);
                 await _productService.UpdateProductAsync(id, vm.Product, additionalImages, attributeSelections);
             }
-            catch (InvalidOperationException ex)
+            // ArgumentException covers "product not found" / invalid references;
+            // InvalidOperationException covers slug conflicts + upload validation.
+            catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
             {
                 ModelState.AddModelError("", ex.Message);
-                vm.Categories = await _productService.GetActiveCategoriesAsync();
-                var brandsRetry = await _productService.GetAllBrandsAsync();
-                vm.Brands = brandsRetry.Where(b => b.IsActive).ToList();
-                vm.Attributes = await _productService.GetAttributesWithDetailsAsync(vm.Product.CategoryId);
-                return View("~/Views/Admin/Products/Form.cshtml", vm);
+                return await RedisplayFormAsync(vm, vm.Product.CategoryId);
             }
 
             TempData["Success"] = "تم تحديث المنتج بنجاح";
@@ -293,25 +296,14 @@ namespace FTD.Web.Controllers.Admin
             return selections;
         }
 
-        private async Task<string> SaveImageAsync(IFormFile file, string folder)
+        /// <summary>Re-populates the dropdown/list data and re-renders the product form.</summary>
+        private async Task<IActionResult> RedisplayFormAsync(ProductFormViewModel vm, int? categoryId)
         {
-            // Validate extension
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (!allowedExtensions.Contains(ext))
-                throw new InvalidOperationException($"نوع الملف غير مدعوم. الأنواع المسموح بها: {string.Join(", ", allowedExtensions)}");
-
-            // Validate size (max 5 MB)
-            const long maxBytes = 5 * 1024 * 1024;
-            if (file.Length > maxBytes)
-                throw new InvalidOperationException("حجم الصورة يتجاوز الحد المسموح به (5 ميغابايت)");
-
-            var path = Path.Combine(_env.WebRootPath, "images", folder);
-            Directory.CreateDirectory(path);
-            var name = $"{Guid.NewGuid()}{ext}";
-            using var s = new FileStream(Path.Combine(path, name), FileMode.Create);
-            await file.CopyToAsync(s);
-            return $"/images/{folder}/{name}";
+            vm.Categories = await _productService.GetActiveCategoriesAsync();
+            var brands = await _productService.GetAllBrandsAsync();
+            vm.Brands = brands.Where(b => b.IsActive).ToList();
+            vm.Attributes = await _productService.GetAttributesWithDetailsAsync(categoryId);
+            return View("~/Views/Admin/Products/Form.cshtml", vm);
         }
 
         private static string GenerateSlug(string text)
@@ -344,10 +336,16 @@ namespace FTD.Web.Controllers.Admin
             if (string.IsNullOrEmpty(model.Slug))
                 model.Slug = model.NameEn.ToLower().Replace(" ", "-");
 
+            if (!ModelState.IsValid)
+                return View("~/Views/Admin/Categories/Form.cshtml", model);
+
             try
             {
                 if (ImageFile != null && ImageFile.Length > 0)
-                    model.ImagePath = await SaveCategoryImageAsync(ImageFile);
+                    model.ImagePath = await ImageUploadHelper.SaveAsync(ImageFile, _env, "categories");
+
+                // The service throws InvalidOperationException on slug conflicts.
+                await _productService.CreateCategoryAsync(model);
             }
             catch (InvalidOperationException ex)
             {
@@ -355,15 +353,14 @@ namespace FTD.Web.Controllers.Admin
                 return View("~/Views/Admin/Categories/Form.cshtml", model);
             }
 
-            await _productService.CreateCategoryAsync(model);
             TempData["Success"] = "تم إضافة التصنيف";
             return RedirectToAction(nameof(Index));
         }
 
         public async Task<IActionResult> Edit(int id)
         {
-            var cat = await _productService.GetAllCategoriesAsync();
-            var item = cat.FirstOrDefault(c => c.Id == id);
+            // Single-row lookup instead of loading every category into memory.
+            var item = await _productService.GetCategoryByIdAsync(id);
             if (item == null) return NotFound();
             return View("~/Views/Admin/Categories/Form.cshtml", item);
         }
@@ -374,42 +371,32 @@ namespace FTD.Web.Controllers.Admin
             if (string.IsNullOrEmpty(model.Slug))
                 model.Slug = model.NameEn.ToLower().Replace(" ", "-");
 
+            if (!ModelState.IsValid)
+            {
+                model.Id = id;
+                return View("~/Views/Admin/Categories/Form.cshtml", model);
+            }
+
             try
             {
                 if (ImageFile != null && ImageFile.Length > 0)
-                    model.ImagePath = await SaveCategoryImageAsync(ImageFile);
+                    model.ImagePath = await ImageUploadHelper.SaveAsync(ImageFile, _env, "categories");
                 else
                     model.ImagePath = null; // null ⇒ الخدمة تحتفظ بالصورة الحالية
+
+                // The service throws InvalidOperationException on slug conflicts
+                // and ArgumentException if the category no longer exists.
+                await _productService.UpdateCategoryAsync(id, model);
             }
-            catch (InvalidOperationException ex)
+            catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
             {
                 ModelState.AddModelError("", ex.Message);
                 model.Id = id;
                 return View("~/Views/Admin/Categories/Form.cshtml", model);
             }
 
-            await _productService.UpdateCategoryAsync(id, model);
             TempData["Success"] = "تم تحديث التصنيف";
             return RedirectToAction(nameof(Index));
-        }
-
-        private async Task<string> SaveCategoryImageAsync(IFormFile file)
-        {
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (!allowedExtensions.Contains(ext))
-                throw new InvalidOperationException($"نوع الملف غير مدعوم. الأنواع المسموح بها: {string.Join(", ", allowedExtensions)}");
-
-            const long maxBytes = 5 * 1024 * 1024;
-            if (file.Length > maxBytes)
-                throw new InvalidOperationException("حجم الصورة يتجاوز الحد المسموح به (5 ميغابايت)");
-
-            var dir = Path.Combine(_env.WebRootPath, "images", "categories");
-            Directory.CreateDirectory(dir);
-            var name = $"{Guid.NewGuid()}{ext}";
-            using var s = new FileStream(Path.Combine(dir, name), FileMode.Create);
-            await file.CopyToAsync(s);
-            return $"/images/categories/{name}";
         }
     }
 
@@ -448,8 +435,15 @@ namespace FTD.Web.Controllers.Admin
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateStatus(int id, int statusId)
         {
-            await _orders.UpdateStatusAsync(id, statusId);
-            TempData["Success"] = "تم تحديث حالة الطلب";
+            try
+            {
+                await _orders.UpdateStatusAsync(id, statusId);
+                TempData["Success"] = "تم تحديث حالة الطلب";
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
             return RedirectToAction(nameof(Detail), new { id });
         }
     }
@@ -548,8 +542,7 @@ namespace FTD.Web.Controllers.Admin
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleCategoryHomepage(int id, string? tab)
         {
-            var cats = await _products.GetAllCategoriesAsync();
-            var cat = cats.FirstOrDefault(c => c.Id == id);
+            var cat = await _products.GetCategoryByIdAsync(id);
             if (cat != null)
             {
                 cat.ShowOnHomepage = !cat.ShowOnHomepage;

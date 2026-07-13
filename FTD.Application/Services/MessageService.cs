@@ -53,6 +53,7 @@ namespace FTD.Application.Services
         public async Task<List<ContactMessageDto>> GetAllMessagesAsync()
         {
             var entities = await _db.ContactMessages
+                .AsNoTracking()
                 .OrderByDescending(m => m.IsRead)
                 .ThenByDescending(m => m.CreatedAt)
                 .ToListAsync();

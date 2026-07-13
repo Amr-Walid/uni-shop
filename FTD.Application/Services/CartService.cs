@@ -11,14 +11,11 @@ namespace FTD.Application.Services
 {
     public class CartService : ICartService
     {
-        private readonly IProductService _productService;
         private readonly IContentService _contentService;
         private readonly IAppDbContext _db;
-        private const string CartKey = "ftd_cart";
 
-        public CartService(IProductService productService, IContentService contentService, IAppDbContext db)
+        public CartService(IContentService contentService, IAppDbContext db)
         {
-            _productService = productService;
             _contentService = contentService;
             _db = db;
         }
@@ -46,6 +43,7 @@ namespace FTD.Application.Services
 
                     // Resolve N+1: Query database once for all matching active products
                     var products = await _db.Products
+                        .AsNoTracking()
                         .Where(p => productIds.Contains(p.Id) && p.IsActive)
                         .ToListAsync();
 
@@ -83,6 +81,8 @@ namespace FTD.Application.Services
 
         public void AddItem(ICartStorage storage, int productId, int qty = 1)
         {
+            // Clamp: a crafted request with qty <= 0 must never add or subtract lines.
+            qty = Math.Max(1, qty);
             var items = GetRawItems(storage);
             var existing = items.FirstOrDefault(i => i.ProductId == productId);
             if (existing != null) existing.Qty += qty;

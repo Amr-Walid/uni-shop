@@ -1,5 +1,4 @@
 using FTD.Application.Interfaces;
-using FTD.Application.Services;
 using FTD.Application.DTOs;
 using FTD.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
@@ -79,12 +78,24 @@ namespace FTD.Web.Controllers
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Contact(string name, string email, string phone, string message)
         {
+            // Server-side validation: the entity caps Name/Email at 100 and Phone
+            // at 20 chars — without these guards an oversized value would throw a
+            // SqlException (500) instead of a friendly redirect.
+            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(message))
+            {
+                TempData["ContactError"] = "true";
+                return Redirect("/#contact");
+            }
+
+            static string? Clamp(string? value, int max)
+                => string.IsNullOrEmpty(value) ? value : (value.Length <= max ? value : value[..max]);
+
             var dto = new ContactMessageDto
             {
-                Name = name,
-                Email = email,
-                Phone = phone,
-                Message = message
+                Name = Clamp(name.Trim(), 100),
+                Email = Clamp(email?.Trim(), 100),
+                Phone = Clamp(phone?.Trim(), 20),
+                Message = Clamp(message.Trim(), 4000)
             };
 
             await _messages.SaveMessageAsync(dto);

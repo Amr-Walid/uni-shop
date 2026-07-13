@@ -391,3 +391,31 @@ docker run -e JwtSettings__Secret="your_production_secret_here" ...
 3. **صفحة تفاصيل المنتج (Storefront View):**
    * **تعديل صفحة العرض (`Detail.cshtml`):** قراءة وفك ترميز الـ JSON وعرض الميزات بأيقوناتها المنسقة ديناميكياً.
    * **إخفاء القسم تلقائياً:** إذا لم يقم المسؤول بإضافة أي ميزات مخصصة للمنتج، يتم إخفاء شبكة المربعات بالكامل من صفحة المشتري لضمان عدم ظهور أي حقول فارغة.
+
+## 11. التدقيق الشامل للجودة — يوليو 2026 (Full Quality Audit)
+
+تم إجراء تدقيق شامل سطراً بسطر (راجع `AUDIT_REPORT.md` للتفاصيل الكاملة — 26 نتيجة). أهم التغييرات المؤثرة على المخطط وواجهات الخدمات:
+
+### 11.1 تغيير مخطط قاعدة البيانات (Migration: `HardenOrderDetailProductFk`)
+
+* **المشكلة:** العلاقة `SalesOrderDetail → Product` كانت `Cascade` افتراضياً، أي أن حذف منتج فعلياً كان يمسح **سجلات الطلبات التاريخية** المرتبطة به بصمت (فقدان بيانات مالية).
+* **الحل:** تم تثبيت العلاقة على `DeleteBehavior.Restrict` في `AppDbContext.OnModelCreating` مع الهجرة المرافقة `HardenOrderDetailProductFk`. خدمة `DeleteProductAsync` تتعامل مع ذلك مسبقاً: منتج له طلبات ⇒ **تعطيل (Soft-Delete)** بدلاً من الحذف الفعلي.
+* **التطبيق:** يتم تلقائياً عند الإقلاع عبر `db.Database.Migrate()` (وأصبح فشل الهجرة يُسجَّل في الـ Logs بدلاً من تجاهله بصمت).
+
+### 11.2 تغييرات توقيعات الخدمات (`IProductService`)
+
+| التغيير | السبب |
+|---|---|
+| **حُذفت** `GetByCategoryAsync(int)` و `GetByBrandAsync(string)` | كود ميت — غير مستدعى من أي متحكم (Web أو API) |
+| **أُضيفت** `GetCategoryByIdAsync(int)` و `GetBrandByIdAsync(int)` | استعلام صف واحد بدل تحميل كل الأقسام/البراندات في الذاكرة ثم `FirstOrDefault` |
+| `CartService` لم يعد يحقن `IProductService` | حقن ميت غير مستخدم |
+
+### 11.3 تحسينات معمارية مطبقة
+
+* **الذرّية (Atomicity):** `CreateProductAsync` / `DuplicateProductAsync` تبني الكيان مع صوره ومواصفاته كـ Object Graph واحد وتستدعي `SaveChangesAsync()` **مرة واحدة** — معاملة ضمنية واحدة بدون منتجات نصف محفوظة.
+* **N+1 في إنشاء الطلب:** `OrderService.CreateOrderAsync` يجلب كل منتجات السلة باستعلام `WHERE Id IN (...)` واحد بدل استعلام لكل عنصر، مع خصم المخزون وحفظ الطلب في نفس المعاملة.
+* **`AsNoTracking()`** على كل استعلامات القراءة في جميع الخدمات (Product/Order/Cart/Content/Dashboard/Message).
+* **CSRF:** أفعال `CartController` (Add/Update/Remove/Clear) أصبحت محمية بـ `[ValidateAntiForgeryToken]` مع توكن عام في `_Layout.cshtml` تقرأه `site.js` لطلبات AJAX.
+* **حدود النماذج:** استُبدلت قيم `int.MaxValue` في `FormOptions` بحدود آمنة (5000 مفتاح / 32 MB) لسد ثغرة DoS.
+* **التحقق من المدخلات:** `[Range]`/`[Required]`/`[StringLength]` على `ProductDto`/`CategoryDto`/`BrandDto`/`CheckoutViewModel` + فحص `ModelState.IsValid` في متحكمات الأدمن + Clamp لحقول نموذج التواصل حسب حدود أعمدة قاعدة البيانات.
+* **توحيد رفع الصور:** `FTD.Web/Helpers/ImageUploadHelper.cs` يستبدل 3 نسخ متطابقة من منطق الرفع في متحكمات الأدمن.

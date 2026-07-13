@@ -44,11 +44,22 @@ namespace FTD.Application.Services
                 }).ToList()
             };
 
-            // Verify stock and deduct
+            // Verify stock and deduct.
+            // Products are fetched in a single batched query (WHERE Id IN ...) instead of
+            // one FindAsync round-trip per cart line (former N+1). They remain tracked so
+            // the stock deduction below is persisted by the same SaveChangesAsync that
+            // inserts the order — one implicit transaction keeps stock + order atomic.
+            var productIds = cart.Items.Select(i => i.ProductId).Distinct().ToList();
+            var products = await _db.Products
+                .Where(p => productIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id);
+
             foreach (var item in cart.Items)
             {
-                var product = await _db.Products.FindAsync(item.ProductId);
-                if (product == null)
+                if (item.Quantity <= 0)
+                    throw new InvalidOperationException($"كمية غير صالحة للمنتج رقم {item.ProductId}.");
+
+                if (!products.TryGetValue(item.ProductId, out var product))
                     throw new InvalidOperationException($"المنتج رقم {item.ProductId} غير موجود في النظام.");
 
                 if (product.Stock < item.Quantity)
@@ -62,6 +73,7 @@ namespace FTD.Application.Services
 
             // Fetch the saved order with navigation properties to return a fully populated DTO
             var savedOrder = await _db.SalesOrders
+                .AsNoTracking()
                 .Include(o => o.Status)
                 .Include(o => o.Details)
                 .FirstOrDefaultAsync(o => o.Id == order.Id);
@@ -71,6 +83,12 @@ namespace FTD.Application.Services
 
         public async Task UpdateStatusAsync(int orderId, int statusId)
         {
+            // Guard against a forged/stale statusId that would violate the FK
+            // and surface as an opaque SqlException to the admin.
+            var statusExists = await _db.OrderStatuses.AnyAsync(s => s.Id == statusId);
+            if (!statusExists)
+                throw new InvalidOperationException($"حالة الطلب رقم {statusId} غير موجودة.");
+
             var order = await _db.SalesOrders.FindAsync(orderId);
             if (order != null)
             {
@@ -82,7 +100,7 @@ namespace FTD.Application.Services
 
         public async Task<List<SalesOrderDto>> GetOrdersAsync(int? statusId)
         {
-            var query = _db.SalesOrders.Include(o => o.Status).AsQueryable();
+            var query = _db.SalesOrders.AsNoTracking().Include(o => o.Status).AsQueryable();
 
             if (statusId.HasValue)
             {
@@ -102,6 +120,7 @@ namespace FTD.Application.Services
         public async Task<SalesOrderDto?> GetOrderByIdAsync(int id)
         {
             var order = await _db.SalesOrders
+                .AsNoTracking()
                 .Include(o => o.Status)
                 .Include(o => o.Details)
                     .ThenInclude(d => d.Product)
@@ -113,6 +132,7 @@ namespace FTD.Application.Services
         public async Task<List<OrderStatusDto>> GetAllStatusesAsync()
         {
             var statuses = await _db.OrderStatuses
+                .AsNoTracking()
                 .OrderBy(s => s.SortOrder)
                 .ToListAsync();
 

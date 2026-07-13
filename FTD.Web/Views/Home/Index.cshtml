@@ -329,20 +329,23 @@
                     <span data-en>@GetOr("about.headline.en", "Delivering the best technology for a better life.")</span>
                 </h2>
                 <p style="margin-top:24px">
-                    <span data-ar>@Get("about.body.ar.ar")</span>
-                    <span data-en>@Get("about.body.en.en")</span>
+                    <span data-ar>@GetOr("about.body.ar.ar", "الفجر للتجارة شركة رائدة في بيع وتوزيع أجهزة التكنولوجيا الحديثة بأفضل الأسعار وأعلى جودة في السوق المصري.")</span>
+                    <span data-en>@GetOr("about.body.en.en", "A leading company in selling and distributing modern technology devices at the best prices and highest quality.")</span>
                 </p>
                 <div class="about-stats">
+                    @* Seed values already end with "+" (e.g. "10+") — TrimEnd prevents
+                       rendering "10++" next to the styled plus span, and GetOr keeps
+                       the card populated if the block is ever emptied. *@
                     <div class="stat-card">
-                        <div class="n">@Get("about.stat.years.ar")<span class="plus">+</span></div>
+                        <div class="n">@GetOr("about.stat.years.ar", "10").TrimEnd('+')<span class="plus">+</span></div>
                         <div class="l"><span data-ar>@GetOr("hero.stat1.label.ar", "سنوات خبرة")</span><span data-en>@GetOr("hero.stat1.label.en", "Years Exp.")</span></div>
                     </div>
                     <div class="stat-card">
-                        <div class="n">@Get("about.stat.clients.ar")<span class="plus">+</span></div>
+                        <div class="n">@GetOr("about.stat.clients.ar", "50K").TrimEnd('+')<span class="plus">+</span></div>
                         <div class="l"><span data-ar>@GetOr("hero.stat2.label.ar", "عميل سعيد")</span><span data-en>@GetOr("hero.stat2.label.en", "Happy Clients")</span></div>
                     </div>
                     <div class="stat-card">
-                        <div class="n">@Get("about.stat.products.ar")<span class="plus">+</span></div>
+                        <div class="n">@GetOr("about.stat.products.ar", "200").TrimEnd('+')<span class="plus">+</span></div>
                         <div class="l"><span data-ar>@GetOr("hero.stat3.label.ar", "منتج فريد")</span><span data-en>@GetOr("hero.stat3.label.en", "Products")</span></div>
                     </div>
                 </div>

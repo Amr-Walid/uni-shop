@@ -24,6 +24,7 @@ namespace FTD.Application.Services
             var monthStart = new DateTime(today.Year, today.Month, 1);
 
             var recentOrders = await _db.SalesOrders
+                .AsNoTracking()
                 .Include(o => o.Status)
                 .OrderByDescending(o => o.CreatedAt)
                 .Take(10)

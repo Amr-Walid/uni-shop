@@ -65,6 +65,16 @@ namespace FTD.Infrastructure.Data
                 .HasForeignKey(av => av.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Protect order history: a Product that was ever sold must never
+            // cascade-delete its SalesOrderDetail rows (financial snapshots).
+            // The service layer soft-deletes such products; the schema now
+            // enforces the same rule as defense-in-depth (was Cascade by convention).
+            builder.Entity<SalesOrderDetail>()
+                .HasOne(d => d.Product)
+                .WithMany(p => p.OrderDetails)
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Self-referencing navigation
             builder.Entity<NavigationItem>()
                 .HasOne(n => n.Parent)
