@@ -2,8 +2,9 @@
 # The Complete Master Guide — من الصفر إلى أقوى متجر إيكومرس ممكن
 
 > **آخر تحديث:** 2026-07-13
-> **الإصدار:** 3.0 (بعد التدقيق الشامل — 26 إصلاحاً)
+> **الإصدار:** 3.1 (بعد تدقيق الأمان والأداء والتحقق — +6 إصلاحات، القسم 20.1)
 > **الحالة:** `dotnet build` = 0 أخطاء / 0 تحذيرات على FTD.Web و FTD.Api
+> **آخر تدقيق:** Pentest + Load Test + Validation — ثغرة XSS حرجة أُغلقت، والصفحة الرئيسية أسرع ≈113×
 > **المستودع:** https://github.com/Amr-Walid/uni-shop
 
 ---
@@ -1502,6 +1503,98 @@ dotnet ef database update --project FTD.Infrastructure --startup-project FTD.Web
 | المتانة | فشل الهجرة يُسجَّل `LogCritical` ويمنع الإقلاع؛ حدود FormOptions مضبوطة |
 
 **الوثائق الحية**: `PROJECT_COMPLETE_DOCUMENTATION.md` (§1–11) + `AUDIT_REPORT.md` + هذا الدليل.
+
+---
+
+## 20.1 تدقيق الأمان والأداء والتحقق (2026-07-13) — Pentest + Load + Validation
+
+جولة تدقيق ثانية ركّزت على ثلاثة محاور: **اختبار اختراق (Penetration Test)**، **اختبار حِمل فعلي (Load Test)**، و**مراجعة التحقق من المدخلات (Validation)**.
+تم **تشغيل المشروع فعلياً** (نسخة اختبار على SQLite مع 200 منتجاً مزروعاً) وقياس الأداء تحت التزامن باستخدام مُولّد حِمل غير متزامن (asyncio/aiohttp)، ثم **إعادة القياس بعد الإصلاح** لإثبات الأثر.
+
+> النتيجة النهائية: **6 مشاكل عولجت**، البناء نظيف **0 أخطاء / 0 تحذيرات** على `FTD.Web` و`FTD.Api`.
+
+### 🔴 المحور الأول — اختبار الاختراق (Penetration Test)
+
+| # | الخطورة | الثغرة | الملف | الحالة |
+|---|---------|--------|-------|--------|
+| P1 | **حرجة (Critical)** | **Reflected XSS** — قيم `?brand=` و`?category=` كانت تُطبع داخل `<script>` عبر دمج نصّي + `@Html.Raw` بدون تهريب. حمولة `?brand='];alert(1)//` تكسر سياق JS وتنفّذ كوداً عشوائياً. | `Views/Products/Index.cshtml` | ✅ مُصلَح ومُتحقَّق |
+| P2 | عالية (High) | **رفع SVG مسموح** — ملفات SVG تحمل `<script>`؛ عند تقديمها من نطاقنا تصبح Stored XSS. | `AdminAttributesAndSectionsControllers.cs` | ✅ مُصلَح |
+| P3 | متوسطة (Medium) | **CORS = `AllowAnyOrigin`** على API يُصدر JWT ويكشف نقاط أدمن → أي موقع يستدعي الـAPI من متصفح الضحية. | `FTD.Api/Program.cs` | ✅ مُصلَح |
+| P4 | متوسطة (Medium) | **`RequireHttpsMetadata = false`** دائماً على JWT → تفاوض التوكن فوق HTTP. | `FTD.Api/Program.cs` | ✅ مُصلَح |
+| P5 | منخفضة (Low/Info) | `HtmlSanitizer` معتمد على Regex — قابل للتجاوز نظرياً؛ وُثِّق كدَيْن تقني (يُفضَّل استبداله بـ **HtmlSanitizer/Ganss** مستقبلاً). | `FTD.Application/Common/HtmlSanitizer.cs` | ⚠️ موثَّق |
+
+**إثبات الإصلاح P1 (قبل/بعد) — نفس الحمولة `?brand=%27%5D%3Balert(1)%2F%2F`:**
+
+```text
+قبل:  var _brands = [''];alert(1)//'];      ← كود JS ينفّذ  (اختراق ناجح)
+بعد:  var _brands = ["alert1"];             ← نصّ آمن مُهرَّب  (الاختراق مُبطَل)
+```
+
+**آلية الإصلاح (دفاع بطبقتين):**
+1. **قائمة بيضاء للأحرف**: كل slug يُقصّ إلى `[a-z0-9-]` فقط قبل الإخراج (يُزيل `'` `]` `;` `/` `<` `>`).
+2. **ترميز JSON آمن**: `System.Text.Json.JsonSerializer.Serialize(...)` يُهرّب الاقتباسات والخطوط المائلة العكسية و`</` تلقائياً بدل الدمج النصّي اليدوي.
+   نُقلت نفس المعالجة لقيمة `_sort` أيضاً.
+
+**آلية الإصلاح P2**: حذف `.svg` من الامتدادات المسموحة + **تحقق Magic-Bytes** (توقيع PNG/GIF/JPEG/WEBP الفعلي) بدل الثقة بالامتداد القابل للانتحال.
+
+**آلية الإصلاح P3/P4**: قراءة الأصول المسموحة من `Cors:AllowedOrigins` في `appsettings` مع `AllowCredentials`؛ السماح المفتوح **حصراً في Development**؛ و`RequireHttpsMetadata = !IsDevelopment()`.
+
+**✔️ ما كان سليماً بالفعل (لا يحتاج إصلاح):**
+- لا SQL خام في أي مكان — كل الاستعلامات عبر EF Core مُعامَلة (لا SQLi).
+- كل متحكمات الأدمن محميّة بـ `[Authorize(Roles="Admin")]` (لا IDOR على لوحة التحكم).
+- تسجيل دخول الأدمن يستخدم `LocalRedirect` (لا Open-Redirect) + Rate-Limiting + Account Lockout (5 محاولات/15 دقيقة).
+- محتوى المحرر الغني يمرّ عبر `HtmlSanitizer` قبل `@Html.Raw`.
+- كل POST محمي بـ `[ValidateAntiForgeryToken]` (CSRF).
+
+### 🟠 المحور الثاني — اختبار الحِمل (Load Test)
+
+بيئة القياس: نسخة اختبار (SQLite، 200 منتجاً)، تزامن 30–50 عاملاً، 8–10 ثوانٍ لكل سيناريو.
+
+| النقطة | قبل الإصلاح | بعد الإصلاح | التحسّن |
+|--------|-------------|-------------|---------|
+| `/` (الرئيسية) | **6.0 req/s** — p50 **9940ms** | **331.7 req/s** — p50 **87.8ms** | **≈55× إنتاجية / ≈113× أسرع** |
+| `/Products` | 26.5 req/s — p50 1228ms | **242.8 req/s** — p50 **109ms** | ≈9× إنتاجية |
+| `/Products?q=` (بحث) | 7.0 req/s — p99 **19473ms** | **306.5 req/s** — p99 **177ms** | ≈44× إنتاجية |
+| `/health` | 1918 req/s — p99 66ms | 1901 req/s — p99 76ms | ثابت (خط أساس) |
+
+**السبب الجذري**: الصفحة الرئيسية كانت تُنفّذ **7 رحلات قاعدة بيانات متتالية** (إعدادات + بلوكات + تصنيفات + جهات اتصال + 3 استعلامات منتجات) على كل طلب، بلا أي تخزين مؤقت.
+
+**آلية الإصلاح (L1)**:
+- إضافة `IMemoryCache` وتخزين البيانات المرجعية شبه الثابتة (الإعدادات/البلوكات/التصنيفات/جهات الاتصال) بمدة صلاحية **60 ثانية** — يحوّل معظم الطلبات إلى إصابات ذاكرة لا تلمس القاعدة.
+- إضافة `ResponseCompression` (Gzip) لتقليل حجم الاستجابات.
+- **ملاحظة هندسية مهمّة**: أُبقيت استعلامات المنتجات **متتالية** (لا `Task.WhenAll`) لأن كل الخدمات تتشارك `DbContext` واحداً مُنطاقاً، وEF Core **يمنع** العمليات المتزامنة على نفس السياق — وإلا لانهار بـ `InvalidOperationException`. مكسب الأداء أتى من التخزين المؤقت لا من التوازي.
+
+> تنبيه: أرقام SQLite أبطأ من SQL Server الإنتاجي؛ النِّسَب (55×/44×) هي المؤشر الحقيقي وليست القيم المطلقة.
+
+### 🟡 المحور الثالث — التحقق من المدخلات (Validation)
+
+| # | المشكلة | الملف | الإصلاح |
+|---|---------|-------|---------|
+| V1 | DTOs الخاصة بالـAPI (`ApiCheckoutRequest`, `LoginRequest`, `UpdateStatusRequest`) بلا `DataAnnotations` — فحوص يدوية فقط، لا حدود طول → إدخال ضخم قد يرمي استثناء DB. | `FTD.Api/Models/Requests/*.cs` | أُضيفت `[Required]`/`[StringLength]`/`[Range]`/`[EmailAddress]`/`[MinLength]/[MaxLength]` — يستفيد `[ApiController]` من التحقق التلقائي (400 نظيف). |
+| V2 | `ContactMessageDto` (مشترك Web/API) بلا حدود طول → رسالة ضخمة عبر API تُسبّب استثناء DB. | `FTD.Application/DTOs/SiteDtos.cs` | أُضيفت حدود مطابقة لأعمدة الكيان (الاسم 100، البريد 100، الهاتف 20، الرسالة 4000). |
+| V3 | حقل `Address` في `ApiCheckoutRequest` كان بلا `[Required]` بينما الشحن يحتاجه (تناقض مع Web). | `CheckoutRequest.cs` | أصبح `[Required]` + سقف `Items` (1–200 عنصراً) وكمية كل عنصر (1–1000) لمنع إساءة الاستخدام. |
+
+### ملخّص الملفات المُعدّلة (10 ملفات)
+
+```text
+FTD.Web/Views/Products/Index.cshtml                      ← P1 (XSS)
+FTD.Web/Controllers/Admin/AdminAttributesAndSectionsControllers.cs ← P2 (SVG + magic-bytes)
+FTD.Api/Program.cs                                       ← P3 (CORS) + P4 (JWT HTTPS)
+FTD.Api/appsettings.json                                 ← P3 (Cors:AllowedOrigins)
+FTD.Web/Program.cs                                       ← L1 (MemoryCache + ResponseCompression)
+FTD.Web/Controllers/HomeController.cs                    ← L1 (caching)
+FTD.Api/Models/Requests/LoginRequest.cs                  ← V1
+FTD.Api/Models/Requests/CheckoutRequest.cs               ← V1 + V3
+FTD.Api/Models/Requests/UpdateStatusRequest.cs           ← V1
+FTD.Application/DTOs/SiteDtos.cs                          ← V2
+```
+
+### توصيات مستقبلية (لم تُنفَّذ — دَيْن تقني موثَّق)
+
+1. استبدال `HtmlSanitizer` القائم على Regex بمكتبة ناضجة (**Ganss.Xss / HtmlSanitizer**).
+2. إضافة رأس **Content-Security-Policy** كطبقة دفاع ثالثة ضد XSS.
+3. تخزين مؤقت موزّع (**Redis**) بدل `IMemoryCache` عند التوسّع الأفقي (عدة خوادم).
+4. تحويل توكن JWT إلى **مفتاح من متغيرات البيئة/User-Secrets** (القيمة النائبة الحالية للتطوير فقط).
 
 ---
 ---

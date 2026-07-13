@@ -159,7 +159,20 @@ namespace FTD.Web.Controllers.Admin
         }
 
         // ── AJAX: image upload (Quill inline images + section images) ─────────
-        private static readonly string[] AllowedImageExts = { ".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif" };
+        // SECURITY: .svg deliberately excluded — SVG files can embed <script> and
+        // on-load handlers, so an uploaded SVG served from our own origin becomes a
+        // stored-XSS vector. Only true raster formats are accepted.
+        private static readonly string[] AllowedImageExts = { ".png", ".jpg", ".jpeg", ".webp", ".gif" };
+        // Magic-byte signatures used to verify the real file type instead of trusting
+        // the (client-supplied, spoofable) extension alone.
+        private static readonly Dictionary<string, byte[][]> ImageSignatures = new()
+        {
+            [".png"]  = new[] { new byte[] { 0x89, 0x50, 0x4E, 0x47 } },
+            [".gif"]  = new[] { System.Text.Encoding.ASCII.GetBytes("GIF87a"), System.Text.Encoding.ASCII.GetBytes("GIF89a") },
+            [".jpg"]  = new[] { new byte[] { 0xFF, 0xD8, 0xFF } },
+            [".jpeg"] = new[] { new byte[] { 0xFF, 0xD8, 0xFF } },
+            [".webp"] = new[] { System.Text.Encoding.ASCII.GetBytes("RIFF") },
+        };
         private const long MaxImageBytes = 5 * 1024 * 1024; // 5 MB
 
         [HttpPost]
@@ -175,7 +188,20 @@ namespace FTD.Web.Controllers.Admin
 
             var ext = System.IO.Path.GetExtension(file.FileName).ToLowerInvariant();
             if (!AllowedImageExts.Contains(ext))
-                return BadRequest(new { error = "صيغة غير مدعومة — المسموح: jpg, png, webp, svg, gif" });
+                return BadRequest(new { error = "صيغة غير مدعومة — المسموح: jpg, png, webp, gif" });
+
+            // Verify the file's real content (magic bytes) matches the claimed extension,
+            // so a script disguised with an image extension is rejected before it is stored.
+            if (ImageSignatures.TryGetValue(ext, out var sigs))
+            {
+                var header = new byte[8];
+                await using (var probe = file.OpenReadStream())
+                {
+                    var read = await probe.ReadAsync(header.AsMemory(0, header.Length));
+                    if (read < 4 || !sigs.Any(sig => header.Take(sig.Length).SequenceEqual(sig)))
+                        return BadRequest(new { error = "محتوى الملف لا يطابق صيغة الصورة المعلنة" });
+                }
+            }
 
             var dir = System.IO.Path.Combine(_env.WebRootPath, "images", "uploads");
             System.IO.Directory.CreateDirectory(dir);

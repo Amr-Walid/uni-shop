@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace FTD.Api.Models.Requests
 {
     /// <summary>
@@ -5,6 +7,7 @@ namespace FTD.Api.Models.Requests
     /// </summary>
     public class UpdateStatusRequest
     {
+        [Range(1, int.MaxValue, ErrorMessage = "معرف الحالة غير صالح")]
         public int StatusId { get; set; }
     }
 }
