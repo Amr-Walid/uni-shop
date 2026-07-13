@@ -363,6 +363,7 @@ namespace FTD.Application.Services
                 Stock = dto.Stock,
                 MetaTitle = dto.MetaTitle,
                 MetaDesc = dto.MetaDesc,
+                FeaturesJson = dto.FeaturesJson,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -424,6 +425,7 @@ namespace FTD.Application.Services
             product.SortOrder = dto.SortOrder;
             product.MetaTitle = dto.MetaTitle;
             product.MetaDesc = dto.MetaDesc;
+            product.FeaturesJson = dto.FeaturesJson;
 
             if (!string.IsNullOrEmpty(dto.ImagePath))
             {
@@ -511,6 +513,7 @@ namespace FTD.Application.Services
                 Stock = source.Stock,
                 MetaTitle = source.MetaTitle,
                 MetaDesc = source.MetaDesc,
+                FeaturesJson = source.FeaturesJson,
                 CreatedAt = DateTime.UtcNow
             };
 

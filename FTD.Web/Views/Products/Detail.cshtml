@@ -208,24 +208,45 @@
                         <span data-ar>@p.DescAr</span>
                         <span data-en>@p.DescEn</span>
                     </p>
-                    <div class="feature-grid">
-                        <div class="f">
-                            <span class="ico"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 2L4 5v5c0 4 6 8 6 8s6-4 6-8V5l-6-3z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-                            <span class="t"><span data-ar>ضمان ١٨ شهر معتمد</span><span data-en>18-month warranty</span></span>
+                    @{
+                        var customFeatures = new List<dynamic>();
+                        if (!string.IsNullOrEmpty(p.FeaturesJson))
+                        {
+                            try
+                            {
+                                var doc = System.Text.Json.JsonDocument.Parse(p.FeaturesJson);
+                                foreach (var el in doc.RootElement.EnumerateArray())
+                                {
+                                    el.TryGetProperty("icon", out var iconProp);
+                                    el.TryGetProperty("text_ar", out var textArProp);
+                                    el.TryGetProperty("text_en", out var textEnProp);
+                                    customFeatures.Add(new {
+                                        icon = iconProp.GetString() ?? "bi-star",
+                                        text_ar = textArProp.GetString() ?? "",
+                                        text_en = textEnProp.GetString() ?? ""
+                                    });
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+                    @if (customFeatures.Any())
+                    {
+                        <div class="feature-grid">
+                            @foreach (var f in customFeatures)
+                            {
+                                <div class="f">
+                                    <span class="ico" style="font-size: 16px; display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                                        <i class="bi @f.icon"></i>
+                                    </span>
+                                    <span class="t">
+                                        <span data-ar>@f.text_ar</span>
+                                        <span data-en>@f.text_en</span>
+                                    </span>
+                                </div>
+                            }
                         </div>
-                        <div class="f">
-                            <span class="ico"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="2" y="6" width="12" height="9" rx="1" stroke="currentColor" stroke-width="1.5"/><path d="M14 8l4-2v11l-4-2" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
-                            <span class="t"><span data-ar>شحن مجاني فوق ٥,٠٠٠ ج.م</span><span data-en>Free shipping over EGP 5,000</span></span>
-                        </div>
-                        <div class="f">
-                            <span class="ico"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 2C5.6 2 2 5.6 2 10s3.6 8 8 8 8-3.6 8-8M14 6l4-4M18 2v4h-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-                            <span class="t"><span data-ar>سياسة إرجاع خلال ١٤ يوم</span><span data-en>14-day return policy</span></span>
-                        </div>
-                        <div class="f">
-                            <span class="ico"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M2 8h16M4 4h12v12H4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
-                            <span class="t"><span data-ar>تقسيط بدون فوائد حتى ١٢ شهر</span><span data-en>0% installments up to 12mo</span></span>
-                        </div>
-                    </div>
+                    }
                 </div>
             </div>
 

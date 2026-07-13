@@ -137,6 +137,7 @@ namespace FTD.Application.Mappers
                 CreatedAt = entity.CreatedAt,
                 MetaTitle = entity.MetaTitle,
                 MetaDesc = entity.MetaDesc,
+                FeaturesJson = entity.FeaturesJson,
                 Category = entity.Category?.ToDto(),
                 Brand = entity.Brand?.ToDto(),
                 AttributeValues = entity.AttributeValues?.Select(av => av.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList() ?? new(),

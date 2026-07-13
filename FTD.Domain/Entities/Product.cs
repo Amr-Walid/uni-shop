@@ -37,6 +37,7 @@ namespace FTD.Domain.Entities
 
         public string? MetaTitle { get; set; }
         public string? MetaDesc { get; set; }
+        public string? FeaturesJson { get; set; }
 
         // Nav
         public Category Category { get; set; } = null!;

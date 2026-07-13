@@ -187,6 +187,42 @@
           <small style="color:var(--a-text3);font-size:11px">بتظهر في الـ slider في صفحة المنتج</small>
         </div>
       </div>
+
+      <!-- DYNAMIC FEATURES -->
+      <div class="a-card" style="margin-bottom:1.5rem">
+        <h3 class="a-card-title" style="margin-bottom:1rem">ميزات المنتج الإضافية (محتويات العلبة)</h3>
+        
+        <input type="hidden" name="Product.FeaturesJson" id="featuresJsonInput" value="@p.FeaturesJson">
+        
+        <div id="featuresListContainer" style="display:flex;flex-direction:column;gap:0.8rem;margin-bottom:1.5rem">
+          <!-- Populated by JS -->
+        </div>
+
+        <div style="background:var(--a-bg);border:1px solid var(--a-border);border-radius:10px;padding:1rem;display:grid;grid-template-columns:100px 1fr 1fr auto;gap:0.8rem;align-items:end">
+          <div class="a-form-group" style="margin-bottom:0">
+            <label style="font-size:11px">الأيقونة</label>
+            <select id="newFeatureIcon" class="a-select" style="padding: 7px 10px;font-size:13px">
+              <option value="bi-shield-check">🛡️ ضمان</option>
+              <option value="bi-truck">🚚 شحن</option>
+              <option value="bi-arrow-counterclockwise">🔄 إرجاع</option>
+              <option value="bi-credit-card">💳 تقسيط</option>
+              <option value="bi-box-seam">📦 علبة</option>
+              <option value="bi-plug">🔌 كهرباء</option>
+              <option value="bi-headset">🎧 دعم</option>
+              <option value="bi-star">⭐ تقييم</option>
+            </select>
+          </div>
+          <div class="a-form-group" style="margin-bottom:0">
+            <label style="font-size:11px">النص بالعربي</label>
+            <input type="text" id="newFeatureTextAr" placeholder="مثال: ضمان ١٨ شهر" style="padding: 7px 10px;font-size:13px">
+          </div>
+          <div class="a-form-group" style="margin-bottom:0">
+            <label style="font-size:11px">Text in English</label>
+            <input type="text" id="newFeatureTextEn" placeholder="e.g. 18-month warranty" dir="ltr" style="padding: 7px 10px;font-size:13px">
+          </div>
+          <button type="button" class="a-btn" id="addFeatureBtn" style="padding: 7px 15px;font-size:13px;height:34px">إضافة</button>
+        </div>
+      </div>
     </div>
 
     <!-- SIDEBAR -->
@@ -380,5 +416,120 @@ function submitQuickAdd(attrId) {
             alert('تعذر إضافة القيمة — حاول مرة أخرى');
         });
 }
+
+document.addEventListener("DOMContentLoaded", function() {
+    var featuresInput = document.getElementById("featuresJsonInput");
+    var container = document.getElementById("featuresListContainer");
+    var addBtn = document.getElementById("addFeatureBtn");
+    
+    var features = [];
+    if (featuresInput && featuresInput.value) {
+        try {
+            features = JSON.parse(featuresInput.value) || [];
+        } catch(e) {
+            features = [];
+        }
+    }
+
+    function renderFeatures() {
+        container.innerHTML = "";
+        if (features.length === 0) {
+            container.innerHTML = '<div style="color:var(--a-text3);font-size:12px;text-align:center;padding:1rem;background:var(--a-bg);border-radius:8px">لا توجد ميزات مخصصة لهذا المنتج (سيتم إخفاء هذا البوكس في صفحة المشتري)</div>';
+            return;
+        }
+        features.forEach(function(f, idx) {
+            var row = document.createElement("div");
+            row.style.display = "grid";
+            row.style.gridTemplateColumns = "40px 120px 1fr 1fr auto";
+            row.style.gap = "0.8rem";
+            row.style.alignItems = "center";
+            row.style.background = "var(--a-bg)";
+            row.style.padding = "0.5rem 0.8rem";
+            row.style.borderRadius = "8px";
+            row.style.border = "1px solid var(--a-border)";
+
+            var emojiSpan = document.createElement("span");
+            emojiSpan.style.fontSize = "16px";
+            emojiSpan.style.textAlign = "center";
+            emojiSpan.innerHTML = getEmojiForIcon(f.icon);
+
+            var iconSpan = document.createElement("span");
+            iconSpan.style.fontSize = "11px";
+            iconSpan.style.fontFamily = "monospace";
+            iconSpan.style.color = "var(--a-text2)";
+            iconSpan.textContent = f.icon;
+
+            var textArSpan = document.createElement("span");
+            textArSpan.style.fontSize = "13px";
+            textArSpan.textContent = f.text_ar;
+
+            var textEnSpan = document.createElement("span");
+            textEnSpan.style.fontSize = "13px";
+            textEnSpan.dir = "ltr";
+            textEnSpan.textContent = f.text_en;
+
+            var delBtn = document.createElement("button");
+            delBtn.type = "button";
+            delBtn.className = "a-btn-sm a-btn-danger";
+            delBtn.style.padding = "4px 8px";
+            delBtn.innerHTML = "✕";
+            delBtn.addEventListener("click", function() {
+                features.splice(idx, 1);
+                updateInputAndRender();
+            });
+
+            row.appendChild(emojiSpan);
+            row.appendChild(iconSpan);
+            row.appendChild(textArSpan);
+            row.appendChild(textEnSpan);
+            row.appendChild(delBtn);
+            container.appendChild(row);
+        });
+    }
+
+    function getEmojiForIcon(icon) {
+        switch(icon) {
+            case "bi-shield-check": return "🛡️";
+            case "bi-truck": return "🚚";
+            case "bi-arrow-counterclockwise": return "🔄";
+            case "bi-credit-card": return "💳";
+            case "bi-box-seam": return "📦";
+            case "bi-plug": return "🔌";
+            case "bi-headset": return "🎧";
+            case "bi-star": return "⭐";
+            default: return "✨";
+        }
+    }
+
+    function updateInputAndRender() {
+        featuresInput.value = JSON.stringify(features);
+        renderFeatures();
+    }
+
+    if (addBtn) {
+        addBtn.addEventListener("click", function() {
+            var iconVal = document.getElementById("newFeatureIcon").value;
+            var textArVal = document.getElementById("newFeatureTextAr").value.trim();
+            var textEnVal = document.getElementById("newFeatureTextEn").value.trim();
+            
+            if (!textArVal || !textEnVal) {
+                alert("يرجى إدخال النصوص بالعربية والإنجليزية");
+                return;
+            }
+            
+            features.push({
+                icon: iconVal,
+                text_ar: textArVal,
+                text_en: textEnVal
+            });
+            
+            document.getElementById("newFeatureTextAr").value = "";
+            document.getElementById("newFeatureTextEn").value = "";
+            updateInputAndRender();
+        });
+    }
+
+    renderFeatures();
+});
 </script>
 }

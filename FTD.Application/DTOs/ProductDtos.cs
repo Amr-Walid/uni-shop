@@ -25,6 +25,7 @@ namespace FTD.Application.DTOs
         public DateTime CreatedAt { get; set; }
         public string? MetaTitle { get; set; }
         public string? MetaDesc { get; set; }
+        public string? FeaturesJson { get; set; }
 
         public CategoryDto? Category { get; set; }
         public BrandDto? Brand { get; set; }
