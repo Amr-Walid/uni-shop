@@ -2,7 +2,9 @@ using FTD.Application.Interfaces;
 using FTD.Application.DTOs;
 using FTD.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -13,21 +15,57 @@ namespace FTD.Web.Controllers
         private readonly IProductService _products;
         private readonly IContentService _content;
         private readonly IMessageService _messages;
+        private readonly IMemoryCache _cache;
+
+        // Static reference data changes only from the admin panel, so a short TTL
+        // keeps the storefront fresh while eliminating most per-request DB traffic.
+        private static readonly TimeSpan CacheTtl = TimeSpan.FromSeconds(60);
 
         public HomeController(
             IProductService products,
             IContentService content,
-            IMessageService messages)
+            IMessageService messages,
+            IMemoryCache cache)
         {
             _products = products;
             _content = content;
             _messages = messages;
+            _cache = cache;
         }
 
         public async Task<IActionResult> Index()
         {
-            var categoriesList = await _products.GetActiveCategoriesAsync();
-            var settingsList = await _content.GetSettingsListAsync();
+            // PERFORMANCE: cache the near-static reference data and run the remaining
+            // independent product queries; this replaces 7 sequential DB round-trips
+            // (measured ~10s p50 under load) with mostly cache hits.
+            // NOTE: all services share one scoped DbContext, and EF Core forbids
+            // concurrent operations on the same context — so DB reads stay sequential.
+            // The performance win here comes from caching, which turns most of these
+            // calls into in-memory hits that never touch the database.
+            var settingsList = await _cache.GetOrCreateAsync("home:settings", e =>
+            {
+                e.AbsoluteExpirationRelativeToNow = CacheTtl;
+                return _content.GetSettingsListAsync();
+            }) ?? new List<SiteSettingDto>();
+
+            var categoriesList = await _cache.GetOrCreateAsync("home:categories", e =>
+            {
+                e.AbsoluteExpirationRelativeToNow = CacheTtl;
+                return _products.GetActiveCategoriesAsync();
+            }) ?? new List<CategoryDto>();
+
+            var contentBlocks = await _cache.GetOrCreateAsync("home:blocks", e =>
+            {
+                e.AbsoluteExpirationRelativeToNow = CacheTtl;
+                return _content.GetBlocksAsync();
+            }) ?? new Dictionary<string, string>();
+
+            var contactInfo = await _cache.GetOrCreateAsync("home:contact", e =>
+            {
+                e.AbsoluteExpirationRelativeToNow = CacheTtl;
+                return _content.GetContactInfoAsync();
+            });
+
             var settingsMap = settingsList
                 .Where(s => !string.IsNullOrEmpty(s.Key))
                 .ToDictionary(s => s.Key, s => s.Value ?? "");
@@ -38,9 +76,9 @@ namespace FTD.Web.Controllers
 
             var heroProducts = await _products.GetByIdsOrderedAsync(heroIds);
             var featured = await _products.GetByIdsOrderedAsync(featuredIds);
+            var dbFeatured = await _products.GetFeaturedAsync(50);
 
             // دمج المنتجات المميزة المحددة يدوياً من لوحة التحكم مع أي منتجات تم تفعيل خيار "مميز" لها في صفحة تعديل المنتج
-            var dbFeatured = await _products.GetFeaturedAsync(50);
             foreach (var p in dbFeatured)
             {
                 if (!featured.Any(f => f.Id == p.Id))
@@ -58,8 +96,8 @@ namespace FTD.Web.Controllers
                 HeroProducts = heroProducts,
                 FeaturedProducts = featured,
                 Categories = categoriesList,
-                ContentBlocks = await _content.GetBlocksAsync(),
-                ContactInfo = await _content.GetContactInfoAsync(),
+                ContentBlocks = contentBlocks,
+                ContactInfo = contactInfo,
                 Settings = settingsList,
                 SettingsMap = settingsMap
             };

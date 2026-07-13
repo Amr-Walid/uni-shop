@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace FTD.Application.DTOs
 {
     public class ContactInfoDto
@@ -42,10 +44,26 @@ namespace FTD.Application.DTOs
     public class ContactMessageDto
     {
         public int Id { get; set; }
+
+        // Length caps mirror the ContactMessage entity columns so oversized input
+        // is rejected by validation (API [ApiController] auto-400) instead of
+        // throwing a DB-level exception. The Web controller also clamps manually.
+        [Required(ErrorMessage = "الاسم مطلوب")]
+        [StringLength(100, ErrorMessage = "الاسم طويل جداً")]
         public string? Name { get; set; }
+
+        [Required(ErrorMessage = "البريد الإلكتروني مطلوب")]
+        [EmailAddress(ErrorMessage = "صيغة البريد الإلكتروني غير صحيحة")]
+        [StringLength(100, ErrorMessage = "البريد الإلكتروني طويل جداً")]
         public string? Email { get; set; }
+
+        [StringLength(20, ErrorMessage = "رقم الهاتف طويل جداً")]
         public string? Phone { get; set; }
+
+        [Required(ErrorMessage = "الرسالة مطلوبة")]
+        [StringLength(4000, ErrorMessage = "الرسالة طويلة جداً")]
         public string? Message { get; set; }
+
         public bool IsRead { get; set; }
         public DateTime CreatedAt { get; set; }
     }

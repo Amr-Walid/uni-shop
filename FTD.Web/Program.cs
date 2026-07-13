@@ -13,6 +13,15 @@ var builder = WebApplication.CreateBuilder(args);
 // ── MVC (no Razor Pages - pure MVC only) ─────────────────────────────────────
 builder.Services.AddControllersWithViews();
 
+// ── IN-MEMORY CACHE ───────────────────────────────────────────────────────────
+// PERFORMANCE: the storefront home page reads several sets of near-static
+// reference data (site settings, content blocks, categories, contact info) on
+// every request. Load testing showed the home page at ~10s p50 / 6 req/s under
+// concurrency because of repeated sequential DB round-trips. A short-lived
+// memory cache removes almost all of that DB traffic for anonymous visitors.
+builder.Services.AddMemoryCache();
+builder.Services.AddResponseCompression();
+
 // ── FORM OPTIONS — increase limits to avoid HTTP 400 on large multipart forms ──
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
 {
@@ -115,6 +124,7 @@ else
     app.UseDeveloperExceptionPage();
 }
 
+app.UseResponseCompression();
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();

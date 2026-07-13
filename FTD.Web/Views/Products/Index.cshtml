@@ -7,6 +7,24 @@
               : cat   != null ? cat.NameAr
               : "كل المنتجات";
     ViewData["Title"] = title;
+
+    // SECURITY (Reflected XSS fix): the filter query-string values (?brand=, ?category=, ?sort=)
+    // are attacker-controlled. They were previously emitted into an inline <script> via
+    // string concatenation + @@Html.Raw, allowing a payload like  ?brand='];alert(1)//  to
+    // break out of the JS string and inject arbitrary code. We now serialize the values with
+    // System.Text.Json (which safely escapes quotes, backslashes and </ sequences) and, as a
+    // second layer, restrict slugs to a safe [a-z0-9-] character set before serialization.
+    System.Func<string?, List<string>> safeSlugs = raw =>
+        string.IsNullOrEmpty(raw)
+            ? new List<string>()
+            : raw.Split(',')
+                 .Select(s => System.Text.RegularExpressions.Regex.Replace(s.Trim().ToLowerInvariant(), "[^a-z0-9-]", ""))
+                 .Where(s => s.Length > 0)
+                 .ToList();
+
+    var jsBrands     = System.Text.Json.JsonSerializer.Serialize(safeSlugs(Model.BrandFilter));
+    var jsCategories = System.Text.Json.JsonSerializer.Serialize(safeSlugs(Model.CategoryFilter));
+    var jsSort       = System.Text.Json.JsonSerializer.Serialize(Model.SortBy ?? "featured");
 }
 
 @Html.AntiForgeryToken()
@@ -233,10 +251,10 @@
 
 @section Scripts {
 <script>
-    var _brands     = [@Html.Raw(string.IsNullOrEmpty(Model.BrandFilter) ? "" : string.Join(",", Model.BrandFilter.Split(',').Select(s => "'" + s.Trim().ToLower() + "'")))];
-    var _categories = [@Html.Raw(string.IsNullOrEmpty(Model.CategoryFilter) ? "" : string.Join(",", Model.CategoryFilter.Split(',').Select(s => "'" + s.Trim().ToLower() + "'")))];
-    var _sort       = '@(Model.SortBy ?? "featured")';
-    var _attrVals   = [@string.Join(",", Model.SelectedAttrValues)];
+    var _brands     = @Html.Raw(jsBrands);
+    var _categories = @Html.Raw(jsCategories);
+    var _sort       = @Html.Raw(jsSort);
+    var _attrVals   = [@string.Join(",", Model.SelectedAttrValues.Select(v => v.ToString()))];
 
     function toggleFltGroup(id) {
         var el = document.getElementById(id);

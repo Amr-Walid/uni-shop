@@ -45,7 +45,9 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    options.RequireHttpsMetadata = false;
+    // SECURITY: require HTTPS for token metadata outside Development so bearer
+    // tokens are never negotiated/transmitted over plaintext in Production.
+    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
     options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
@@ -61,13 +63,31 @@ builder.Services.AddAuthentication(options =>
 });
 
 // CORS Policy
+// SECURITY: AllowAnyOrigin() is a data-exfiltration risk for an API that issues
+// JWTs and exposes admin endpoints — any website could call it from a victim's
+// browser. Origins are now read from configuration ("Cors:AllowedOrigins"); we
+// only fall back to AllowAnyOrigin in Development for local tooling convenience.
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? Array.Empty<string>();
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AppCors", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins)
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials();
+        }
+        else if (builder.Environment.IsDevelopment())
+        {
+            // Local dev only — never reached in Production without explicit origins.
+            policy.SetIsOriginAllowed(_ => true)
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        }
+        // else: no origins configured in Production → CORS denies cross-origin calls.
     });
 });
 
@@ -106,7 +126,7 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
-app.UseCors("AllowAll");
+app.UseCors("AppCors");
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
