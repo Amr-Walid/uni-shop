@@ -549,9 +549,27 @@ namespace FTD.Application.Services
 
         public async Task<bool> DeleteProductAsync(int id)
         {
-            var product = await _db.Products.FindAsync(id);
+            var product = await _db.Products
+                .Include(p => p.AttributeValues)
+                .Include(p => p.Images)
+                .Include(p => p.OrderDetails)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
             if (product == null) return false;
-            product.IsActive = false;
+
+            if (product.OrderDetails.Any())
+            {
+                // Soft-delete if it has orders to prevent breaking foreign keys
+                product.IsActive = false;
+            }
+            else
+            {
+                // Hard delete if it has no order history
+                _db.ProductAttributeValues.RemoveRange(product.AttributeValues);
+                _db.ProductImages.RemoveRange(product.Images);
+                _db.Products.Remove(product);
+            }
+
             await _db.SaveChangesAsync();
             return true;
         }
