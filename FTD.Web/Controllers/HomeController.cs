@@ -40,9 +40,17 @@ namespace FTD.Web.Controllers
             var heroProducts = await _products.GetByIdsOrderedAsync(heroIds);
             var featured = await _products.GetByIdsOrderedAsync(featuredIds);
 
-            // Fallbacks لو الإعدادات فاضية أو كل المنتجات المختارة غير نشطة
-            if (featured.Count == 0)
-                featured = await _products.GetFeaturedAsync(6);
+            // دمج المنتجات المميزة المحددة يدوياً من لوحة التحكم مع أي منتجات تم تفعيل خيار "مميز" لها في صفحة تعديل المنتج
+            var dbFeatured = await _products.GetFeaturedAsync(50);
+            foreach (var p in dbFeatured)
+            {
+                if (!featured.Any(f => f.Id == p.Id))
+                {
+                    featured.Add(p);
+                }
+            }
+
+            // Fallback لو كل المنتجات المميزة المختارة غير نشطة
             if (heroProducts.Count == 0)
                 heroProducts = featured.Take(5).ToList();
 
