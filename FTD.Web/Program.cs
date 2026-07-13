@@ -16,16 +16,19 @@ builder.Services.AddControllersWithViews();
 // ── FORM OPTIONS — increase limits to avoid HTTP 400 on large multipart forms ──
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
 {
-    options.ValueCountLimit = int.MaxValue;
-    options.MultipartBodyLengthLimit = 100 * 1024 * 1024; // 100 MB
-    options.MultipartHeadersLengthLimit = int.MaxValue;
-    options.KeyLengthLimit = int.MaxValue;
+    // int.MaxValue limits were a DoS vector: a single crafted request could
+    // carry millions of form keys. These values comfortably cover the biggest
+    // admin form (bulk content editor + 4 × 5 MB images) while staying bounded.
+    options.ValueCountLimit = 5000;
+    options.MultipartBodyLengthLimit = 32 * 1024 * 1024;   // 32 MB
+    options.MultipartHeadersLengthLimit = 64 * 1024;       // 64 KB
+    options.KeyLengthLimit = 8 * 1024;                     // 8 KB
 });
 
 // ── KESTREL — increase max request body size ──────────────────────────────────
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Limits.MaxRequestBodySize = 100 * 1024 * 1024; // 100 MB
+    options.Limits.MaxRequestBodySize = 32 * 1024 * 1024; // 32 MB (aligned with form limits)
 });
 
 // ── DATABASE ──────────────────────────────────────────────────────────────────
@@ -182,7 +185,18 @@ static async Task SeedAsync(WebApplication app)
     var roleMgr = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
 
-    try { db.Database.Migrate(); } catch { }
+    // Self-migrate at startup. Failures are logged (not swallowed silently — a
+    // schema mismatch would otherwise surface later as confusing runtime errors)
+    // but do not crash the app, so it can still boot against a read-only replica.
+    try
+    {
+        db.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Database migration failed at startup — the schema may be out of date.");
+    }
 
     if (!await roleMgr.RoleExistsAsync("Admin"))
         await roleMgr.CreateAsync(new IdentityRole("Admin"));

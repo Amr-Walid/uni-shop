@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace FTD.Application.DTOs
 {
     public class ProductDto
@@ -5,14 +7,20 @@ namespace FTD.Application.DTOs
         public int Id { get; set; }
         public int CategoryId { get; set; }
         public int? BrandId { get; set; }
+        [Required(ErrorMessage = "اسم المنتج بالعربية مطلوب")]
+        [StringLength(200)]
         public string NameAr { get; set; } = "";
+        [StringLength(200)]
         public string NameEn { get; set; } = "";
+        [StringLength(100)]
         public string Slug { get; set; } = "";
         public string? ShortDescAr { get; set; }
         public string? ShortDescEn { get; set; }
         public string? DescAr { get; set; }
         public string? DescEn { get; set; }
+        [Range(0, double.MaxValue, ErrorMessage = "السعر لا يمكن أن يكون سالباً")]
         public decimal Price { get; set; }
+        [Range(0, double.MaxValue, ErrorMessage = "السعر القديم لا يمكن أن يكون سالباً")]
         public decimal? OldPrice { get; set; }
         public string? Badge { get; set; }
         public string? ImagePath { get; set; }
@@ -21,6 +29,7 @@ namespace FTD.Application.DTOs
         public bool IsActive { get; set; }
         public bool IsFeatured { get; set; }
         public int SortOrder { get; set; }
+        [Range(0, int.MaxValue, ErrorMessage = "المخزون لا يمكن أن يكون سالباً")]
         public int Stock { get; set; }
         public DateTime CreatedAt { get; set; }
         public string? MetaTitle { get; set; }

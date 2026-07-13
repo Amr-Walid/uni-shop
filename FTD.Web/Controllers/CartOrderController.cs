@@ -27,6 +27,7 @@ namespace FTD.Web.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Add(int productId, int qty = 1)
         {
             _cart.AddItem(_storage, productId, qty);
@@ -36,6 +37,7 @@ namespace FTD.Web.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Update(int productId, int qty)
         {
             _cart.UpdateQty(_storage, productId, qty);
@@ -43,6 +45,7 @@ namespace FTD.Web.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Remove(int productId)
         {
             _cart.RemoveItem(_storage, productId);
@@ -50,6 +53,7 @@ namespace FTD.Web.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Clear()
         {
             _cart.ClearCart(_storage);

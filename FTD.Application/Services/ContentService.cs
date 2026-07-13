@@ -17,7 +17,7 @@ namespace FTD.Application.Services
 
         public async Task<Dictionary<string, string>> GetBlocksAsync()
         {
-            var blocks = await _db.ContentBlocks.ToListAsync();
+            var blocks = await _db.ContentBlocks.AsNoTracking().ToListAsync();
             var dict = new Dictionary<string, string>();
             foreach (var b in blocks)
             {
@@ -31,7 +31,7 @@ namespace FTD.Application.Services
 
         public async Task<string> GetBlockAsync(string key, string lang = "ar")
         {
-            var block = await _db.ContentBlocks.FirstOrDefaultAsync(b => b.Key == key);
+            var block = await _db.ContentBlocks.AsNoTracking().FirstOrDefaultAsync(b => b.Key == key);
             if (block == null) return "";
             return lang == "en" ? (block.BodyEn ?? block.BodyAr ?? "") : (block.BodyAr ?? block.BodyEn ?? "");
         }
@@ -39,6 +39,7 @@ namespace FTD.Application.Services
         public async Task<ContentPageDto?> GetPageBySlugAsync(string slug)
         {
             var entity = await _db.ContentPages
+                .AsNoTracking()
                 .Include(p => p.Sections.OrderBy(s => s.SortOrder))
                 .FirstOrDefaultAsync(p => p.Slug == slug && p.IsPublished);
 
@@ -47,31 +48,32 @@ namespace FTD.Application.Services
 
         public async Task<ContactInfoDto?> GetContactInfoAsync()
         {
-            var entity = await _db.ContactInfos.FirstOrDefaultAsync();
+            var entity = await _db.ContactInfos.AsNoTracking().FirstOrDefaultAsync();
             return entity.ToDto();
         }
 
         public async Task<Dictionary<string, string>> GetSettingsAsync()
         {
-            var settings = await _db.SiteSettings.ToListAsync();
+            var settings = await _db.SiteSettings.AsNoTracking().ToListAsync();
             return settings.ToDictionary(s => s.Key, s => s.Value ?? "");
         }
 
         public async Task<string> GetSettingAsync(string key, string defaultValue = "")
         {
-            var s = await _db.SiteSettings.FirstOrDefaultAsync(x => x.Key == key);
+            var s = await _db.SiteSettings.AsNoTracking().FirstOrDefaultAsync(x => x.Key == key);
             return s?.Value ?? defaultValue;
         }
 
         public async Task<List<SiteSettingDto>> GetSettingsListAsync()
         {
-            var settings = await _db.SiteSettings.ToListAsync();
+            var settings = await _db.SiteSettings.AsNoTracking().ToListAsync();
             return settings.Select(s => s.ToDto()).Where(s => s != null).Select(s => s!).ToList();
         }
 
         public async Task<List<NavigationItemDto>> GetNavigationItemsAsync()
         {
             var entities = await _db.NavigationItems
+                .AsNoTracking()
                 .Where(n => n.IsActive)
                 .OrderBy(n => n.SortOrder)
                 .ToListAsync();
@@ -82,6 +84,7 @@ namespace FTD.Application.Services
         public async Task<List<BrandDto>> GetActiveBrandsAsync()
         {
             var entities = await _db.Brands
+                .AsNoTracking()
                 .Where(b => b.IsActive)
                 .OrderBy(b => b.SortOrder)
                 .ToListAsync();
@@ -91,7 +94,7 @@ namespace FTD.Application.Services
 
         public async Task<List<ContentBlockDto>> GetBlocksListAsync()
         {
-            var blocks = await _db.ContentBlocks.OrderBy(b => b.Key).ToListAsync();
+            var blocks = await _db.ContentBlocks.AsNoTracking().OrderBy(b => b.Key).ToListAsync();
             return blocks.Select(b => b.ToDto()).Where(b => b != null).Select(b => b!).ToList();
         }
 
@@ -110,7 +113,7 @@ namespace FTD.Application.Services
 
         public async Task<List<ContentPageDto>> GetAllPagesAsync()
         {
-            var pages = await _db.ContentPages.OrderBy(p => p.Slug).ToListAsync();
+            var pages = await _db.ContentPages.AsNoTracking().OrderBy(p => p.Slug).ToListAsync();
             return pages.Select(p => p.ToDto()).Where(p => p != null).Select(p => p!).ToList();
         }
 
@@ -167,6 +170,7 @@ namespace FTD.Application.Services
         public async Task<ContentPageDto?> GetPageWithSectionsAsync(int id)
         {
             var page = await _db.ContentPages
+                .AsNoTracking()
                 .Include(p => p.Sections)
                 .FirstOrDefaultAsync(p => p.Id == id);
             return page.ToDto();
@@ -285,6 +289,7 @@ namespace FTD.Application.Services
         public async Task<List<NavigationItemDto>> GetAllNavigationItemsForAdminAsync()
         {
             var items = await _db.NavigationItems
+                .AsNoTracking()
                 .Where(n => n.ParentId == null)
                 .OrderBy(n => n.SortOrder)
                 .ToListAsync();

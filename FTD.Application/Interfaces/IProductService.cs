@@ -10,9 +10,8 @@ namespace FTD.Application.Interfaces
         Task<List<ProductDto>> GetByIdsOrderedAsync(List<int> ids);
         Task<List<CategoryDto>> GetActiveCategoriesAsync();
         Task<List<CategoryDto>> GetAllCategoriesAsync();
+        Task<CategoryDto?> GetCategoryByIdAsync(int id);
         Task<List<ProductDto>> GetAllActiveAsync();
-        Task<List<ProductDto>> GetByCategoryAsync(int categoryId);
-        Task<List<ProductDto>> GetByBrandAsync(string brandSlug);
         Task<List<ProductDto>> GetFilteredBySlugAsync(List<string>? brandSlugs, List<string>? categorySlugs, List<int>? attributeValueIds, string? sortBy);
         Task<(List<CategoryDto> AvailableCategories, List<BrandDto> AvailableBrands)> GetAvailableFacetsAsync(List<string>? brandSlugs, List<string>? categorySlugs);
         Task<List<ProductDto>> GetFilteredByIdAsync(int? categoryId, int? brandId, string? query);
@@ -33,6 +32,7 @@ namespace FTD.Application.Interfaces
         Task<int> DuplicateProductAsync(int id);
         Task<ProductImageDto?> DeleteProductImageAsync(int imageId);
         Task<List<BrandDto>> GetAllBrandsAsync();
+        Task<BrandDto?> GetBrandByIdAsync(int id);
         Task<BrandDto> CreateBrandAsync(BrandDto dto);
         Task<BrandDto> UpdateBrandAsync(int id, BrandDto dto);
         Task<List<ProductAttributeDto>> GetAttributesWithDetailsAsync(int? categoryId);

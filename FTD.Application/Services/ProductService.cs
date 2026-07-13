@@ -18,6 +18,7 @@ namespace FTD.Application.Services
         public async Task<List<ProductDto>> GetFeaturedAsync(int take = 6)
         {
             var entities = await _db.Products
+                .AsNoTracking()
                 .Include(p => p.Category)
                 .Where(p => p.IsActive && p.IsFeatured)
                 .OrderBy(p => p.SortOrder)
@@ -33,6 +34,7 @@ namespace FTD.Application.Services
             if (ids == null || ids.Count == 0) return new List<ProductDto>();
 
             var entities = await _db.Products
+                .AsNoTracking()
                 .Include(p => p.Category)
                 .Where(p => p.IsActive && ids.Contains(p.Id))
                 .ToListAsync();
@@ -56,6 +58,7 @@ namespace FTD.Application.Services
             // (navbar dropdown, filters…) get an accurate ProductsCount without
             // loading whole product collections into memory.
             var rows = await _db.Categories
+                .AsNoTracking()
                 .Where(c => c.IsActive)
                 .OrderBy(c => c.SortOrder)
                 .Select(c => new { Category = c, ActiveProducts = c.Products.Count(p => p.IsActive) })
@@ -76,35 +79,10 @@ namespace FTD.Application.Services
         public async Task<List<ProductDto>> GetAllActiveAsync()
         {
             var entities = await _db.Products
+                .AsNoTracking()
                 .Include(p => p.Category)
                 .Where(p => p.IsActive)
                 .OrderBy(p => p.Category.SortOrder).ThenBy(p => p.SortOrder)
-                .ToListAsync();
-
-            return entities.Select(p => p.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList();
-        }
-
-        public async Task<List<ProductDto>> GetByCategoryAsync(int categoryId)
-        {
-            var entities = await _db.Products
-                .Include(p => p.Category)
-                .Where(p => p.IsActive && p.CategoryId == categoryId)
-                .OrderBy(p => p.SortOrder)
-                .ToListAsync();
-
-            return entities.Select(p => p.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList();
-        }
-
-        public async Task<List<ProductDto>> GetByBrandAsync(string brandSlug)
-        {
-            var entities = await _db.Products
-                .Include(p => p.Category)
-                .Include(p => p.Brand)
-                .Where(p => p.IsActive && (
-                    (p.Brand != null && p.Brand.Slug.ToLower() == brandSlug.ToLower()) ||
-                    (p.BrandName != null && p.BrandName.ToLower() == brandSlug.ToLower())
-                ))
-                .OrderBy(p => p.SortOrder)
                 .ToListAsync();
 
             return entities.Select(p => p.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList();
@@ -117,6 +95,7 @@ namespace FTD.Application.Services
         {
             // Step 1: simple query WITHOUT Include(AttributeValues) to avoid CTE
             var query = _db.Products
+                .AsNoTracking()
                 .Include(p => p.Category)
                 .Include(p => p.Brand)
                 .Where(p => p.IsActive)
@@ -157,7 +136,7 @@ namespace FTD.Application.Services
             {
                 var productIds = products.Select(p => p.Id).ToHashSet();
                 // Fetch and filter in database - avoids fetching all records
-                var pavs = await _db.ProductAttributeValues.Where(av => productIds.Contains(av.ProductId)).ToListAsync();
+                var pavs = await _db.ProductAttributeValues.AsNoTracking().Where(av => productIds.Contains(av.ProductId)).ToListAsync();
 
                 products = products.Where(p =>
                     attributeValueIds.All(vid =>
@@ -185,6 +164,7 @@ namespace FTD.Application.Services
             }
             var activeCategoryIds = await catQuery.Select(p => p.CategoryId).Distinct().ToListAsync();
             var categories = await _db.Categories
+                .AsNoTracking()
                 .Where(c => c.IsActive && activeCategoryIds.Contains(c.Id))
                 .OrderBy(c => c.SortOrder)
                 .ToListAsync();
@@ -203,6 +183,7 @@ namespace FTD.Application.Services
             var activeBrandNames = await brandQuery.Where(p => p.BrandId == null && p.BrandName != null).Select(p => p.BrandName!).Distinct().ToListAsync();
             
             var brands = await _db.Brands
+                .AsNoTracking()
                 .Where(b => b.IsActive)
                 .OrderBy(b => b.SortOrder)
                 .ToListAsync();
@@ -222,6 +203,7 @@ namespace FTD.Application.Services
         public async Task<List<ProductDto>> GetFilteredByIdAsync(int? categoryId, int? brandId, string? query)
         {
             var queryable = _db.Products
+                .AsNoTracking()
                 .Include(p => p.Category)
                 .Include(p => p.Brand)
                 .Where(p => p.IsActive)
@@ -239,21 +221,7 @@ namespace FTD.Application.Services
 
             if (!string.IsNullOrEmpty(query))
             {
-                var q = query.ToLower().Trim();
-                queryable = queryable.Where(p =>
-                    p.NameAr.ToLower().Contains(q) ||
-                    p.NameEn.ToLower().Contains(q) ||
-                    (p.BrandName != null && p.BrandName.ToLower().Contains(q)) ||
-                    (p.Brand != null && p.Brand.NameAr.ToLower().Contains(q)) ||
-                    (p.Brand != null && p.Brand.NameEn.ToLower().Contains(q)) ||
-                    (p.ShortDescAr != null && p.ShortDescAr.ToLower().Contains(q)) ||
-                    (p.ShortDescEn != null && p.ShortDescEn.ToLower().Contains(q)) ||
-                    (p.DescAr != null && p.DescAr.ToLower().Contains(q)) ||
-                    (p.DescEn != null && p.DescEn.ToLower().Contains(q)) ||
-                    (p.Badge != null && p.Badge.ToLower().Contains(q)) ||
-                    (p.Category != null && p.Category.NameAr.ToLower().Contains(q)) ||
-                    (p.Category != null && p.Category.NameEn.ToLower().Contains(q))
-                );
+                queryable = ApplyTextSearch(queryable, query);
             }
 
             queryable = queryable.OrderByDescending(p => p.IsFeatured).ThenBy(p => p.SortOrder);
@@ -262,9 +230,32 @@ namespace FTD.Application.Services
             return entities.Select(p => p.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList();
         }
 
+        // Shared full-text-ish search predicate used by SearchAsync and
+        // GetFilteredByIdAsync — kept in one place so both endpoints always
+        // match the exact same fields.
+        private static IQueryable<Product> ApplyTextSearch(IQueryable<Product> source, string query)
+        {
+            var q = query.ToLower().Trim();
+            return source.Where(p =>
+                p.NameAr.ToLower().Contains(q) ||
+                p.NameEn.ToLower().Contains(q) ||
+                (p.BrandName != null && p.BrandName.ToLower().Contains(q)) ||
+                (p.Brand != null && p.Brand.NameAr.ToLower().Contains(q)) ||
+                (p.Brand != null && p.Brand.NameEn.ToLower().Contains(q)) ||
+                (p.ShortDescAr != null && p.ShortDescAr.ToLower().Contains(q)) ||
+                (p.ShortDescEn != null && p.ShortDescEn.ToLower().Contains(q)) ||
+                (p.DescAr != null && p.DescAr.ToLower().Contains(q)) ||
+                (p.DescEn != null && p.DescEn.ToLower().Contains(q)) ||
+                (p.Badge != null && p.Badge.ToLower().Contains(q)) ||
+                (p.Category != null && p.Category.NameAr.ToLower().Contains(q)) ||
+                (p.Category != null && p.Category.NameEn.ToLower().Contains(q))
+            );
+        }
+
         public async Task<ProductDto?> GetBySlugAsync(string slug)
         {
             var entity = await _db.Products
+                .AsNoTracking()
                 .Include(p => p.Category)
                 .Include(p => p.AttributeValues)
                     .ThenInclude(av => av.Attribute)
@@ -279,6 +270,7 @@ namespace FTD.Application.Services
         public async Task<ProductDto?> GetByIdAsync(int id)
         {
             var entity = await _db.Products
+                .AsNoTracking()
                 .Include(p => p.Category)
                 .Include(p => p.AttributeValues)
                     .ThenInclude(av => av.Attribute)
@@ -292,9 +284,13 @@ namespace FTD.Application.Services
 
         public async Task<List<ProductDto>> GetRelatedAsync(int productId, int categoryId, int take = 4)
         {
+            // Explicit ordering makes the "related" set deterministic — without
+            // an OrderBy, SQL Server may return arbitrary rows on each request.
             var entities = await _db.Products
+                .AsNoTracking()
                 .Include(p => p.Category)
                 .Where(p => p.IsActive && p.CategoryId == categoryId && p.Id != productId)
+                .OrderByDescending(p => p.IsFeatured).ThenBy(p => p.SortOrder).ThenBy(p => p.Id)
                 .Take(take)
                 .ToListAsync();
 
@@ -303,24 +299,13 @@ namespace FTD.Application.Services
 
         public async Task<List<ProductDto>> SearchAsync(string query)
         {
-            var q = query.ToLower().Trim();
-            var entities = await _db.Products
+            var baseQuery = _db.Products
+                .AsNoTracking()
                 .Include(p => p.Category)
                 .Include(p => p.Brand)
-                .Where(p => p.IsActive && (
-                    p.NameAr.ToLower().Contains(q) ||
-                    p.NameEn.ToLower().Contains(q) ||
-                    (p.BrandName != null && p.BrandName.ToLower().Contains(q)) ||
-                    (p.Brand != null && p.Brand.NameAr.ToLower().Contains(q)) ||
-                    (p.Brand != null && p.Brand.NameEn.ToLower().Contains(q)) ||
-                    (p.ShortDescAr != null && p.ShortDescAr.ToLower().Contains(q)) ||
-                    (p.ShortDescEn != null && p.ShortDescEn.ToLower().Contains(q)) ||
-                    (p.DescAr != null && p.DescAr.ToLower().Contains(q)) ||
-                    (p.DescEn != null && p.DescEn.ToLower().Contains(q)) ||
-                    (p.Badge != null && p.Badge.ToLower().Contains(q)) ||
-                    (p.Category != null && p.Category.NameAr.ToLower().Contains(q)) ||
-                    (p.Category != null && p.Category.NameEn.ToLower().Contains(q))
-                ))
+                .Where(p => p.IsActive);
+
+            var entities = await ApplyTextSearch(baseQuery, query)
                 .OrderByDescending(p => p.IsFeatured)
                 .ThenByDescending(p => p.CreatedAt)
                 .Take(20)
@@ -332,14 +317,32 @@ namespace FTD.Application.Services
         public async Task<List<ProductDto>> GetAllProductsForAdminAsync()
         {
             var entities = await _db.Products
+                .AsNoTracking()
                 .Include(p => p.Category)
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
             return entities.Select(p => p.ToDto()).Where(p => p != null).Select(p => p!).ToList();
         }
 
+        // Slug uniqueness pre-checks — the DB unique indexes are the last line
+        // of defense; these checks convert a would-be DbUpdateException (500)
+        // into a friendly, localized validation error the forms already render.
+        private async Task EnsureProductSlugUniqueAsync(string slug, int? excludeId = null)
+        {
+            if (await _db.Products.AnyAsync(p => p.Slug == slug && (excludeId == null || p.Id != excludeId)))
+                throw new InvalidOperationException($"الرابط (Slug) \"{slug}\" مستخدم بالفعل لمنتج آخر — غيّره ثم أعد الحفظ");
+        }
+
+        private async Task EnsureCategorySlugUniqueAsync(string slug, int? excludeId = null)
+        {
+            if (await _db.Categories.AnyAsync(c => c.Slug == slug && (excludeId == null || c.Id != excludeId)))
+                throw new InvalidOperationException($"الرابط (Slug) \"{slug}\" مستخدم بالفعل لتصنيف آخر — غيّره ثم أعد الحفظ");
+        }
+
         public async Task<ProductDto> CreateProductAsync(ProductDto dto, List<ProductImageDto> additionalImages, Dictionary<int, int> attributes)
         {
+            await EnsureProductSlugUniqueAsync(dto.Slug);
+
             var product = new Product
             {
                 CategoryId = dto.CategoryId,
@@ -367,15 +370,15 @@ namespace FTD.Application.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            _db.Products.Add(product);
-            await _db.SaveChangesAsync();
-
+            // Attach children to the navigation collections and save ONCE —
+            // EF persists the whole graph in a single implicit transaction, so
+            // a failure can never leave an orphan product without its images
+            // or attribute values (previously two separate SaveChanges calls).
             var addedImages = 0;
             foreach (var img in additionalImages)
             {
-                _db.ProductImages.Add(new ProductImage
+                product.Images.Add(new ProductImage
                 {
-                    ProductId = product.Id,
                     ImagePath = img.ImagePath,
                     IsMain = addedImages == 0 && string.IsNullOrEmpty(product.ImagePath),
                     SortOrder = addedImages
@@ -387,15 +390,15 @@ namespace FTD.Application.Services
             {
                 if (kv.Value > 0)
                 {
-                    _db.ProductAttributeValues.Add(new ProductAttributeValue
+                    product.AttributeValues.Add(new ProductAttributeValue
                     {
-                        ProductId = product.Id,
                         AttributeId = kv.Key,
                         AttributeValueId = kv.Value
                     });
                 }
             }
 
+            _db.Products.Add(product);
             await _db.SaveChangesAsync();
 
             return (await GetByIdAsync(product.Id))!;
@@ -405,6 +408,8 @@ namespace FTD.Application.Services
         {
             var product = await _db.Products.FindAsync(id);
             if (product == null) throw new ArgumentException("Product not found");
+
+            await EnsureProductSlugUniqueAsync(dto.Slug, id);
 
             product.NameAr = dto.NameAr;
             product.NameEn = dto.NameEn;
@@ -517,15 +522,11 @@ namespace FTD.Application.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            _db.Products.Add(clone);
-            await _db.SaveChangesAsync();
-
             // Copy gallery images (paths are shared — files on disk are reused)
             foreach (var img in source.Images.OrderBy(i => i.SortOrder))
             {
-                _db.ProductImages.Add(new ProductImage
+                clone.Images.Add(new ProductImage
                 {
-                    ProductId = clone.Id,
                     ImagePath = img.ImagePath,
                     IsMain = img.IsMain,
                     SortOrder = img.SortOrder
@@ -535,14 +536,16 @@ namespace FTD.Application.Services
             // Copy all assigned specification values
             foreach (var av in source.AttributeValues)
             {
-                _db.ProductAttributeValues.Add(new ProductAttributeValue
+                clone.AttributeValues.Add(new ProductAttributeValue
                 {
-                    ProductId = clone.Id,
                     AttributeId = av.AttributeId,
                     AttributeValueId = av.AttributeValueId
                 });
             }
 
+            // Single SaveChanges = single implicit transaction — the clone and
+            // ALL of its children commit together or not at all.
+            _db.Products.Add(clone);
             await _db.SaveChangesAsync();
             return clone.Id;
         }
@@ -586,8 +589,31 @@ namespace FTD.Application.Services
 
         public async Task<List<BrandDto>> GetAllBrandsAsync()
         {
-            var entities = await _db.Brands.OrderBy(b => b.SortOrder).ToListAsync();
-            return entities.Select(b => b.ToDto()).Where(b => b != null).Select(b => b!).ToList();
+            // Project the products count in the same query — avoids loading
+            // whole product collections AND fixes the admin grid always
+            // showing "0 منتج" (Brand.Products was never loaded before).
+            var rows = await _db.Brands
+                .AsNoTracking()
+                .OrderBy(b => b.SortOrder)
+                .Select(b => new { Brand = b, Count = b.Products.Count })
+                .ToListAsync();
+
+            return rows
+                .Select(r =>
+                {
+                    var dto = r.Brand.ToDto();
+                    if (dto != null) dto.ProductsCount = r.Count;
+                    return dto;
+                })
+                .Where(b => b != null)
+                .Select(b => b!)
+                .ToList();
+        }
+
+        public async Task<BrandDto?> GetBrandByIdAsync(int id)
+        {
+            var entity = await _db.Brands.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id);
+            return entity.ToDto();
         }
 
         public async Task<BrandDto> CreateBrandAsync(BrandDto dto)
@@ -633,12 +659,36 @@ namespace FTD.Application.Services
 
         public async Task<List<CategoryDto>> GetAllCategoriesAsync()
         {
-            var entities = await _db.Categories.Include(c => c.Products).OrderBy(c => c.SortOrder).ToListAsync();
-            return entities.Select(c => c.ToDto()).Where(c => c != null).Select(c => c!).ToList();
+            // Count() projection instead of Include(Products) — previously this
+            // materialized EVERY product entity in the DB just to count them.
+            var rows = await _db.Categories
+                .AsNoTracking()
+                .OrderBy(c => c.SortOrder)
+                .Select(c => new { Category = c, Count = c.Products.Count })
+                .ToListAsync();
+
+            return rows
+                .Select(r =>
+                {
+                    var dto = r.Category.ToDto();
+                    if (dto != null) dto.ProductsCount = r.Count;
+                    return dto;
+                })
+                .Where(c => c != null)
+                .Select(c => c!)
+                .ToList();
+        }
+
+        public async Task<CategoryDto?> GetCategoryByIdAsync(int id)
+        {
+            var entity = await _db.Categories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
+            return entity.ToDto();
         }
 
         public async Task<CategoryDto> CreateCategoryAsync(CategoryDto dto)
         {
+            await EnsureCategorySlugUniqueAsync(dto.Slug);
+
             var category = new Category
             {
                 NameAr = dto.NameAr,
@@ -663,6 +713,8 @@ namespace FTD.Application.Services
             var category = await _db.Categories.FindAsync(id);
             if (category == null) throw new ArgumentException("Category not found");
 
+            await EnsureCategorySlugUniqueAsync(dto.Slug, id);
+
             category.NameAr = dto.NameAr;
             category.NameEn = dto.NameEn;
             category.Slug = dto.Slug;
@@ -680,6 +732,7 @@ namespace FTD.Application.Services
         public async Task<List<ProductAttributeDto>> GetAttributesWithDetailsAsync(int? categoryId)
         {
             var query = _db.ProductAttributes
+                .AsNoTracking()
                 .Include(a => a.Values)
                 .Include(a => a.Category)
                 .AsQueryable();
@@ -724,6 +777,16 @@ namespace FTD.Application.Services
         {
             var attr = await _db.ProductAttributes.FindAsync(id);
             if (attr == null) return false;
+
+            // ProductAttributeValue → Attribute/AttributeValue FKs are Restrict
+            // (to break SQL Server cascade cycles), so junction rows MUST be
+            // detached from products first — otherwise this throws a raw
+            // SqlException (FK constraint) and the admin sees a 500 page.
+            var junctions = _db.ProductAttributeValues.Where(av => av.AttributeId == id);
+            _db.ProductAttributeValues.RemoveRange(junctions);
+
+            // Child values cascade from the attribute itself (AttributeValue →
+            // Attribute is Cascade), so removing the attribute removes them.
             _db.ProductAttributes.Remove(attr);
             await _db.SaveChangesAsync();
             return true;
@@ -761,6 +824,12 @@ namespace FTD.Application.Services
         {
             var val = await _db.AttributeValues.FindAsync(valueId);
             if (val == null) return false;
+
+            // Same Restrict-FK rule as DeleteAttributeAsync: detach the value
+            // from any products before deleting it to avoid an FK SqlException.
+            var junctions = _db.ProductAttributeValues.Where(av => av.AttributeValueId == valueId);
+            _db.ProductAttributeValues.RemoveRange(junctions);
+
             _db.AttributeValues.Remove(val);
             await _db.SaveChangesAsync();
             return true;
@@ -772,15 +841,15 @@ namespace FTD.Application.Services
 
             var productIds = products.Select(p => p.Id).ToHashSet();
 
-            var pavs = await _db.ProductAttributeValues.Where(av => productIds.Contains(av.ProductId)).ToListAsync();
+            var pavs = await _db.ProductAttributeValues.AsNoTracking().Where(av => productIds.Contains(av.ProductId)).ToListAsync();
 
             if (!pavs.Any()) return new();
 
             var attrIds = pavs.Select(av => av.AttributeId).ToHashSet();
             var valIds = pavs.Select(av => av.AttributeValueId).ToHashSet();
 
-            var attrs = await _db.ProductAttributes.Where(a => attrIds.Contains(a.Id)).ToListAsync();
-            var vals = await _db.AttributeValues.Where(v => valIds.Contains(v.Id)).ToListAsync();
+            var attrs = await _db.ProductAttributes.AsNoTracking().Where(a => attrIds.Contains(a.Id)).ToListAsync();
+            var vals = await _db.AttributeValues.AsNoTracking().Where(v => valIds.Contains(v.Id)).ToListAsync();
 
             var groups = new List<AttributeFilterGroupDto>();
 

@@ -1,5 +1,4 @@
 using FTD.Application.DTOs;
-using FTD.Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -24,7 +23,7 @@ namespace FTD.Web.ViewModels
 
         public List<string> SectionsOrder
             => (SettingsMap.TryGetValue("homepage.sections.order", out var v) && !string.IsNullOrWhiteSpace(v)
-                    ? v : "hero,values,marquee,categories,featured,about,mission,cta,contact")
+                    ? v : "hero,values,categories,featured,about,mission,cta,contact")
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .ToList();
 
@@ -86,27 +85,36 @@ namespace FTD.Web.ViewModels
     // ── CHECKOUT ─────────────────────────────────────────────────────────────
     public class CheckoutViewModel
     {
+        // StringLength attributes mirror the SalesOrder entity column limits so
+        // oversized input fails model validation instead of throwing SqlException.
         [Required(ErrorMessage = "الاسم مطلوب")]
+        [StringLength(150, ErrorMessage = "الاسم طويل جداً")]
         [Display(Name = "الاسم الكامل")]
         public string CustomerName { get; set; } = "";
 
         [Required(ErrorMessage = "رقم الهاتف مطلوب")]
+        [StringLength(20, ErrorMessage = "رقم الهاتف طويل جداً")]
         [Display(Name = "رقم الهاتف")]
         public string CustomerPhone { get; set; } = "";
 
         [EmailAddress]
+        [StringLength(200, ErrorMessage = "البريد الإلكتروني طويل جداً")]
         [Display(Name = "البريد الإلكتروني")]
         public string? CustomerEmail { get; set; }
 
+        [StringLength(300, ErrorMessage = "العنوان طويل جداً")]
         [Display(Name = "العنوان")]
         public string? Address { get; set; }
 
+        [StringLength(100, ErrorMessage = "اسم المحافظة طويل جداً")]
         [Display(Name = "المحافظة")]
         public string? Governorate { get; set; }
 
+        [StringLength(100, ErrorMessage = "اسم المدينة طويل جداً")]
         [Display(Name = "المدينة")]
         public string? City { get; set; }
 
+        [StringLength(1000, ErrorMessage = "الملاحظات طويلة جداً")]
         [Display(Name = "ملاحظات")]
         public string? Notes { get; set; }
 
