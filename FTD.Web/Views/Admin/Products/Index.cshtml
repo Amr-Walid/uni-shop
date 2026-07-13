@@ -50,6 +50,12 @@
               <td>
                 <div style="display:flex;gap:6px">
                   <a href="/Admin/AdminProducts/Edit/@p.Id" class="a-btn-sm">تعديل</a>
+                  <form action="/Admin/AdminProducts/Duplicate" method="post" style="display:inline"
+                        onsubmit="return confirm('نسخ هذا المنتج بكل مواصفاته وصوره؟ سيتم إنشاء نسخة مخفية لتعديلها.')">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@p.Id">
+                    <button type="submit" class="a-btn-sm" title="نسخ المنتج بكل تفاصيله ومواصفاته">⧉ نسخ</button>
+                  </form>
                   <form action="/Admin/AdminProducts/Delete" method="post" style="display:inline" onsubmit="return confirm('هل أنت متأكد من حذف هذا المنتج؟')">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="id" value="@p.Id">

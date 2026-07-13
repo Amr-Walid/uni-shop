@@ -97,7 +97,8 @@ namespace FTD.Web.Controllers.Admin
                             additionalImages.Add(new ProductImageDto { ImagePath = path });
                         }
 
-                await _productService.CreateProductAsync(vm.Product, additionalImages, vm.SelectedAttributeValues);
+                var attributeSelections = await ResolveAttributeSelectionsAsync(vm);
+                await _productService.CreateProductAsync(vm.Product, additionalImages, attributeSelections);
             }
             catch (InvalidOperationException ex)
             {
@@ -163,7 +164,8 @@ namespace FTD.Web.Controllers.Admin
                         }
                 }
 
-                await _productService.UpdateProductAsync(id, vm.Product, additionalImages, vm.SelectedAttributeValues);
+                var attributeSelections = await ResolveAttributeSelectionsAsync(vm);
+                await _productService.UpdateProductAsync(id, vm.Product, additionalImages, attributeSelections);
             }
             catch (InvalidOperationException ex)
             {
@@ -191,6 +193,54 @@ namespace FTD.Web.Controllers.Admin
             return Json(result);
         }
 
+        // ── DUPLICATE PRODUCT ─────────────────────────────────────────────────
+        // Clones the product (details + brand + category + price + stock + images
+        // + all assigned attribute values) then redirects the admin straight to
+        // the Edit form of the new copy to change the name/slug and save.
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> Duplicate(int id)
+        {
+            try
+            {
+                var newId = await _productService.DuplicateProductAsync(id);
+                TempData["Success"] = "تم نسخ المنتج بنجاح — عدّل الاسم والـ Slug ثم فعّله واحفظ";
+                return RedirectToAction(nameof(Edit), new { id = newId });
+            }
+            catch (ArgumentException)
+            {
+                TempData["Error"] = "المنتج غير موجود";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        // ── QUICK ADD ATTRIBUTE VALUE (inline AJAX from the product form) ────
+        // Lets the admin create a missing spec value (e.g. a new color) without
+        // leaving the Add/Edit Product screen. Returns the created value as JSON
+        // so the client inserts + selects it in the dropdown instantly.
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> QuickAddAttributeValue(int attributeId, string valueAr, string? valueEn)
+        {
+            if (attributeId <= 0 || string.IsNullOrWhiteSpace(valueAr))
+                return BadRequest(new { success = false, message = "القيمة مطلوبة" });
+
+            try
+            {
+                var created = await _productService.AddAttributeValueAsync(attributeId, valueAr, valueEn ?? "");
+                return Json(new
+                {
+                    success = true,
+                    id = created.Id,
+                    attributeId = created.AttributeId,
+                    valueAr = created.ValueAr,
+                    valueEn = created.ValueEn
+                });
+            }
+            catch (Exception)
+            {
+                return BadRequest(new { success = false, message = "تعذر إضافة القيمة" });
+            }
+        }
+
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
@@ -211,6 +261,36 @@ namespace FTD.Web.Controllers.Admin
                 return RedirectToAction(nameof(Edit), new { id = deletedImage.ProductId });
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        /// <summary>
+        /// Merges dropdown selections with free-text spec inputs.
+        /// Free-text values (attributes without predefined values) are created
+        /// in the DB on the fly — AddAttributeValueAsync is idempotent, so
+        /// retyping an existing value re-uses it instead of duplicating.
+        /// A dropdown selection for the same attribute wins over free text.
+        /// </summary>
+        private async Task<Dictionary<int, int>> ResolveAttributeSelectionsAsync(ProductFormViewModel vm)
+        {
+            var selections = new Dictionary<int, int>(vm.SelectedAttributeValues);
+
+            foreach (var kv in vm.FreeTextAttributeValues)
+            {
+                if (string.IsNullOrWhiteSpace(kv.Value)) continue;
+                if (selections.TryGetValue(kv.Key, out var chosen) && chosen > 0) continue;
+
+                try
+                {
+                    var created = await _productService.AddAttributeValueAsync(kv.Key, kv.Value.Trim(), kv.Value.Trim());
+                    selections[kv.Key] = created.Id;
+                }
+                catch (ArgumentException)
+                {
+                    // Attribute was deleted while the form was open — skip silently
+                }
+            }
+
+            return selections;
         }
 
         private async Task<string> SaveImageAsync(IFormFile file, string folder)

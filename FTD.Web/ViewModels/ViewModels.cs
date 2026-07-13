@@ -150,6 +150,10 @@ namespace FTD.Web.ViewModels
         public List<BrandDto> Brands { get; set; } = new();
         public List<ProductAttributeDto> Attributes { get; set; } = new();
         public Dictionary<int, int> SelectedAttributeValues { get; set; } = new();
+        // Free-text specs: attributes that have no predefined values render as a
+        // plain text input — the typed value is created in the DB on save and
+        // linked to the product (key = AttributeId, value = the typed text).
+        public Dictionary<int, string> FreeTextAttributeValues { get; set; } = new();
         public IFormFile? MainImage { get; set; }
         public List<IFormFile> ProductImages { get; set; } = new();
         public List<ProductImageDto> ExistingImages { get; set; } = new();
@@ -175,6 +179,7 @@ namespace FTD.Web.ViewModels
     {
         public List<NavigationItemDto> NavItems { get; set; } = new();
         public List<BrandDto> NavBrands { get; set; } = new();
+        public List<CategoryDto> NavCategories { get; set; } = new();
     }
 
     public class FooterViewModel
@@ -182,6 +187,7 @@ namespace FTD.Web.ViewModels
         public List<NavigationItemDto> FootItems { get; set; } = new();
         public ContactInfoDto? ContactInfo { get; set; }
         public List<BrandDto> NavBrands { get; set; } = new();
+        public List<CategoryDto> NavCategories { get; set; } = new();
         public Dictionary<string, string> Blocks { get; set; } = new();
         public Dictionary<string, string> Settings { get; set; } = new();
 

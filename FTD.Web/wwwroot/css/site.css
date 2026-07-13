@@ -4321,3 +4321,135 @@ body:not(.en) .cat-tile .cat-link svg { transform: scaleX(-1); }
 @media (max-width: 768px) { .mission-section { padding: 64px 0; margin: 32px var(--page-margin-mobile); } }
 .section-header { margin-bottom: 44px; }
 .footer { margin-top: 72px; }
+
+/* ============================================
+   NAVBAR CATEGORIES DROPDOWN (dynamic)
+   ============================================ */
+.nav-dropdown { position: relative; display: inline-flex; }
+.nav-dropdown .nav-caret { transition: transform 0.2s ease; }
+.nav-dropdown:hover .nav-caret,
+.nav-dropdown:focus-within .nav-caret { transform: rotate(180deg); }
+
+.nav-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  inset-inline-start: 50%;
+  transform: translateX(50%) translateY(6px);
+  min-width: 240px;
+  background: white;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-elev);
+  padding: 8px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+  z-index: 300;
+}
+html[dir="ltr"] .nav-dropdown-menu { transform: translateX(-50%) translateY(6px); }
+.nav-dropdown:hover .nav-dropdown-menu,
+.nav-dropdown:focus-within .nav-dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(50%) translateY(0);
+}
+html[dir="ltr"] .nav-dropdown:hover .nav-dropdown-menu,
+html[dir="ltr"] .nav-dropdown:focus-within .nav-dropdown-menu {
+  transform: translateX(-50%) translateY(0);
+}
+/* invisible hover-bridge so the menu doesn't close crossing the gap */
+.nav-dropdown-menu::before {
+  content: '';
+  position: absolute;
+  top: -10px; left: 0; right: 0;
+  height: 10px;
+}
+
+.nav-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--navy);
+  transition: background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+.nav-dropdown-item:hover { background: rgba(var(--primary-rgb), 0.07); color: var(--primary); }
+.nav-dropdown-item .nd-emoji { font-size: 17px; width: 24px; text-align: center; flex: none; }
+.nav-dropdown-item .nd-name { flex: 1; }
+.nav-dropdown-item .nd-count {
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: var(--r-full);
+  background: var(--surface-container-low);
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.nav-dropdown-item.all { font-weight: 700; color: var(--primary); }
+.nav-dropdown-item.all svg { margin-inline-start: auto; }
+html[dir="rtl"] .nav-dropdown-item.all svg { transform: scaleX(-1); }
+.nav-dropdown-sep { height: 1px; background: var(--outline-variant); margin: 6px 4px; }
+
+/* ── Mobile: products accordion ── */
+.mobile-acc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 !important;
+}
+.mobile-acc-row .mobile-acc-link {
+  flex: 1;
+  padding: 12px 16px;
+  color: inherit;
+  display: block;
+}
+.mobile-acc-toggle {
+  width: 38px;
+  height: 38px;
+  margin-inline-end: 6px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-container-low);
+  color: var(--navy);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: none;
+  transition: transform 0.2s ease, background 0.15s ease;
+}
+.mobile-accordion.open .mobile-acc-toggle { transform: rotate(180deg); background: rgba(var(--primary-rgb), 0.08); color: var(--primary); }
+.mobile-acc-panel {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  margin-inline-start: 12px;
+  padding-inline-start: 10px;
+  border-inline-start: 2px solid var(--outline-variant);
+}
+.mobile-accordion.open .mobile-acc-panel { display: flex; }
+.mobile-cat-link {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px !important;
+  padding: 10px 12px !important;
+}
+.mobile-cat-link .nd-emoji { font-size: 16px; width: 22px; text-align: center; flex: none; }
+
+/* Footer: allow the extra dynamic Categories column to fit gracefully */
+.footer-grid { grid-template-columns: 1.4fr repeat(auto-fit, minmax(140px, 1fr)); gap: 44px; }
+@media (max-width: 968px) { .footer-grid { grid-template-columns: 1fr 1fr; gap: 40px; } }
+@media (max-width: 640px) { .footer-grid { grid-template-columns: 1fr; } }

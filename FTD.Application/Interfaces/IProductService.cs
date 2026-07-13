@@ -24,6 +24,13 @@ namespace FTD.Application.Interfaces
         Task<ProductDto> CreateProductAsync(ProductDto dto, List<ProductImageDto> additionalImages, Dictionary<int, int> attributes);
         Task<ProductDto> UpdateProductAsync(int id, ProductDto dto, List<ProductImageDto> additionalImages, Dictionary<int, int> attributes);
         Task<bool> DeleteProductAsync(int id);
+        /// <summary>
+        /// Clones a product with all its data (pricing, brand, category, images
+        /// and assigned attribute values). The copy is created INACTIVE with a
+        /// unique slug and a "(نسخة)" suffix so it never leaks to the storefront
+        /// before the admin reviews it. Returns the new product's id.
+        /// </summary>
+        Task<int> DuplicateProductAsync(int id);
         Task<ProductImageDto?> DeleteProductImageAsync(int imageId);
         Task<List<BrandDto>> GetAllBrandsAsync();
         Task<BrandDto> CreateBrandAsync(BrandDto dto);

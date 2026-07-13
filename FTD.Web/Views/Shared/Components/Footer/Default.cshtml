@@ -77,6 +77,26 @@
                 </ul>
             </div>
 
+            <!-- Categories Column (dynamic) -->
+            @if (Model.NavCategories.Any())
+            {
+                <div class="footer-links-col">
+                    <h4 class="footer-title">
+                        <span data-ar>التصنيفات</span><span data-en>Categories</span>
+                    </h4>
+                    <ul class="footer-links">
+                        @foreach (var c in Model.NavCategories)
+                        {
+                            <li>
+                                <a href="/Products?category=@c.Slug">
+                                    <span data-ar>@c.NameAr</span><span data-en>@c.NameEn</span>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+
             <!-- Brands Column -->
             <div class="footer-links-col">
                 <h4 class="footer-title">

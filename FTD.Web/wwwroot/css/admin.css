@@ -552,3 +552,35 @@ body.admin-body::before{
 [data-theme="light"] .login-foot {
   color: var(--a-text3);
 }
+
+/* ── Product form: inline quick-add attribute value ── */
+.attr-quick-add-btn {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 8px;
+  border: 1px dashed var(--a-border);
+  background: var(--a-bg);
+  color: var(--a-text2);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.attr-quick-add-btn:hover {
+  border-color: var(--a-blue);
+  color: var(--a-blue);
+  background: transparent;
+}
+.attr-quick-add-row { display: flex; align-items: center; }
+.attr-quick-add-row input[type="text"] {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--a-border);
+  background: var(--a-bg);
+  color: var(--a-text);
+}
+.attr-free-text {
+  width: 100%;
+}

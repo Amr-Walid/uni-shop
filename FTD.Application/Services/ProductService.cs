@@ -52,12 +52,25 @@ namespace FTD.Application.Services
 
         public async Task<List<CategoryDto>> GetActiveCategoriesAsync()
         {
-            var entities = await _db.Categories
+            // Project the ACTIVE-products count in the same query so consumers
+            // (navbar dropdown, filters…) get an accurate ProductsCount without
+            // loading whole product collections into memory.
+            var rows = await _db.Categories
                 .Where(c => c.IsActive)
                 .OrderBy(c => c.SortOrder)
+                .Select(c => new { Category = c, ActiveProducts = c.Products.Count(p => p.IsActive) })
                 .ToListAsync();
 
-            return entities.Select(c => c.ToDto()).Where(dto => dto != null).Select(dto => dto!).ToList();
+            return rows
+                .Select(r =>
+                {
+                    var dto = r.Category.ToDto();
+                    if (dto != null) dto.ProductsCount = r.ActiveProducts;
+                    return dto;
+                })
+                .Where(dto => dto != null)
+                .Select(dto => dto!)
+                .ToList();
         }
 
         public async Task<List<ProductDto>> GetAllActiveAsync()
@@ -456,6 +469,81 @@ namespace FTD.Application.Services
             return (await GetByIdAsync(id))!;
         }
 
+        public async Task<int> DuplicateProductAsync(int id)
+        {
+            var source = await _db.Products
+                .Include(p => p.Images)
+                .Include(p => p.AttributeValues)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (source == null) throw new ArgumentException("Product not found");
+
+            // Generate a unique slug for the copy (Slug has a unique index)
+            var baseSlug = string.IsNullOrWhiteSpace(source.Slug) ? "product" : source.Slug;
+            var newSlug = baseSlug + "-copy";
+            var counter = 2;
+            while (await _db.Products.AnyAsync(p => p.Slug == newSlug))
+            {
+                newSlug = $"{baseSlug}-copy-{counter}";
+                counter++;
+            }
+
+            var clone = new Product
+            {
+                CategoryId = source.CategoryId,
+                BrandId = source.BrandId,
+                NameAr = source.NameAr + " (نسخة)",
+                NameEn = source.NameEn + " (Copy)",
+                Slug = newSlug,
+                ShortDescAr = source.ShortDescAr,
+                ShortDescEn = source.ShortDescEn,
+                DescAr = source.DescAr,
+                DescEn = source.DescEn,
+                Price = source.Price,
+                OldPrice = source.OldPrice,
+                Badge = source.Badge,
+                ImagePath = source.ImagePath,
+                BrandName = source.BrandName,
+                Emoji = source.Emoji,
+                IsActive = false,       // hidden until the admin reviews & saves it
+                IsFeatured = false,
+                SortOrder = source.SortOrder,
+                Stock = source.Stock,
+                MetaTitle = source.MetaTitle,
+                MetaDesc = source.MetaDesc,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _db.Products.Add(clone);
+            await _db.SaveChangesAsync();
+
+            // Copy gallery images (paths are shared — files on disk are reused)
+            foreach (var img in source.Images.OrderBy(i => i.SortOrder))
+            {
+                _db.ProductImages.Add(new ProductImage
+                {
+                    ProductId = clone.Id,
+                    ImagePath = img.ImagePath,
+                    IsMain = img.IsMain,
+                    SortOrder = img.SortOrder
+                });
+            }
+
+            // Copy all assigned specification values
+            foreach (var av in source.AttributeValues)
+            {
+                _db.ProductAttributeValues.Add(new ProductAttributeValue
+                {
+                    ProductId = clone.Id,
+                    AttributeId = av.AttributeId,
+                    AttributeValueId = av.AttributeValueId
+                });
+            }
+
+            await _db.SaveChangesAsync();
+            return clone.Id;
+        }
+
         public async Task<bool> DeleteProductAsync(int id)
         {
             var product = await _db.Products.FindAsync(id);
@@ -622,11 +710,25 @@ namespace FTD.Application.Services
 
         public async Task<AttributeValueDto> AddAttributeValueAsync(int attributeId, string valueAr, string valueEn)
         {
+            var attrExists = await _db.ProductAttributes.AnyAsync(a => a.Id == attributeId);
+            if (!attrExists) throw new ArgumentException("Attribute not found");
+
+            var trimmedAr = valueAr.Trim();
+            var trimmedEn = string.IsNullOrWhiteSpace(valueEn) ? trimmedAr : valueEn.Trim();
+
+            // Idempotent: if an identical value already exists for this attribute,
+            // return it instead of creating a duplicate (important for the inline
+            // Quick-Add flow in the product form).
+            var existing = await _db.AttributeValues.FirstOrDefaultAsync(v =>
+                v.AttributeId == attributeId &&
+                (v.ValueAr.ToLower() == trimmedAr.ToLower() || v.ValueEn.ToLower() == trimmedEn.ToLower()));
+            if (existing != null) return existing.ToDto()!;
+
             var val = new AttributeValue
             {
                 AttributeId = attributeId,
-                ValueAr = valueAr.Trim(),
-                ValueEn = string.IsNullOrWhiteSpace(valueEn) ? valueAr.Trim() : valueEn.Trim()
+                ValueAr = trimmedAr,
+                ValueEn = trimmedEn
             };
 
             _db.AttributeValues.Add(val);
@@ -680,7 +782,10 @@ namespace FTD.Application.Services
                     })
                     .Where(o => o != null)
                     .Cast<AttributeFilterOptionDto>()
-                    .OrderBy(o => o.ValueAr)
+                    // Natural sort: numeric-prefixed values (8GB < 12GB < 128GB)
+                    // come first in numeric order, then the rest alphabetically.
+                    .OrderBy(o => ExtractLeadingNumber(o.ValueEn) ?? ExtractLeadingNumber(o.ValueAr) ?? double.MaxValue)
+                    .ThenBy(o => o.ValueAr)
                     .ToList();
 
                 if (options.Any())
@@ -694,6 +799,19 @@ namespace FTD.Application.Services
             }
 
             return groups;
+        }
+
+        // Parses a leading number from spec values like "8GB", "128 GB", "6.6 inch"
+        // so filter options sort naturally instead of alphabetically.
+        private static double? ExtractLeadingNumber(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return null;
+            var s = value.Trim();
+            int i = 0;
+            while (i < s.Length && (char.IsDigit(s[i]) || s[i] == '.')) i++;
+            if (i == 0) return null;
+            return double.TryParse(s[..i], System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out var n) ? n : null;
         }
     }
 }

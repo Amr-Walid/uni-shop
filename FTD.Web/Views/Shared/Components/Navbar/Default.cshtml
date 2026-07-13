@@ -12,10 +12,34 @@
             <a href="/#about" class="nav-link" id="nav-about">
                 <span data-ar>عننا</span><span data-en>About</span>
             </a>
-            <a href="/Products" class="nav-link" id="nav-products">
-                <span data-ar>المنتجات</span><span data-en>Products</span>
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </a>
+            <div class="nav-dropdown" id="nav-products-wrap">
+                <a href="/Products" class="nav-link" id="nav-products">
+                    <span data-ar>المنتجات</span><span data-en>Products</span>
+                    <svg class="nav-caret" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </a>
+                @if (Model.NavCategories.Any())
+                {
+                    <div class="nav-dropdown-menu" role="menu" aria-label="Product categories">
+                        <a href="/Products" class="nav-dropdown-item all" role="menuitem">
+                            <span class="nd-emoji">🛍️</span>
+                            <span class="nd-name"><span data-ar>كل المنتجات</span><span data-en>All Products</span></span>
+                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </a>
+                        <div class="nav-dropdown-sep"></div>
+                        @foreach (var c in Model.NavCategories)
+                        {
+                            <a href="/Products?category=@c.Slug" class="nav-dropdown-item" role="menuitem">
+                                <span class="nd-emoji">@(string.IsNullOrWhiteSpace(c.Emoji) ? "📦" : c.Emoji)</span>
+                                <span class="nd-name"><span data-ar>@c.NameAr</span><span data-en>@c.NameEn</span></span>
+                                @if (c.ProductsCount > 0)
+                                {
+                                    <span class="nd-count">@c.ProductsCount</span>
+                                }
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
             <a href="/#contact" class="nav-link" id="nav-contact">
                 <span data-ar>تواصل معنا</span><span data-en>Contact</span>
             </a>
@@ -41,7 +65,30 @@
     <div class="mobile-menu" id="mobile-menu">
         <a href="/" class="mobile-menu-link" data-nav="home"><span data-ar>الرئيسية</span><span data-en>Home</span></a>
         <a href="/#about" class="mobile-menu-link" data-nav="about"><span data-ar>عننا</span><span data-en>About</span></a>
-        <a href="/Products" class="mobile-menu-link" data-nav="products"><span data-ar>المنتجات</span><span data-en>Products</span></a>
+        <div class="mobile-accordion" id="mobile-products-acc">
+            <div class="mobile-menu-link mobile-acc-row" data-nav="products">
+                <a href="/Products" class="mobile-acc-link"><span data-ar>المنتجات</span><span data-en>Products</span></a>
+                @if (Model.NavCategories.Any())
+                {
+                    <button type="button" class="mobile-acc-toggle" aria-label="Toggle categories" aria-expanded="false"
+                            onclick="toggleMobileCats(event)">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                }
+            </div>
+            @if (Model.NavCategories.Any())
+            {
+                <div class="mobile-acc-panel" id="mobile-cats-panel">
+                    @foreach (var c in Model.NavCategories)
+                    {
+                        <a href="/Products?category=@c.Slug" class="mobile-menu-link mobile-cat-link">
+                            <span class="nd-emoji">@(string.IsNullOrWhiteSpace(c.Emoji) ? "📦" : c.Emoji)</span>
+                            <span><span data-ar>@c.NameAr</span><span data-en>@c.NameEn</span></span>
+                        </a>
+                    }
+                </div>
+            }
+        </div>
         <a href="/#contact" class="mobile-menu-link" data-nav="contact"><span data-ar>تواصل معنا</span><span data-en>Contact</span></a>
     </div>
 </div>
@@ -49,6 +96,18 @@
     function toggleMobileMenu() {
         var menu = document.getElementById('mobile-menu');
         if (menu) menu.classList.toggle('open');
+    }
+
+    // Mobile: expand/collapse the categories accordion under "Products"
+    function toggleMobileCats(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var acc = document.getElementById('mobile-products-acc');
+        var btn = e.currentTarget;
+        if (acc) {
+            var open = acc.classList.toggle('open');
+            if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
     }
 
     (function () {

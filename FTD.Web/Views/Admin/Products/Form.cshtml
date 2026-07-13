@@ -92,20 +92,41 @@
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
                 @foreach (var attr in Model.Attributes)
                 {
-                    <div class="a-form-group">
+                    <div class="a-form-group" data-attr-group="@attr.Id">
                       <label>@attr.NameAr / @attr.NameEn</label>
-                      <select name="SelectedAttributeValues[@attr.Id]" class="a-select">
-                        <option value="">— اختر —</option>
-                        @foreach (var val in attr.Values)
-                        {
-                            var isSelected = Model.SelectedAttributeValues.ContainsKey(attr.Id) &&
-                                             Model.SelectedAttributeValues[attr.Id] == val.Id;
-                            if (isSelected)
-                            { <option value="@val.Id" selected>@val.ValueAr / @val.ValueEn</option> }
-                            else
-                            { <option value="@val.Id">@val.ValueAr / @val.ValueEn</option> }
-                        }
-                      </select>
+                      @if (attr.Values.Any())
+                      {
+                          <div style="display:flex;gap:6px;align-items:center">
+                            <select name="SelectedAttributeValues[@attr.Id]" class="a-select" id="attrSel-@attr.Id" style="flex:1">
+                              <option value="">— اختر —</option>
+                              @foreach (var val in attr.Values)
+                              {
+                                  var isSelected = Model.SelectedAttributeValues.ContainsKey(attr.Id) &&
+                                                   Model.SelectedAttributeValues[attr.Id] == val.Id;
+                                  if (isSelected)
+                                  { <option value="@val.Id" selected>@val.ValueAr / @val.ValueEn</option> }
+                                  else
+                                  { <option value="@val.Id">@val.ValueAr / @val.ValueEn</option> }
+                              }
+                            </select>
+                            <button type="button" class="attr-quick-add-btn" title="إضافة قيمة جديدة"
+                                    onclick="toggleQuickAdd(@attr.Id)">+</button>
+                          </div>
+                          <div class="attr-quick-add-row" id="quickAddRow-@attr.Id" style="display:none;margin-top:6px;gap:6px">
+                            <input type="text" id="quickAddInput-@attr.Id" placeholder="اكتب القيمة الجديدة..."
+                                   style="flex:1;font-size:13px" onkeydown="quickAddKeydown(event, @attr.Id)">
+                            <button type="button" class="a-btn-sm" onclick="submitQuickAdd(@attr.Id)">حفظ</button>
+                            <button type="button" class="a-btn-sm" style="opacity:.7" onclick="toggleQuickAdd(@attr.Id)">✕</button>
+                          </div>
+                      }
+                      else
+                      {
+                          <!-- Free-text spec: no predefined values → type the value directly -->
+                          <input type="text" name="FreeTextAttributeValues[@attr.Id]" class="attr-free-text"
+                                 placeholder="اكتب القيمة يدوياً (نص حر)..."
+                                 value="@(Model.FreeTextAttributeValues.TryGetValue(attr.Id, out var ftv) ? ftv : "")">
+                          <small style="color:var(--a-text3);font-size:11px">سيتم إنشاء القيمة تلقائياً عند الحفظ</small>
+                      }
                     </div>
                 }
               </div>
@@ -253,6 +274,36 @@ function limitFiles(input, max) {
     }
 }
 
+function escHtml(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function renderAttrGroup(a) {
+    var html = '<div class="a-form-group" data-attr-group="' + a.id + '"><label>' + escHtml(a.nameAr) + ' / ' + escHtml(a.nameEn) + '</label>';
+    if (a.values && a.values.length) {
+        html += '<div style="display:flex;gap:6px;align-items:center">';
+        html += '<select name="SelectedAttributeValues[' + a.id + ']" class="a-select" id="attrSel-' + a.id + '" style="flex:1"><option value="">— اختر —</option>';
+        a.values.forEach(function(v) {
+            html += '<option value="' + v.id + '">' + escHtml(v.valueAr) + ' / ' + escHtml(v.valueEn) + '</option>';
+        });
+        html += '</select>';
+        html += '<button type="button" class="attr-quick-add-btn" title="إضافة قيمة جديدة" onclick="toggleQuickAdd(' + a.id + ')">+</button>';
+        html += '</div>';
+        html += '<div class="attr-quick-add-row" id="quickAddRow-' + a.id + '" style="display:none;margin-top:6px;gap:6px">';
+        html += '<input type="text" id="quickAddInput-' + a.id + '" placeholder="اكتب القيمة الجديدة..." style="flex:1;font-size:13px" onkeydown="quickAddKeydown(event, ' + a.id + ')">';
+        html += '<button type="button" class="a-btn-sm" onclick="submitQuickAdd(' + a.id + ')">حفظ</button>';
+        html += '<button type="button" class="a-btn-sm" style="opacity:.7" onclick="toggleQuickAdd(' + a.id + ')">✕</button>';
+        html += '</div>';
+    } else {
+        html += '<input type="text" name="FreeTextAttributeValues[' + a.id + ']" class="attr-free-text" placeholder="اكتب القيمة يدوياً (نص حر)...">';
+        html += '<small style="color:var(--a-text3);font-size:11px">سيتم إنشاء القيمة تلقائياً عند الحفظ</small>';
+    }
+    html += '</div>';
+    return html;
+}
+
 function loadAttrs(catId) {
     var container = document.getElementById('attrsContainer');
     if (!catId) { container.innerHTML = '<div style="color:var(--a-text3);font-size:12px">اختر الكاتيجوري أولاً</div>'; return; }
@@ -265,19 +316,68 @@ function loadAttrs(catId) {
                 return;
             }
             var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">';
-            attrs.forEach(function(a) {
-                html += '<div class="a-form-group"><label>' + a.nameAr + ' / ' + a.nameEn + '</label>';
-                html += '<select name="SelectedAttributeValues[' + a.id + ']" class="a-select"><option value="">— اختر —</option>';
-                a.values.forEach(function(v) {
-                    html += '<option value="' + v.id + '">' + v.valueAr + ' / ' + v.valueEn + '</option>';
-                });
-                html += '</select></div>';
-            });
+            attrs.forEach(function(a) { html += renderAttrGroup(a); });
             html += '</div>';
             container.innerHTML = html;
         })
         .catch(function() {
             container.innerHTML = '<div style="color:var(--a-danger);font-size:12px">خطأ في التحميل</div>';
+        });
+}
+
+// ── INLINE QUICK-ADD ATTRIBUTE VALUE (AJAX) ─────────────────────────────────
+function toggleQuickAdd(attrId) {
+    var row = document.getElementById('quickAddRow-' + attrId);
+    if (!row) return;
+    var visible = row.style.display !== 'none';
+    row.style.display = visible ? 'none' : 'flex';
+    if (!visible) {
+        var input = document.getElementById('quickAddInput-' + attrId);
+        if (input) { input.value = ''; input.focus(); }
+    }
+}
+
+function quickAddKeydown(e, attrId) {
+    if (e.key === 'Enter') {
+        e.preventDefault(); // don't submit the whole product form
+        submitQuickAdd(attrId);
+    } else if (e.key === 'Escape') {
+        toggleQuickAdd(attrId);
+    }
+}
+
+function submitQuickAdd(attrId) {
+    var input = document.getElementById('quickAddInput-' + attrId);
+    var value = (input && input.value || '').trim();
+    if (!value) { if (input) input.focus(); return; }
+
+    var tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+    var fd = new FormData();
+    fd.append('attributeId', attrId);
+    fd.append('valueAr', value);
+    fd.append('valueEn', value);
+    if (tokenEl) fd.append('__RequestVerificationToken', tokenEl.value);
+
+    fetch('/Admin/AdminProducts/QuickAddAttributeValue', { method: 'POST', body: fd })
+        .then(function(r) { if (!r.ok) throw new Error('bad'); return r.json(); })
+        .then(function(res) {
+            if (!res.success) throw new Error('fail');
+            var sel = document.getElementById('attrSel-' + attrId);
+            if (sel) {
+                // If the value already exists in the list (idempotent server), just select it
+                var existing = sel.querySelector('option[value="' + res.id + '"]');
+                if (!existing) {
+                    var opt = document.createElement('option');
+                    opt.value = res.id;
+                    opt.textContent = res.valueAr + ' / ' + res.valueEn;
+                    sel.appendChild(opt);
+                }
+                sel.value = res.id;
+            }
+            toggleQuickAdd(attrId);
+        })
+        .catch(function() {
+            alert('تعذر إضافة القيمة — حاول مرة أخرى');
         });
 }
 </script>
