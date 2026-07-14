@@ -94,30 +94,9 @@
 {
     <div class="a-card" style="margin-bottom:1.5rem">
         <h3 class="a-card-title" style="margin-bottom:.4rem"><i class="bi bi-stars"></i> نصوص قسم الهيرو</h3>
-        <p class="hp-hint">العنوان الرئيسي، الوصف، الشارات، وأزرار الهيرو.</p>
+        <p class="hp-hint">العنوان الرئيسي، الوصف، وأزرار الهيرو.</p>
         <form action="/Admin/AdminContent/SaveBlocksBulk?tab=hero" method="post">
             @Html.AntiForgeryToken()
-
-            <div class="hp-grid-2">
-                <div class="a-form-group">
-                    <label>الشارة الأولى (عربي)</label>
-                    <input type="text" name="blocks[hero.chip1].Ar" value="@BA("hero.chip1")">
-                </div>
-                <div class="a-form-group">
-                    <label>Chip 1 (English)</label>
-                    <input type="text" name="blocks[hero.chip1].En" value="@BE("hero.chip1")" dir="ltr">
-                </div>
-                <div class="a-form-group">
-                    <label>الشارة الثانية (عربي)</label>
-                    <input type="text" name="blocks[hero.chip2].Ar" value="@BA("hero.chip2")">
-                </div>
-                <div class="a-form-group">
-                    <label>Chip 2 (English)</label>
-                    <input type="text" name="blocks[hero.chip2].En" value="@BE("hero.chip2")" dir="ltr">
-                </div>
-            </div>
-
-            <hr class="hp-divider">
 
             <div class="hp-grid-2">
                 <div class="a-form-group">

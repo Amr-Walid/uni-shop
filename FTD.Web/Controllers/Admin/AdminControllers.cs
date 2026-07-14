@@ -14,9 +14,23 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace FTD.Web.Controllers.Admin
 {
+    // ── HOME CACHE INVALIDATION ───────────────────────────────────────────
+    // HomeController caches near-static reference data (settings / blocks /
+    // contact / categories) for 60s. Admin saves must evict those keys so
+    // dashboard edits are visible on the storefront immediately — otherwise
+    // "حفظ" in the admin looks broken for up to a minute.
+    internal static class HomeCache
+    {
+        public static readonly string[] Keys = { "home:settings", "home:categories", "home:blocks", "home:contact" };
+        public static void Evict(IMemoryCache cache)
+        {
+            foreach (var k in Keys) cache.Remove(k);
+        }
+    }
     // ── DASHBOARD ─────────────────────────────────────────────────────────────
     [Authorize(Roles = "Admin")]
     public class DashboardController : Controller
@@ -454,8 +468,9 @@ namespace FTD.Web.Controllers.Admin
     {
         private readonly IContentService _content;
         private readonly IProductService _products;
-        public AdminContentController(IContentService content, IProductService products)
-        { _content = content; _products = products; }
+        private readonly IMemoryCache _cache;
+        public AdminContentController(IContentService content, IProductService products, IMemoryCache cache)
+        { _content = content; _products = products; _cache = cache; }
 
         public async Task<IActionResult> Blocks(string? tab)
         {
@@ -472,6 +487,7 @@ namespace FTD.Web.Controllers.Admin
         public async Task<IActionResult> SaveBlock(int id, string? bodyAr, string? bodyEn, string? titleAr, string? tab)
         {
             await _content.SaveBlockAsync(id, bodyAr, bodyEn, titleAr);
+            HomeCache.Evict(_cache);
             TempData["Success"] = "تم الحفظ";
             return RedirectToAction(nameof(Blocks), new { tab });
         }
@@ -490,6 +506,7 @@ namespace FTD.Web.Controllers.Admin
                     await _content.SaveBlockByKeyAsync(key, kv.Value?.Ar, kv.Value?.En, kv.Value?.Icon);
                 }
             }
+            HomeCache.Evict(_cache);
             TempData["Success"] = "تم حفظ المحتوى";
             return RedirectToAction(nameof(Blocks), new { tab });
         }
@@ -510,6 +527,7 @@ namespace FTD.Web.Controllers.Admin
                 await _content.SaveSettingByKeyAsync("homepage.featured.products", featured, "منتجات الكتالوج المميز (IDs مرتبة)");
             }
 
+            HomeCache.Evict(_cache);
             TempData["Success"] = "تم حفظ اختيارات المنتجات";
             return RedirectToAction(nameof(Blocks), new { tab });
         }
@@ -534,6 +552,7 @@ namespace FTD.Web.Controllers.Admin
             if (!string.IsNullOrWhiteSpace(categoriesCount) && int.TryParse(categoriesCount, out var cc) && cc > 0)
                 await _content.SaveSettingByKeyAsync("homepage.categories.count", cc.ToString(), "عدد بلاطات الفئات بالرئيسية");
 
+            HomeCache.Evict(_cache);
             TempData["Success"] = "تم حفظ إعدادات الأقسام";
             return RedirectToAction(nameof(Blocks), new { tab });
         }
@@ -548,6 +567,7 @@ namespace FTD.Web.Controllers.Admin
                 cat.ShowOnHomepage = !cat.ShowOnHomepage;
                 cat.ImagePath = null; // لا تغير الصورة
                 await _products.UpdateCategoryAsync(id, cat);
+                HomeCache.Evict(_cache);
                 TempData["Success"] = cat.ShowOnHomepage ? "ستظهر الفئة بالرئيسية" : "تم إخفاء الفئة من الرئيسية";
             }
             return RedirectToAction(nameof(Blocks), new { tab = tab ?? "sections" });
@@ -607,7 +627,9 @@ namespace FTD.Web.Controllers.Admin
     public class AdminSettingsController : Controller
     {
         private readonly IContentService _content;
-        public AdminSettingsController(IContentService content) => _content = content;
+        private readonly IMemoryCache _cache;
+        public AdminSettingsController(IContentService content, IMemoryCache cache)
+        { _content = content; _cache = cache; }
 
         public async Task<IActionResult> Index()
         {
@@ -622,6 +644,7 @@ namespace FTD.Web.Controllers.Admin
         public async Task<IActionResult> SaveSettings(Dictionary<int, string> values)
         {
             await _content.SaveSiteSettingsAsync(values);
+            HomeCache.Evict(_cache);
             TempData["Success"] = "تم حفظ الإعدادات";
             return RedirectToAction(nameof(Index));
         }
@@ -630,6 +653,7 @@ namespace FTD.Web.Controllers.Admin
         public async Task<IActionResult> SaveContact(ContactInfoDto model)
         {
             await _content.SaveContactInfoAsync(model);
+            HomeCache.Evict(_cache);
             TempData["Success"] = "تم حفظ بيانات التواصل";
             return RedirectToAction(nameof(Index));
         }

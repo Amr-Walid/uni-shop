@@ -4449,7 +4449,12 @@ html[dir="rtl"] .nav-dropdown-item.all svg { transform: scaleX(-1); }
 }
 .mobile-cat-link .nd-emoji { font-size: 16px; width: 22px; text-align: center; flex: none; }
 
-/* Footer: allow the extra dynamic Categories column to fit gracefully */
-.footer-grid { grid-template-columns: 1.4fr repeat(auto-fit, minmax(140px, 1fr)); gap: 44px; }
+/* Footer: allow the extra dynamic Categories column to fit gracefully.
+   NOTE: `1.4fr repeat(auto-fit, minmax(...))` is INVALID CSS (auto-fit can't be
+   combined with other flexible tracks), so browsers dropped it and fell back to
+   the 4-column rule — pushing the 5th column (Contact) onto its own row with a
+   huge empty area. Use an explicit 5-column template instead. */
+.footer-grid { grid-template-columns: 1.4fr 1fr 1fr 1fr 1.1fr; gap: 36px; }
+@media (max-width: 1100px) { .footer-grid { grid-template-columns: 1.4fr 1fr 1fr 1.1fr; } }
 @media (max-width: 968px) { .footer-grid { grid-template-columns: 1fr 1fr; gap: 40px; } }
 @media (max-width: 640px) { .footer-grid { grid-template-columns: 1fr; } }
