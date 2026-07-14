@@ -295,6 +295,9 @@ a { color: inherit; text-decoration: none; }
   color: var(--navy);
   direction: ltr;
 }
+html[dir="rtl"] .logo {
+  direction: rtl;
+}
 .logo-mark {
   width: 34px;
   height: 34px;
@@ -671,6 +674,7 @@ a { color: inherit; text-decoration: none; }
   max-width: 320px;
 }
 .footer .logo { color: white; font-size: 20px; }
+.footer .logo strong { color: white; }
 .footer .logo-mark { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
 .social-links { display: flex; gap: 10px; }
 .social-btn {
