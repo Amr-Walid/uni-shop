@@ -8,6 +8,17 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
+    <!-- Sqlite is a local-development convenience: it persists to a single file
+         so data survives restarts on a machine with no SQL Server. SqlServer
+         above stays the production and default provider. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
+    <!-- Throwaway provider for demos and CI runners; also Development-only. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.0" />
+    <!--
+      JWT signing lives in Infrastructure (not in FTD.Api) so the token format
+      and secret-validation rules are defined once and shared by any host.
+    -->
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -662,8 +662,8 @@ namespace FTD.Web.Controllers.Admin
     // ── ADMIN ACCOUNT ─────────────────────────────────────────────────────────
     public class AdminAccountController : Controller
     {
-        private readonly SignInManager<IdentityUser> _signIn;
-        public AdminAccountController(SignInManager<IdentityUser> signIn) => _signIn = signIn;
+        private readonly SignInManager<AppUser> _signIn;
+        public AdminAccountController(SignInManager<AppUser> signIn) => _signIn = signIn;
 
         [AllowAnonymous]
         public IActionResult Login(string? returnUrl = null)

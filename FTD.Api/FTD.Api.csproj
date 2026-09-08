@@ -6,6 +6,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>FTD.Api</RootNamespace>
     <UserSecretsId>755d0f9f-8d93-43dd-8012-bd117cc1fdd2</UserSecretsId>
+    <!--
+      Generates the XML documentation file that Swashbuckle reads to turn the
+      <summary>/<param> comments on controllers into API documentation, so the
+      OpenAPI contract is produced from the code and cannot drift from it.
+      CS1591 is suppressed because documenting every public DTO member is noise.
+    -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,11 +23,30 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="9.0.0" />
+
+    <!-- Enables Database:Provider=InMemory for demos and CI runners that have
+         no SQL Server. Program.cs refuses to use it outside Development. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.0" />
+    <!-- OpenAPI/Swagger: makes the endpoint contract self-documenting and
+         machine-readable, which is what the mobile client generates models from. -->
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
+    <!-- URL-segment API versioning (/api/v1/...): published mobile builds keep
+         calling the version they shipped against, so breaking changes must be
+         additive under a new version rather than mutating existing routes. -->
+    <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.0" />
+    <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\FTD.Application\FTD.Application.csproj" />
     <ProjectReference Include="..\FTD.Infrastructure\FTD.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Host-startup helper shared by FTD.Web and FTD.Api. Compiled into both
+         rather than placed in FTD.Infrastructure because it needs the hosting
+         and JSON-configuration packages a data-layer library does not reference. -->
+    <Compile Include="..\Shared\LocalConfiguration.cs" Link="Infrastructure\LocalConfiguration.cs" />
   </ItemGroup>
 
 </Project>

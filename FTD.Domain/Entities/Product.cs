@@ -45,5 +45,6 @@ namespace FTD.Domain.Entities
         public ICollection<ProductAttributeValue> AttributeValues { get; set; } = new List<ProductAttributeValue>();
         public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
         public ICollection<SalesOrderDetail> OrderDetails { get; set; } = new List<SalesOrderDetail>();
+        public ICollection<WishlistItem> WishlistItems { get; set; } = new List<WishlistItem>();
     }
 }

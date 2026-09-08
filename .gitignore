@@ -24,3 +24,26 @@ bld/
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# Test results (produced by `dotnet test`)
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+
+# Core dumps (a killed dotnet process can leave one behind).
+# Anchored to the repo root and matched as files only: a bare `core` pattern
+# also silently excluded mobile/lib/core/, which is real source.
+/**/core
+!**/core/
+core.[0-9]*
+*.dmp
+
+# Local development database (Database:Provider=Sqlite). A developer's own data
+# and the -shm/-wal sidecars WAL mode creates; never shared.
+*.local.db
+*.local.db-shm
+*.local.db-wal
+
+# Per-machine configuration overrides. Untracked on purpose so the committed
+# defaults (SQL Server) stay authoritative for everyone who clones the repo.
+appsettings.Local.json

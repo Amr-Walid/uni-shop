@@ -6,4 +6,15 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!--
+      AppUser derives from IdentityUser so the customer profile lives on the
+      same aggregate ASP.NET Core Identity already manages. This package
+      contributes only the Identity *model* types (IdentityUser/IdentityRole),
+      not EF Core or any web/hosting dependency, so the Domain layer stays free
+      of infrastructure concerns.
+    -->
+    <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="9.0.0" />
+  </ItemGroup>
+
 </Project>

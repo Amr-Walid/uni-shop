@@ -15,12 +15,23 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="9.0.0" />
+    <!-- Enables Database:Provider=InMemory so the storefront can be demoed on a
+         machine with no SQL Server. Program.cs refuses this provider outside
+         Development. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\FTD.Application\FTD.Application.csproj" />
     <ProjectReference Include="..\FTD.Infrastructure\FTD.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Host-startup helper shared by FTD.Web and FTD.Api. Compiled into both
+         rather than placed in FTD.Infrastructure because it needs the hosting
+         and JSON-configuration packages a data-layer library does not reference. -->
+    <Compile Include="..\Shared\LocalConfiguration.cs" Link="Infrastructure\LocalConfiguration.cs" />
   </ItemGroup>
 
 </Project>
