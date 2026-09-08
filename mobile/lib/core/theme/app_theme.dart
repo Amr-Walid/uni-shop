@@ -129,7 +129,7 @@ abstract final class AppTheme {
       // ── Cards ─────────────────────────────────────────────────────────────
       // CardTheme (not CardThemeData): the *ThemeData variants were introduced
       // in Flutter 3.27; this project targets 3.24 LTS.
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -256,7 +256,7 @@ abstract final class AppTheme {
         showDragHandle: true,
         dragHandleColor: textTertiary,
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -295,7 +295,7 @@ abstract final class AppTheme {
         subtitleTextStyle: textTheme.bodySmall?.copyWith(color: textSecondary),
         iconColor: textSecondary,
       ),
-      tabBarTheme: TabBarTheme(
+      tabBarTheme: TabBarThemeData(
         labelStyle: textTheme.labelLarge,
         unselectedLabelStyle: textTheme.labelLarge,
         labelColor: scheme.primary,

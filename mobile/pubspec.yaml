@@ -51,11 +51,11 @@ dependencies:
   cached_network_image: ^3.4.1
 
   # ── UI ────────────────────────────────────────────────────────────────────
-  google_fonts: ^6.2.1
+  google_fonts: ^6.3.3
   shimmer: ^3.0.0
 
   # ── Utilities ─────────────────────────────────────────────────────────────
-  intl: ^0.19.0
+  intl: ">=0.19.0 <1.0.0"
   connectivity_plus: ^6.1.0
   package_info_plus: ^8.1.1
   url_launcher: ^6.3.1
