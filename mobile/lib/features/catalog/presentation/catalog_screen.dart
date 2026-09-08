@@ -310,6 +310,7 @@ class _Grid extends ConsumerWidget {
     ref.read(cartControllerProvider.notifier).addProduct(product);
 
     final l10n = context.l10n;
+    final router = GoRouter.of(context);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -318,7 +319,7 @@ class _Grid extends ConsumerWidget {
           duration: const Duration(seconds: 2),
           action: SnackBarAction(
             label: l10n.t('navCart'),
-            onPressed: () => context.go(Routes.cart),
+            onPressed: () => router.go(Routes.cart),
           ),
         ),
       );

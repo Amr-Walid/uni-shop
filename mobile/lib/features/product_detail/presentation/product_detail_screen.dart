@@ -441,6 +441,7 @@ class _AddToCartBar extends ConsumerWidget {
         );
 
     final l10n = context.l10n;
+    final router = GoRouter.of(context);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -448,7 +449,7 @@ class _AddToCartBar extends ConsumerWidget {
           content: Text(l10n.t('productAddedToCart')),
           action: SnackBarAction(
             label: l10n.t('navCart'),
-            onPressed: () => context.go(Routes.cart),
+            onPressed: () => router.go(Routes.cart),
           ),
         ),
       );
