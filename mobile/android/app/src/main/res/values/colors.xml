@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Brand purple, matching the website's `--primary: #330077`. Used as the
+    <!-- Brand purple, matching the website's primary: #330077. Used as the
          adaptive-icon background layer and the splash window background so the
          cold-start frame is brand-coloured instead of white. -->
     <color name="ic_launcher_background">#330077</color>
