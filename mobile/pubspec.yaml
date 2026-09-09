@@ -1,0 +1,77 @@
+name: unishop_app
+description: "Uni-Shop — متجر يونى شوب الإلكتروني | Android & iOS"
+publish_to: 'none'
+
+# MAJOR.MINOR.PATCH+BUILD. The build number must increase on every store
+# upload; MinSupportedVersion in /api/v1/app/config is compared against the
+# semantic part to drive force-update.
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # ── State management ──────────────────────────────────────────────────────
+  # Riverpod over BLoC: compile-safe dependency overrides make the network layer
+  # trivially replaceable in tests, and there is far less boilerplate per screen.
+  flutter_riverpod: ^2.6.1
+
+  # ── Navigation ────────────────────────────────────────────────────────────
+  # go_router handles deep links (unishop://product/x, order notifications)
+  # declaratively, which is required for push-notification tap-through.
+  go_router: ^14.6.2
+
+  # ── Networking ────────────────────────────────────────────────────────────
+  dio: ^5.7.0
+
+  # ── Models ────────────────────────────────────────────────────────────────
+  # Hand-written fromJson is used instead of freezed/build_runner: the API
+  # contract is small and stable, and codegen would add a ~200MB toolchain plus
+  # a build step for no behavioural gain. See lib/core/README for the rationale.
+  equatable: ^2.0.7
+
+  # ── Money ─────────────────────────────────────────────────────────────────
+  # decimal (NOT double) for every monetary value. IEEE-754 cannot represent
+  # 0.1 exactly, so double arithmetic drifts on totals — unacceptable for prices.
+  decimal: ^3.0.2
+
+  # ── Storage ───────────────────────────────────────────────────────────────
+  # Secure storage for tokens: Keychain on iOS, EncryptedSharedPreferences on
+  # Android. Plain SharedPreferences would leave a refresh token readable on a
+  # rooted device.
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.3
+
+  # ── Images ────────────────────────────────────────────────────────────────
+  cached_network_image: ^3.4.1
+
+  # ── UI ────────────────────────────────────────────────────────────────────
+  google_fonts: ^6.3.3
+  shimmer: ^3.0.0
+
+  # ── Utilities ─────────────────────────────────────────────────────────────
+  intl: ">=0.19.0 <1.0.0"
+  connectivity_plus: ^6.1.0
+  package_info_plus: ^8.1.1
+  url_launcher: ^6.3.1
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Localization is wired through flutter_localizations + a hand-written
+  # AppLocalizations lookup rather than gen_l10n, keeping the build free of a
+  # codegen step while still supporting ar/en with full RTL.
+  assets:
+    - assets/
+    - assets/branding/

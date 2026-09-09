@@ -3,10 +3,18 @@ using FTD.Application.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace FTD.Infrastructure.Data
 {
-    public class AppDbContext : IdentityDbContext<IdentityUser>, IAppDbContext
+    /// <summary>
+    /// Now typed on <see cref="AppUser"/> instead of the bare <c>IdentityUser</c>
+    /// so the customer profile (name, default address, language) lives on the
+    /// Identity aggregate. The Identity table names and columns are unchanged —
+    /// the migration only ADDs nullable columns to AspNetUsers, so the existing
+    /// admin account and the running storefront are unaffected.
+    /// </summary>
+    public class AppDbContext : IdentityDbContext<AppUser>, IAppDbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -28,9 +36,19 @@ namespace FTD.Infrastructure.Data
         public DbSet<SiteSetting> SiteSettings => Set<SiteSetting>();
         public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
 
+        // ── Mobile/API support sets ───────────────────────────────────────────
+        public DbSet<AppUser> AppUsers => Set<AppUser>();
+        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+        public DbSet<WishlistItem> WishlistItems => Set<WishlistItem>();
+        public DbSet<UserCart> UserCarts => Set<UserCart>();
+        public DbSet<DeviceToken> DeviceTokens => Set<DeviceToken>();
+        public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            ConfigureSqliteMoneyColumns(builder);
 
             // Unique constraints
             builder.Entity<Category>().HasIndex(c => c.Slug).IsUnique();
@@ -81,6 +99,8 @@ namespace FTD.Infrastructure.Data
                 .WithMany(n => n.Children)
                 .HasForeignKey(n => n.ParentId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            ConfigureMobileApiModel(builder);
 
             // ── SEED: Order Statuses ──────────────────────────────────────────
             builder.Entity<OrderStatus>().HasData(
@@ -435,6 +455,174 @@ namespace FTD.Infrastructure.Data
                 new SiteSetting { Id = 23, Key = "homepage.sections.order", Value = "hero,values,categories,featured,about,mission,cta,contact", Description = "ترتيب أقسام الرئيسية", Type = "text", UpdatedAt = new DateTime(2026, 7, 12) },
                 new SiteSetting { Id = 24, Key = "homepage.categories.count", Value = "3", Description = "عدد بلاطات الفئات بالرئيسية", Type = "text", UpdatedAt = new DateTime(2026, 7, 12) }
             );
+        }
+
+        /// <summary>
+        /// Sqlite has no native decimal type, so EF Core stores <c>decimal</c> as
+        /// TEXT. That is lossless for round-tripping but it makes the database
+        /// compare money as strings, which silently corrupts server-side money
+        /// queries: with prices 899, 8999 and 10000, "sort by price ascending"
+        /// returns 10000, 899, 8999 because "1" &lt; "8". SUM over TEXT is likewise
+        /// unreliable. Both matter here — CatalogQueryService and ProductService
+        /// sort by Price in SQL, and DashboardService calls SumAsync on
+        /// TotalAmount.
+        ///
+        /// Mapping decimal to REAL restores numeric ordering and aggregation.
+        /// REAL is a binary double, so it cannot represent every 2-decimal value
+        /// exactly; that is acceptable for a local development database and is
+        /// the reason this conversion is applied ONLY on Sqlite. SQL Server keeps
+        /// its exact decimal(18,2) columns untouched, so production money maths
+        /// is unaffected.
+        ///
+        /// EF Core otherwise emits a runtime warning for each decimal property on
+        /// Sqlite precisely because of the ordering trap described above.
+        /// </summary>
+        /// <summary>
+        /// decimal &lt;-&gt; double for Sqlite money columns. Rounded to 2 decimal
+        /// places on the way back so a stored 8999.00 cannot resurface as
+        /// 8998.999999999999 and render as a wrong-looking price.
+        /// </summary>
+        private static readonly ValueConverter<decimal, double> SqliteMoneyConverter =
+            new(v => (double)v, v => Math.Round((decimal)v, 2));
+
+        private static readonly ValueConverter<decimal?, double?> SqliteNullableMoneyConverter =
+            new(v => v.HasValue ? (double)v.Value : null,
+                v => v.HasValue ? Math.Round((decimal)v.Value, 2) : null);
+
+        private void ConfigureSqliteMoneyColumns(ModelBuilder builder)
+        {
+            if (!Database.IsSqlite()) return;
+
+            foreach (var entityType in builder.Model.GetEntityTypes())
+            {
+                foreach (var property in entityType.GetProperties())
+                {
+                    if (property.ClrType == typeof(decimal) || property.ClrType == typeof(decimal?))
+                    {
+                        // Clear the SQL Server column type inherited from the
+                        // [Column(TypeName = "decimal(18,2)")] attributes —
+                        // Sqlite would otherwise create a decimal(18,2) column
+                        // whose declared affinity keeps TEXT comparison rules.
+                        property.SetColumnType("REAL");
+                        property.SetValueConverter(
+                            property.ClrType == typeof(decimal)
+                                ? SqliteMoneyConverter
+                                : SqliteNullableMoneyConverter);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Relationships and indexes for the mobile/API support tables.
+        ///
+        /// Delete-behaviour policy (consistent with AUDIT_REPORT I-01):
+        /// • Anything that is purely *session state* for a user (refresh tokens,
+        ///   wishlist, cart) cascades when the account row is removed.
+        /// • Anything that is *financial history* (SalesOrder) is detached with
+        ///   SetNull so the record survives account deletion.
+        /// • WishlistItem → Product uses Restrict so a product that customers
+        ///   saved cannot be hard-deleted out from under them; the product
+        ///   service already soft-deletes in that situation.
+        /// </summary>
+        private static void ConfigureMobileApiModel(ModelBuilder builder)
+        {
+            // ── SalesOrder → AppUser (guest orders keep UserId = NULL) ────────
+            builder.Entity<SalesOrder>()
+                .HasOne(o => o.User)
+                .WithMany(u => u.Orders)
+                .HasForeignKey(o => o.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Covers the "my orders" query: WHERE UserId = @id ORDER BY CreatedAt DESC
+            builder.Entity<SalesOrder>()
+                .HasIndex(o => new { o.UserId, o.CreatedAt });
+
+            // Order-number lookups drive guest order tracking (/orders/track).
+            //
+            // Deliberately NOT unique: adding a unique index would abort the
+            // migration on any existing database that already contains a
+            // duplicate order number, leaving the schema half-applied. Because
+            // migrations run at startup with fail-open logging, that would take
+            // the site down in a way that is hard to diagnose.
+            // Uniqueness is instead guaranteed at generation time by
+            // OrderService.GenerateUniqueOrderNumberAsync, which retries on
+            // collision before inserting.
+            builder.Entity<SalesOrder>()
+                .HasIndex(o => o.OrderNumber);
+
+            // ── RefreshToken ──────────────────────────────────────────────────
+            builder.Entity<RefreshToken>(entity =>
+            {
+                entity.HasOne(t => t.User)
+                      .WithMany(u => u.RefreshTokens)
+                      .HasForeignKey(t => t.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Every refresh performs a lookup by hash — must be unique+indexed.
+                entity.HasIndex(t => t.TokenHash).IsUnique();
+
+                // Reuse detection revokes a whole family in one statement.
+                entity.HasIndex(t => t.FamilyId);
+                entity.HasIndex(t => t.UserId);
+
+                // Ignore computed helpers so EF does not try to map them.
+                entity.Ignore(t => t.IsRevoked);
+                entity.Ignore(t => t.IsExpired);
+                entity.Ignore(t => t.IsActive);
+            });
+
+            // ── WishlistItem ──────────────────────────────────────────────────
+            builder.Entity<WishlistItem>(entity =>
+            {
+                entity.HasOne(w => w.User)
+                      .WithMany(u => u.WishlistItems)
+                      .HasForeignKey(w => w.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(w => w.Product)
+                      .WithMany(p => p.WishlistItems)
+                      .HasForeignKey(w => w.ProductId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // Makes "add to wishlist" idempotent — a retried mobile request
+                // cannot create a duplicate row.
+                entity.HasIndex(w => new { w.UserId, w.ProductId }).IsUnique();
+            });
+
+            // ── UserCart (one active cart per user) ───────────────────────────
+            builder.Entity<UserCart>(entity =>
+            {
+                entity.HasOne(c => c.User)
+                      .WithMany()
+                      .HasForeignKey(c => c.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(c => c.UserId).IsUnique();
+            });
+
+            // ── DeviceToken ───────────────────────────────────────────────────
+            builder.Entity<DeviceToken>(entity =>
+            {
+                entity.HasOne(d => d.User)
+                      .WithMany()
+                      .HasForeignKey(d => d.UserId)
+                      .OnDelete(DeleteBehavior.SetNull);
+
+                // Re-registering the same installation updates the existing row.
+                entity.HasIndex(d => d.Token).IsUnique();
+                entity.HasIndex(d => d.UserId);
+            });
+
+            // ── IdempotencyRecord ─────────────────────────────────────────────
+            builder.Entity<IdempotencyRecord>(entity =>
+            {
+                // The (Key, Endpoint) pair is what makes a replay detectable.
+                entity.HasIndex(r => new { r.Key, r.Endpoint }).IsUnique();
+
+                // Supports the background pruning sweep.
+                entity.HasIndex(r => r.ExpiresAt);
+            });
         }
     }
 }

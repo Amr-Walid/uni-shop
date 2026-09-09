@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <!--
+      InMemory provider: these tests cover business-rule logic (paging order,
+      stock restoration, ownership filters, idempotency), none of which needs a
+      real SQL Server. Keeping them provider-light means they run in CI with no
+      database dependency.
+    -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FTD.Application\FTD.Application.csproj" />
+    <ProjectReference Include="..\FTD.Domain\FTD.Domain.csproj" />
+    <ProjectReference Include="..\FTD.Infrastructure\FTD.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

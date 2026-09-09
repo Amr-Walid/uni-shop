@@ -12,6 +12,17 @@ namespace FTD.Domain.Entities
         [Required, MaxLength(30)] public string OrderNumber { get; set; } = "";
         public int StatusId { get; set; }
 
+        /// <summary>
+        /// Owning customer account, or NULL for a guest checkout.
+        ///
+        /// Nullable by design: the storefront has always allowed guest orders and
+        /// every historical row predates accounts. The FK uses
+        /// DeleteBehavior.SetNull so deleting an account never cascades into the
+        /// financial history (same principle as the SalesOrderDetail → Product
+        /// Restrict rule from AUDIT_REPORT I-01).
+        /// </summary>
+        [MaxLength(450)] public string? UserId { get; set; }
+
         // Customer Info
         [Required, MaxLength(150)] public string CustomerName { get; set; } = "";
         [Required, MaxLength(20)] public string CustomerPhone { get; set; } = "";
@@ -32,6 +43,7 @@ namespace FTD.Domain.Entities
 
         // Nav
         public OrderStatus Status { get; set; } = null!;
+        public AppUser? User { get; set; }
         public ICollection<SalesOrderDetail> Details { get; set; } = new List<SalesOrderDetail>();
     }
 }

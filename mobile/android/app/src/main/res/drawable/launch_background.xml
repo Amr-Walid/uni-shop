@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cold-start window background, shown by the OS before the Flutter engine
+     paints its first frame.
+
+     Both this and the drawable-v21 copy were the Flutter template's plain
+     white. On a brand whose app opens onto a purple-accented UI that reads as
+     a white flash on every launch, so both are brand purple with the logo
+     centred: the app now looks like it is starting rather than stalling. The
+     bitmap is the adaptive foreground (white mark, transparent background),
+     which already exists in every density. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/ic_launcher_background" />
+
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@mipmap/ic_launcher_foreground" />
+    </item>
+</layer-list>

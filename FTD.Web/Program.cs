@@ -1,5 +1,6 @@
 using FTD.Application.Interfaces;
 using FTD.Application.Services;
+using FTD.Domain.Entities;
 using FTD.Infrastructure.Data;
 using FTD.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
@@ -9,6 +10,14 @@ using System;
 using System.Threading.Tasks;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Optional, gitignored, developer-machine overrides (appsettings.Local.json).
+// Inserted directly after the tracked appsettings files rather than appended,
+// so it outranks them but still loses to environment variables and command-line
+// args — otherwise a leftover local file would silently override deployment
+// configuration, which is exactly the failure mode it must not cause.
+// Its absence is the normal case; nothing here is required to run the app.
+FTD.Hosting.LocalConfiguration.Insert(builder.Configuration, builder.Environment);
 
 // ── MVC (no Razor Pages - pure MVC only) ─────────────────────────────────────
 builder.Services.AddControllersWithViews();
@@ -41,13 +50,17 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 
 // ── DATABASE ──────────────────────────────────────────────────────────────────
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Provider comes from Database:Provider and DEFAULTS TO SqlServer, so a fresh
+// clone of the repo behaves exactly as before. Sqlite (persistent local file)
+// and InMemory (throwaway) are Development-only opt-ins; see
+// DatabaseProviderSetup for why they are refused elsewhere.
+var databaseProvider = DatabaseProviderSetup.AddAppDbContext(
+    builder.Services, builder.Configuration, builder.Environment.IsDevelopment());
 
 builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
 
 // ── IDENTITY (without UI scaffolding) ────────────────────────────────────────
-builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
 {
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 8;
@@ -182,25 +195,32 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 // ── SEED: Admin role + user ───────────────────────────────────────────────────
-await SeedAsync(app);
+await SeedAsync(app, databaseProvider);
 
 app.MapHealthChecks("/health");
 
 app.Run();
 
-static async Task SeedAsync(WebApplication app)
+// databaseProvider is passed in rather than captured: a static local function
+// cannot reference an enclosing local (CS8421), and making it non-static would
+// allow accidental capture of the whole builder scope.
+static async Task SeedAsync(WebApplication app, string databaseProvider)
 {
     await using var scope = app.Services.CreateAsyncScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var roleMgr = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+    var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
 
     // Self-migrate at startup. Failures are logged (not swallowed silently — a
     // schema mismatch would otherwise surface later as confusing runtime errors)
     // but do not crash the app, so it can still boot against a read-only replica.
     try
     {
-        db.Database.Migrate();
+        // Migrates on SQL Server; builds the schema from the model on Sqlite and
+        // InMemory (the committed migrations are SQL-Server-only). Must run
+        // before the role/admin writes below, because EnsureCreated is what
+        // materialises the HasData seeds.
+        await DatabaseProviderSetup.InitializeSchemaAsync(db, databaseProvider);
     }
     catch (Exception ex)
     {
@@ -208,8 +228,14 @@ static async Task SeedAsync(WebApplication app)
         logger.LogError(ex, "Database migration failed at startup — the schema may be out of date.");
     }
 
-    if (!await roleMgr.RoleExistsAsync("Admin"))
-        await roleMgr.CreateAsync(new IdentityRole("Admin"));
+    // "Customer" is the role assigned to storefront/mobile shoppers. It is
+    // seeded here (not only in the API) so both hosts converge on the same role
+    // set regardless of which one boots first against a fresh database.
+    foreach (var role in new[] { "Admin", "Customer" })
+    {
+        if (!await roleMgr.RoleExistsAsync(role))
+            await roleMgr.CreateAsync(new IdentityRole(role));
+    }
 
     var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
     var adminEmail = config["SeedAdmin:Email"] ?? "admin@ftdtechzone.com";
@@ -217,7 +243,7 @@ static async Task SeedAsync(WebApplication app)
 
     if (await userMgr.FindByEmailAsync(adminEmail) == null)
     {
-        var admin = new IdentityUser
+        var admin = new AppUser
         {
             UserName = adminEmail,
             Email = adminEmail,

@@ -84,5 +84,93 @@ namespace FTD.Infrastructure.Services
                 _logger.LogError(ex, "Failed to send contact email");
             }
         }
+
+        public async Task SendPasswordResetAsync(
+            string toEmail, string userName, string resetToken, string language = "ar")
+        {
+            if (string.IsNullOrEmpty(_settings.SenderEmail) ||
+                _settings.SenderEmail == "your-email@gmail.com")
+            {
+                // Never log the token itself — an application log is not a safe
+                // place for a live credential.
+                _logger.LogWarning(
+                    "Email not configured — password reset for {Email} could not be delivered.", toEmail);
+                return;
+            }
+
+            var isArabic = !string.Equals(language, "en", StringComparison.OrdinalIgnoreCase);
+
+            try
+            {
+                var mail = new MailMessage
+                {
+                    From = new MailAddress(_settings.SenderEmail, _settings.SenderName),
+                    Subject = isArabic
+                        ? "إعادة تعيين كلمة المرور — Uni-Shop"
+                        : "Password Reset — Uni-Shop",
+                    IsBodyHtml = true,
+                    Body = isArabic
+                        ? BuildArabicResetBody(userName, resetToken)
+                        : BuildEnglishResetBody(userName, resetToken)
+                };
+
+                mail.To.Add(toEmail);
+
+                using var smtp = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
+                {
+                    Credentials = new NetworkCredential(_settings.SenderEmail, _settings.Password),
+                    EnableSsl = true
+                };
+
+                await smtp.SendMailAsync(mail);
+                _logger.LogInformation("Password reset email sent to {Email}", toEmail);
+            }
+            catch (Exception ex)
+            {
+                // Swallowed deliberately: AuthService.ForgotPasswordAsync always
+                // reports success to the caller so the endpoint cannot be used to
+                // enumerate which addresses have accounts. Surfacing an error
+                // here would leak exactly that.
+                _logger.LogError(ex, "Failed to send password reset email to {Email}", toEmail);
+            }
+        }
+
+        private static string BuildArabicResetBody(string userName, string token) => $@"
+<div style='font-family:Tahoma,sans-serif;direction:rtl;max-width:600px;margin:0 auto'>
+  <div style='background:#1A6BFF;padding:20px 30px;border-radius:12px 12px 0 0'>
+    <h2 style='color:white;margin:0;font-size:20px'>🔐 إعادة تعيين كلمة المرور</h2>
+  </div>
+  <div style='background:#f9f9f9;padding:24px 30px;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 12px 12px'>
+    <p style='font-size:15px;color:#333'>مرحباً {userName}،</p>
+    <p style='font-size:14px;color:#555;line-height:1.8'>
+      وصلنا طلب لإعادة تعيين كلمة مرور حسابك. استخدم الرمز التالي في التطبيق لإكمال العملية:
+    </p>
+    <div style='margin:20px 0;padding:16px;background:#fff;border:2px dashed #1A6BFF;border-radius:8px;text-align:center'>
+      <code style='font-size:15px;font-weight:700;color:#1A6BFF;word-break:break-all;direction:ltr;display:inline-block'>{token}</code>
+    </div>
+    <div style='padding:14px;background:#fff3cd;border-radius:8px;font-size:13px;color:#856404'>
+      ⚠️ إذا لم تطلب إعادة التعيين، تجاهل هذه الرسالة — لن يتغير أي شيء في حسابك.
+    </div>
+  </div>
+</div>";
+
+        private static string BuildEnglishResetBody(string userName, string token) => $@"
+<div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto'>
+  <div style='background:#1A6BFF;padding:20px 30px;border-radius:12px 12px 0 0'>
+    <h2 style='color:white;margin:0;font-size:20px'>🔐 Password Reset</h2>
+  </div>
+  <div style='background:#f9f9f9;padding:24px 30px;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 12px 12px'>
+    <p style='font-size:15px;color:#333'>Hello {userName},</p>
+    <p style='font-size:14px;color:#555;line-height:1.7'>
+      We received a request to reset your account password. Use the code below in the app to continue:
+    </p>
+    <div style='margin:20px 0;padding:16px;background:#fff;border:2px dashed #1A6BFF;border-radius:8px;text-align:center'>
+      <code style='font-size:15px;font-weight:700;color:#1A6BFF;word-break:break-all'>{token}</code>
+    </div>
+    <div style='padding:14px;background:#fff3cd;border-radius:8px;font-size:13px;color:#856404'>
+      ⚠️ If you did not request a reset, ignore this email — nothing will change.
+    </div>
+  </div>
+</div>";
     }
 }

@@ -25,6 +25,17 @@ namespace FTD.Application.Interfaces
         DbSet<SiteSetting> SiteSettings { get; }
         DbSet<ContactMessage> ContactMessages { get; }
 
+        // ── Mobile/API support sets ───────────────────────────────────────────
+        // Exposed through the same abstraction so the Application layer can
+        // implement carts, wishlists, token rotation and idempotency without
+        // taking a direct dependency on EF Core's DbContext.
+        DbSet<AppUser> AppUsers { get; }
+        DbSet<RefreshToken> RefreshTokens { get; }
+        DbSet<WishlistItem> WishlistItems { get; }
+        DbSet<UserCart> UserCarts { get; }
+        DbSet<DeviceToken> DeviceTokens { get; }
+        DbSet<IdempotencyRecord> IdempotencyRecords { get; }
+
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }
